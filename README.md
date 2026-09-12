@@ -1,4 +1,6 @@
-# 🛡️ AegisCrypt Web
+# AegisCrypt Web
+
+> **Indonesia Version:** bisa dilihat [disini](README_id.md)
 
 ![AegisCrypt Banner](https://via.placeholder.com/1200x400/0f172a/3b82f6?text=AegisCrypt+Web+Security)
 
@@ -13,18 +15,18 @@ AegisCrypt Web is a military-grade, browser-based encryption tool. It is designe
 
 ---
 
-## ✨ Features at a Glance
+## Features at a Glance
 
-*   **🔒 AES-256-GCM**: Authenticated encryption that detects tampering.
-*   **🔑 Two-Factor Authentication**: Combine `Password` + `Keyfile` (e.g., a photo, a document) for ultimate security.
-*   **🌊 Streaming Engine (v2)**: Encrypts multi-gigabyte files without crashing the browser (low RAM footprint).
-*   **🎨 Cyberpunk Glass UI**: A fully responsive, modern interface with real-time animations.
-*   **⚡ Real-time Telemetry**: View encryption speed (MB/s) and ETA.
-*   **📁 Batch Processing**: Drag & drop entire folders to process queue.
+*   **AES-256-GCM**: Authenticated encryption that detects tampering.
+*   **Two-Factor Authentication**: Combine `Password` + `Keyfile` (e.g., a photo, a document) for ultimate security.
+*   **Streaming Engine (v2)**: Encrypts multi-gigabyte files without crashing the browser (low RAM footprint).
+*   **Cyberpunk Glass UI**: A fully responsive, modern interface with real-time animations.
+*   **Real-time Telemetry**: View encryption speed (MB/s) and ETA.
+*   **Batch Processing**: Drag & drop entire folders to process queue.
 
 ---
 
-## 📸 Screenshots & Demo
+## Screenshots & Demo
 
 ### 1. The Dashboard
 The main command center. Monitor your queue, check speeds, and manage sessions.
@@ -43,7 +45,7 @@ Manage your files before committing to encryption.
 
 ---
 
-## 🔒 Security Architecture
+## Security Architecture
 
 AegisCrypt follows strict cryptographic standards to ensure data integrity and confidentiality.
 
@@ -68,7 +70,7 @@ AegisCrypt follows strict cryptographic standards to ensure data integrity and c
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 *   Node.js (v18+)
@@ -93,7 +95,7 @@ The app will launch at `http://localhost:5173` (Vite default).
 
 ---
 
-## 📖 User Guide
+## User Guide
 
 ### Encryption Workflow
 1.  **Login**: Enter a strong password. (Optional) Drag a random file (image, song, doc) into the Keyfile area.
@@ -110,7 +112,7 @@ The app will launch at `http://localhost:5173` (Vite default).
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 aegiscrypt-web/
@@ -121,7 +123,7 @@ aegiscrypt-web/
 │   │   ├── LoginScreen.tsx    # Auth Entry
 │   │   └── PasswordInput.tsx  # Strength Meter
 │   ├── services/
-│   │   └── cryptoService.ts   # 🛡️ Core Crypto Engine (AES-GCM)
+│   │   └── cryptoService.ts   # core Crypto Engine (AES-GCM)
 │   ├── App.tsx                # Main Controller
 │   ├── constants.ts           # Config & Magic Bytes
 │   └── types.ts               # TypeScript Interfaces
@@ -134,7 +136,7 @@ aegiscrypt-web/
 
 ---
 
-## 📄 File Format Spec (.aegis v2)
+## File Format Spec (.aegis v2)
 
 Binary layout for interoperability with the Desktop version:
 
@@ -150,7 +152,7 @@ Binary layout for interoperability with the Desktop version:
 
 ---
 
-## ⚠️ FAQ & Troubleshooting
+## FAQ & Troubleshooting
 
 **Q: I lost my password/keyfile. Can you recover my data?**
 > **No.** AegisCrypt is zero-knowledge. There are no backdoors. If credentials are lost, the data is mathematically unrecoverable.
