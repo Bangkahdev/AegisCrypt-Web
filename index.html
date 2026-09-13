@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AegisCrypt | Professional Web Encryption</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="bg-black text-neutral-200 antialiased h-screen overflow-hidden selection:bg-white/20 selection:text-white">
+    <div id="root" class="h-full relative z-10"></div>
+    <!-- Background Container -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+      <div class="absolute inset-[-100%] top-[-100%] w-[300%] h-[300%] bg-grid-pattern opacity-50"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/80"></div>
+    </div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

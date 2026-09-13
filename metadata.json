@@ -1,0 +1,5 @@
+{
+  "name": "AegisCrypt Web",
+  "description": "Professional client-side encryption suite. AES-256-GCM, PBKDF2, Chunked Streaming, and Dark Mode Glassmorphism UI.",
+  "requestFramePermissions": []
+}
