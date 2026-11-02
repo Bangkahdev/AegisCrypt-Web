@@ -9,6 +9,10 @@ Object.defineProperty(global, 'crypto', {
     randomUUID: () => crypto.randomUUID()
   }
 });
+Object.defineProperty(global, 'window', {
+  value: global,
+  configurable: true
+});
 
 // Polyfill TextEncoder/Decoder jika belum ada
 if (typeof TextEncoder === 'undefined') {
