@@ -1,75 +1,102 @@
-
-import React from 'react';
-import { X, FileText, Image, Film, Music, Box, Lock } from 'lucide-react';
-import { EXTENSION_ENCRYPTED } from '../constants';
+import React from "react";
+import { Box, FileArchive, FileText, Film, Image, Lock, Music, X } from "lucide-react";
+import { EXTENSION_ENCRYPTED } from "../constants";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 
 interface FileListProps {
   files: File[];
   onRemove: (index: number) => void;
-  disabled: boolean; // Disables remove buttons during processing
+  disabled: boolean;
 }
 
-/**
- * FILE LIST COMPONENT
- * Renders a visual queue of files waiting to be processed.
- * Includes icons based on file type and a remove button.
- */
+function formatSize(bytes: number) {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
+function getFileIcon(filename: string) {
+  if (filename.endsWith(EXTENSION_ENCRYPTED)) {
+    return <Lock className="h-4 w-4 text-success" />;
+  }
+  const ext = filename.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "png":
+    case "jpg":
+    case "jpeg":
+    case "gif":
+    case "webp":
+      return <Image className="h-4 w-4" />;
+    case "mp4":
+    case "mov":
+    case "avi":
+      return <Film className="h-4 w-4" />;
+    case "mp3":
+    case "wav":
+      return <Music className="h-4 w-4" />;
+    case "zip":
+    case "rar":
+    case "7z":
+      return <FileArchive className="h-4 w-4" />;
+    case "bin":
+      return <Box className="h-4 w-4" />;
+    default:
+      return <FileText className="h-4 w-4" />;
+  }
+}
+
 export const FileList: React.FC<FileListProps> = ({ files, onRemove, disabled }) => {
-  
-  // Format bytes to human readable string (KB, MB, GB)
-  const formatSize = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
-
-  // Determine Icon based on extension
-  const getFileIcon = (filename: string) => {
-    if (filename.endsWith(EXTENSION_ENCRYPTED)) return <Lock className="w-5 h-5 text-white" />;
-    const ext = filename.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      case 'png': case 'jpg': case 'jpeg': case 'gif': return <Image className="w-5 h-5 text-neutral-300" />;
-      case 'mp4': case 'mov': case 'avi': return <Film className="w-5 h-5 text-neutral-300" />;
-      case 'mp3': case 'wav': return <Music className="w-5 h-5 text-neutral-300" />;
-      case 'zip': case 'rar': case '7z': return <Box className="w-5 h-5 text-neutral-300" />;
-      default: return <FileText className="w-5 h-5 text-neutral-300" />;
-    }
-  };
-
   return (
-    <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin space-y-2 max-h-[400px]">
-      {files.map((file, idx) => (
-        <div 
-          key={`${file.name}-${idx}`}
-          className="group flex items-center justify-between p-3 bg-neutral-900/40 border border-neutral-800 hover:border-neutral-600 rounded-xl transition-all hover:bg-neutral-800/40 animate-in fade-in slide-in-from-bottom-2 duration-300"
-          style={{ animationDelay: `${idx * 50}ms` }}
-        >
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="p-2 bg-neutral-900 rounded-lg group-hover:bg-black transition-colors">
+    <div className="scrollbar-thin flex-1 space-y-2 overflow-y-auto pr-1">
+      {files.map((file, idx) => {
+        const isEncrypted = file.name.endsWith(EXTENSION_ENCRYPTED);
+
+        return (
+          <div
+            key={`${file.name}-${idx}`}
+            className="group flex items-center gap-3 border-2 border-border bg-background p-3 hover:bg-secondary"
+          >
+            <span className="hidden w-5 shrink-0 font-mono text-[10px] text-muted-foreground sm:block">
+              {String(idx + 1).padStart(2, "0")}
+            </span>
+
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center border-2 border-border bg-secondary text-foreground">
               {getFileIcon(file.name)}
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-neutral-200 truncate pr-2 group-hover:text-white transition-colors">
-                {file.name}
-              </span>
-              <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-wide">
-                {formatSize(file.size)}
-              </span>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{file.name}</p>
+              <div className="mt-0.5 flex items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {formatSize(file.size)}
+                </span>
+                {isEncrypted && (
+                  <Badge variant="success" className="px-1.5 py-0 text-[9px]">
+                    ENCRYPTED
+                  </Badge>
+                )}
+              </div>
             </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove(idx);
+              }}
+              disabled={disabled}
+              aria-label={`Remove ${file.name}`}
+              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-          
-          <button
-            onClick={(e) => { e.stopPropagation(); onRemove(idx); }}
-            disabled={disabled}
-            className="p-1.5 text-neutral-500 hover:text-white hover:bg-white/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-0"
-            title="Remove from queue"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

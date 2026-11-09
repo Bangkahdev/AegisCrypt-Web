@@ -1,6 +1,7 @@
-
-import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Lock, Check, X } from 'lucide-react';
+﻿import React, { useEffect, useState } from "react";
+import { Eye, EyeOff, Lock } from "lucide-react";
+import { Input } from "./ui/input";
+import { cn } from "@/lib/utils";
 
 interface PasswordInputProps {
   value: string;
@@ -10,11 +11,14 @@ interface PasswordInputProps {
 
 export const PasswordInput: React.FC<PasswordInputProps> = ({ value, onChange, disabled }) => {
   const [show, setShow] = useState(false);
-  const [strength, setStrength] = useState(0); // 0-4
+  const [strength, setStrength] = useState(0);
 
   useEffect(() => {
     let score = 0;
-    if (!value) { setStrength(0); return; }
+    if (!value) {
+      setStrength(0);
+      return;
+    }
     if (value.length > 7) score++;
     if (value.length > 12) score++;
     if (/[A-Z]/.test(value)) score++;
@@ -22,57 +26,72 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({ value, onChange, d
     setStrength(score);
   }, [value]);
 
-  const strengthColor = () => {
-    if (strength <= 1) return 'bg-neutral-500';
-    if (strength === 2) return 'bg-neutral-300';
-    if (strength === 3) return 'bg-neutral-100';
-    return 'bg-white shadow-white/40';
+  const strengthLabel = () => {
+    if (strength <= 1) return "Weak";
+    if (strength === 2) return "Fair";
+    if (strength === 3) return "Good";
+    return "Excellent";
   };
 
-  const strengthLabel = () => {
-    if (strength <= 1) return 'Weak';
-    if (strength === 2) return 'Fair';
-    if (strength === 3) return 'Good';
-    return 'Excellent';
+  const strengthColor = () => {
+    if (strength <= 1) return "text-destructive";
+    if (strength === 2) return "text-warning";
+    if (strength === 3) return "text-success";
+    return "text-success";
+  };
+
+  const barColor = (index: number) => {
+    if (index >= strength) return "bg-muted";
+    if (strength <= 1) return "bg-destructive";
+    if (strength === 2) return "bg-warning";
+    return "bg-success";
   };
 
   return (
-    <div className="space-y-3">
-      <div className="relative group">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Lock className={`w-5 h-5 transition-colors duration-300 ${value ? 'text-white' : 'text-neutral-500'}`} />
-        </div>
-        <input
-          type={show ? 'text' : 'password'}
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <label htmlFor="master-password" className="text-sm font-semibold">
+          Master password
+        </label>
+        <span className="font-mono text-[11px] text-muted-foreground">
+          {value.length} chars
+        </span>
+      </div>
+
+      <div className="relative">
+        <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          id="master-password"
+          type={show ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           placeholder="Enter encryption password"
-          className="w-full bg-neutral-900/50 backdrop-blur-md border border-neutral-700 rounded-xl py-3.5 pl-10 pr-12 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium tracking-wide"
+          autoComplete="new-password"
+          className="h-11 pl-9 pr-11"
         />
         <button
+          type="button"
           onClick={() => setShow(!show)}
           disabled={disabled}
-          className="absolute right-3 top-3.5 text-neutral-500 hover:text-neutral-300 transition-colors focus:outline-none"
+          aria-label={show ? "Hide password" : "Show password"}
+          className="absolute right-2 top-1/2 -translate-y-1/2 border-2 border-transparent p-1.5 text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50"
         >
-          {show ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
-      
-      {/* Strength Bar */}
-      <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden flex items-center">
-         <div 
-            className={`h-full transition-all duration-500 ease-out ${value ? strengthColor() : 'w-0'}`} 
-            style={{ width: `${(strength / 4) * 100}%` }}
-         />
+
+      <div className="flex gap-1.5" aria-hidden="true">
+        {[0, 1, 2, 3].map((index) => (
+          <div key={index} className={cn("h-2 flex-1", barColor(index))} />
+        ))}
       </div>
-      <div className="flex justify-between items-center text-xs">
-         <span className={`font-semibold transition-colors duration-300 ${
-           strength <= 1 ? 'text-neutral-500' : strength === 2 ? 'text-neutral-300' : strength === 3 ? 'text-neutral-100' : 'text-white'
-         }`}>
-           {value ? strengthLabel() : 'Password required'}
-         </span>
-         <span className="text-neutral-500">{value.length} chars</span>
+
+      <div className="flex items-center justify-between text-[11px]">
+        <span className={cn("font-semibold", value ? strengthColor() : "text-muted-foreground")}>
+          {value ? strengthLabel() : "Password required"}
+        </span>
+        <span className="text-muted-foreground">PBKDF2 / 100k iterations</span>
       </div>
     </div>
   );
