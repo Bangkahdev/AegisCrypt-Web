@@ -24,3 +24,13 @@ playwright-report
 *.njsproj
 *.sln
 *.sw?
+
+# cloudflare build output
+.cloudflare
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example

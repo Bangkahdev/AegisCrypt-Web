@@ -1,78 +1,157 @@
 @import "tailwindcss";
 
-body {
-  font-family: 'Inter', sans-serif;
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #f4f0e6;
+  --foreground: #17150f;
+  --card: #fffdf6;
+  --card-foreground: #17150f;
+  --popover: #fffdf6;
+  --popover-foreground: #17150f;
+  --primary: #17150f;
+  --primary-foreground: #fffdf6;
+  --secondary: #e9e1cf;
+  --secondary-foreground: #17150f;
+  --muted: #e1d8c4;
+  --muted-foreground: #5d574a;
+  --accent: #f5d76e;
+  --accent-foreground: #17150f;
+  --destructive: #b42318;
+  --destructive-foreground: #fffdf6;
+  --success: #2f7d5a;
+  --warning: #a16207;
+  --border: #17150f;
+  --input: #17150f;
+  --ring: #17150f;
+  --radius: 0;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-.font-mono {
-  font-family: 'JetBrains Mono', monospace;
+.dark {
+  --background: #141210;
+  --foreground: #f4f0e6;
+  --card: #1d1a16;
+  --card-foreground: #f4f0e6;
+  --popover: #1d1a16;
+  --popover-foreground: #f4f0e6;
+  --primary: #f5d76e;
+  --primary-foreground: #141210;
+  --secondary: #2a251f;
+  --secondary-foreground: #f4f0e6;
+  --muted: #332d25;
+  --muted-foreground: #c9c0ae;
+  --accent: #b7d8a8;
+  --accent-foreground: #141210;
+  --destructive: #ffb4ab;
+  --destructive-foreground: #3b0a06;
+  --success: #8fd6b4;
+  --warning: #f5d76e;
+  --border: #f4f0e6;
+  --input: #f4f0e6;
+  --ring: #f5d76e;
 }
 
-/* Custom Scrollbar */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    height: 100%;
+  }
+
+  body {
+    min-height: 100%;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  #root {
+    min-height: 100%;
+  }
+}
+
+/* Neo-brutalism soft: solid fills, thick borders, no effects */
+.nb-panel {
+  border: 2px solid var(--border);
+  background-color: var(--card);
+}
+
+.nb-divider {
+  border-color: var(--border);
+  border-width: 2px;
+}
+
+.nb-accent {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.nb-muted {
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.nb-input {
+  border: 2px solid var(--input);
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+[disabled],
+.disabled,
+.cursor-not-allowed {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
 .scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
+
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--background);
 }
+
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #404040;
-  border-radius: 3px;
-}
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #666666;
-}
-
-/* Cyber Grid Animation */
-.bg-grid-pattern {
-  background-size: 50px 50px;
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  animation: moveGrid 20s linear infinite;
-}
-
-@keyframes moveGrid {
-  0% {
-    transform: translateY(0) translateX(0);
-  }
-  100% {
-    transform: translateY(50px) translateX(50px);
-  }
-}
-
-/* Utility for glass */
-.glass-panel {
-  background: rgba(10, 10, 10, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Shimmer sweep on progress bar while processing */
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-.animate-shimmer {
-  animation: shimmer 1.5s linear infinite;
-}
-
-/* Simple fade + slide entrance used by FileList / LogBox rows.
-   (Previously referenced classes from the `tailwindcss-animate` plugin,
-   which was never installed — implemented natively here instead.) */
-@keyframes enter-fade-slide-1 {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes enter-fade-slide-2 {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-in.fade-in.slide-in-from-bottom-1 {
-  animation: enter-fade-slide-1 200ms ease-out both;
-}
-.animate-in.fade-in.slide-in-from-bottom-2 {
-  animation: enter-fade-slide-2 300ms ease-out both;
+  background: var(--border);
+  border: 2px solid var(--background);
 }

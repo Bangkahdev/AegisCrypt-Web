@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Referensi teknis untuk AegisCrypt: enkripsi file AES-256-GCM hanya di browser, derivasi kunci PBKDF2, format container .aegis v2, API, model keamanan, dan deployment Cloudflare."
+    />
+    <meta name="theme-color" content="#fafafa" />
+    <title>AegisCrypt Docs — Referensi Teknis (Bahasa Indonesia)</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Lompat ke konten</a>
+
+    <div class="docs-shell">
+      <header class="topbar">
+        <a class="brand" href="#overview" aria-label="Beranda AegisCrypt Docs">
+          <span class="brand-mark">A</span>
+          <span class="brand-text">AegisCrypt<small>DOKUMEN</small></span>
+        </a>
+
+        <nav class="topnav" aria-label="Navigasi Utama">
+          <a href="#overview">Ringkasan</a>
+          <a href="#quickstart">Mulai Cepat</a>
+          <a href="#architecture">Arsitektur</a>
+          <a href="#security">Keamanan</a>
+          <a href="#deployment">Deployment</a>
+        </nav>
+
+        <div class="top-actions">
+          <a
+            class="btn btn-primary"
+            href="https://aegiscrypt.bangkah.tech"
+            >Aplikasi &nearr;</a
+          >
+          <button
+            class="menu-toggle"
+            type="button"
+            aria-label="Buka menu navigasi"
+            aria-expanded="false"
+          >
+            MENU
+          </button>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Navigasi Samping">
+        <p class="sidebar-title">Konten</p>
+        <a href="#overview" class="active">01 / Ringkasan</a>
+        <a href="#quickstart">02 / Mulai Cepat</a>
+        <a href="#architecture">03 / Arsitektur</a>
+        <a href="#usage">04 / Penggunaan</a>
+        <a href="#file-format">05 / Format File</a>
+        <a href="#api">06 / Referensi API</a>
+        <a href="#structure">07 / Struktur Project</a>
+        <a href="#security">08 / Model Keamanan</a>
+        <a href="#performance">09 / Performa & Batasan</a>
+        <a href="#testing">10 / Pengujian</a>
+        <a href="#deployment">11 / Deployment</a>
+        <a href="#troubleshooting">12 / Pemecahan Masalah</a>
+        <a href="#faq">13 / FAQ</a>
+
+        <div class="sidebar-note">
+          <strong>Situs Live</strong>
+          <a href="https://aegiscrypt.bangkah.tech" target="_blank" rel="noreferrer"
+            >aegiscrypt.bangkah.tech ↗</a
+          >
+          <a href="https://docs.aegiscrypt.bangkah.tech" target="_blank" rel="noreferrer"
+            >docs.aegiscrypt.bangkah.tech ↗</a
+          >
+        </div>
+      </aside>
+
+      <main id="main" class="content">
+        <div class="page-inner">
+          <section class="doc-section" id="overview">
+          <div class="hero">
+            <p class="hero-eyebrow">
+              <span class="dot"></span> ENKRIPSI FILE TANPA BACKEND
+            </p>
+            <h1>AegisCrypt<br /><span class="hero-accent">Dokumentasi.</span></h1>
+            <p>
+              Referensi teknis lengkap untuk klien browser AegisCrypt: mesin
+              AES-256-GCM, container <code class="inline">.aegis</code> v2,
+              API kriptografi publik, dan deployment Cloudflare yang melayani
+              semuanya — tanpa unggah file, tanpa server, tanpa pengetahuan
+              server.
+            </p>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="#quickstart">Mulai Cepat →</a>
+              <a
+                class="btn btn-outline"
+                href="https://github.com/Bangkahdev/AegisCrypt-Web"
+                target="_blank"
+                rel="noreferrer"
+                >GitHub ↗</a
+              >
+            </div>
+          </div>
+
+          <h3 class="subhead">Pada pandangan pertama</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Properti</th><th>Nilai</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Sandi</td><td><code class="inline">AES-GCM</code>, kunci 256-bit</td></tr>
+                <tr><td>Derivasi kunci</td><td><code class="inline">PBKDF2</code> / HMAC-SHA-256, 100.000 iterasi</td></tr>
+                <tr><td>Salt</td><td>32 byte acak, dihasilkan per file</td></tr>
+                <tr><td>IV</td><td>12 byte acak, dihasilkan per bagian</td></tr>
+                <tr><td>Tag autentikasi</td><td>128 bit, ditambahkan oleh Web Crypto</td></tr>
+                <tr><td>Plaintext per bagian</td><td>1.048.576 byte (1 MiB)</td></tr>
+                <tr><td>Versi container</td><td><code class="inline">0x02</code></td></tr>
+                <tr><td>Ukuran header</td><td>38 byte (5 magic + 1 versi + 32 salt)</td></tr>
+                <tr><td>Nama file terenkripsi</td><td><code class="inline">original.ext.aegis</code></td></tr>
+                <tr><td>Nama file terdekripsi</td><td>Menghapus <code class="inline">.aegis</code>, atau awalan <code class="inline">decrypted_</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="feature-grid">
+            <article class="card">
+              <span class="card-tag">Sandi</span>
+              <h3>AES-256-GCM</h3>
+              <p>
+                Enkripsi terotentikasi mendeteksi penyusupan. Sebuah bit yang
+                berubah dalam ciphertext atau tag akan membuat dekripsi gagal.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-tag">KDF</span>
+              <h3>PBKDF2 100K</h3>
+              <p>
+                HMAC-SHA-256 dengan 100.000 putaran dan garam 32 byte segar
+                per file menghasilkan kunci AES 256-bit yang tidak dapat
+                diekstrak.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-tag">2FA</span>
+              <h3>Keyfile</h3>
+              <p>
+                Materi kunci adalah byte sandi diikuti oleh
+                <span class="inline">SHA-256(keyfile)</span>. Keyfile yang
+                persis sama diperlukan untuk mereproduksi kunci.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-tag">Stream</span>
+              <h3>1 MiB bagian</h3>
+              <p>
+                Enkripsi memotong file besar menjadi blok 1 MiB dengan IV baru
+                per blok dan menyimpan output sebagai bagian Blob.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-tag">Lokal</span>
+              <h3>Tanpa backend</h3>
+              <p>
+                Tidak ada endpoint unggah, sistem akun, atau penanganan kunci
+                di sisi server. Aplikasi yang di-deploy adalah HTML, CSS, dan
+                JavaScript statis.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-tag">Integritas</span>
+              <h3>Parsing ketat</h3>
+              <p>
+                Magic bytes, versi, dan panjang bagian divalidasi sebelum
+                dekripsi; container yang rusak ditolak.
+              </p>
+            </article>
+          </div>
+
+          <div class="callout info">
+            <strong>Artinya “tanpa pengetahuan server” di sini</strong>
+            <p>
+              Aplikasi tidak dapat membaca file Anda setelah sesi berakhir
+              karena tidak pernah mengirimkannya ke mana pun. Browser
+              menghasilkan kunci dan mengenkripsi secara lokal, lalu mengunduh
+              container. Permintaan eksternal satu-satunya adalah untuk aset
+              statis dan stylesheet Google Fonts opsional.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="quickstart">
+          <div class="section-head">
+            <span class="section-num">02</span>
+            <h2>Mulai Cepat</h2>
+          </div>
+
+          <h3 class="subhead">Persyaratan</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Persyaratan</th><th>Detail</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Node.js</td><td><code class="inline">^20.19.0</code> atau <code class="inline">&gt;=22.12.0</code> (diperlukan Vite 8)</td></tr>
+                <tr><td>npm</td><td>10 atau lebih baru</td></tr>
+                <tr><td>Browser</td><td>Browser modern dengan <code class="inline">crypto.subtle</code>, <code class="inline">File.slice</code>, dan <code class="inline">Blob</code></td></tr>
+                <tr><td>Deployment (opsional)</td><td>CLI Cloudflare <code class="inline">cf</code>, terautentikasi</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-block">
+            <div class="code-head">
+              <span>terminal</span>
+              <button type="button" data-copy="quickstart-code">Salin</button>
+            </div>
+            <pre id="quickstart-code"><code># 1. Kloning repositori
+git clone https://github.com/Bangkahdev/AegisCrypt-Web.git
+
+# 2. Masuk ke direktori proyek
+cd AegisCrypt-Web
+
+# 3. Instal dependensi
+npm install
+
+# 4. Jalankan server pengembangan
+npm start</code></pre>
+          </div>
+
+          <p>
+            Vite mencetak URL lokal, biasanya
+            <code class="inline">http://localhost:5173</code>. Build produksi
+            dan suite pengujian adalah perintah terpisah:
+          </p>
+
+          <div class="code-block">
+            <div class="code-head">
+              <span>build &amp; test</span>
+              <button type="button" data-copy="build-code">Salin</button>
+            </div>
+            <pre id="build-code"><code>npm run build        # tsc + vite build
+npm run preview      # layani build di port :4173
+npm run test:unit    # jalankan suite Vitest sekali
+npm run test:e2e     # jalankan uji browser Playwright</code></pre>
+          </div>
+
+          <h3 class="subhead">Skrip</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Skrip</th><th>Menjalankan</th><th>Catatan</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code class="inline">npm start</code></td><td><code class="inline">vite</code></td><td>Server pengembangan dengan HMR di port 5173</td></tr>
+                <tr><td><code class="inline">npm run build</code></td><td><code class="inline">tsc &amp;&amp; vite build</code></td><td>Typecheck, lalu build dengan plugin Vite Cloudflare</td></tr>
+                <tr><td><code class="inline">npm run preview</code></td><td><code class="inline">vite preview</code></td><td>Menyajikan build untuk uji e2e di port 4173</td></tr>
+                <tr><td><code class="inline">npm run test:unit</code></td><td><code class="inline">vitest --run</code></td><td>6 uji crypto, tidak memerlukan browser</td></tr>
+                <tr><td><code class="inline">npm run test:e2e</code></td><td><code class="inline">playwright test</code></td><td>2 uji Chromium terhadap server preview</td></tr>
+                <tr><td><code class="inline">npm run deploy</code></td><td><code class="inline">cf deploy</code></td><td>Build dan deploy Worker aplikasi</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="subhead">Sesi pertama Anda</h3>
+          <ol class="steps">
+            <li>Buka aplikasi dan masukkan sandi utama. Tombol tetap nonaktif saat kolom kosong.</li>
+            <li>Opsional: aktifkan <strong>Gunakan keyfile</strong> dan pilih berkas apa pun. Aplikasi membacanya sebagai <code class="inline">ArrayBuffer</code> saat Anda memulai sesi.</li>
+            <li>Klik <strong>Mulai Sesi</strong>. Ini menyimpan sandi dan buffer keyfile opsional dalam status React; kunci belum diturunkan.</li>
+            <li>Seret file ke dalam antrian, lalu klik <strong>Enkripsi</strong> atau <strong>Dekripsi</strong>. Garam dan kunci segar diturunkan untuk setiap operasi file.</li>
+          </ol>
+
+          <div class="callout warn">
+            <strong>Tidak ada jalur pemulihan</strong>
+            <p>
+              Tidak ada akun, alur reset, atau sandi sepuluh di sisi server. Jika
+              sandi atau keyfile yang persis sama hilang, container tidak dapat
+              didekripsi.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="architecture">
+          <div class="section-head">
+            <span class="section-num">03</span>
+            <h2>Arsitektur</h2>
+          </div>
+
+          <p class="lead">
+            Setiap file mengikuti pipeline yang sama. Derivasi kunci terjadi di
+            dalam operasi file, bukan saat masuk, sehingga garam baru dapat
+            dihasilkan per file.
+          </p>
+
+          <div class="flow" aria-label="Pipeline enkripsi">
+            <div class="flow-node">
+              <span>Input</span>
+              <strong>Sandi + Keyfile</strong>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">
+              <span>KDF</span>
+              <strong>PBKDF2-SHA256</strong>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">
+              <span>Sandi</span>
+              <strong>AES-256-GCM</strong>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">
+              <span>Output</span>
+              <strong>Container .aegis</strong>
+            </div>
+          </div>
+
+          <h3 class="subhead">Urutan enkripsi</h3>
+          <ol class="steps">
+            <li>Hasilkan garam 32 byte dengan <code class="inline">crypto.getRandomValues</code>.</li>
+            <li>Bangun materi kunci: byte sandi UTF-8, diikuti oleh hash SHA-256 32 byte dari keyfile jika ada.</li>
+            <li>Impor materi kunci sebagai input PBKDF2 dan turunkan kunci AES-GCM 256-bit dengan 100.000 iterasi. Kunci tidak dapat diekstrak.</li>
+            <li>Tulis header 38 byte: <code class="inline">AEGIS</code>, versi <code class="inline">0x02</code>, lalu garam.</li>
+            <li>Untuk setiap irisan plaintext 1 MiB, buat IV baru 12 byte, enkripsi, dan paketkan hasilnya.</li>
+            <li>Kumpulkan header dan catatan bagian sebagai bagian Blob dan unduh container yang selesai.</li>
+          </ol>
+
+          <h3 class="subhead">Urutan dekripsi</h3>
+          <ol class="steps">
+            <li>Baca seluruh container ke dalam <code class="inline">ArrayBuffer</code>.</li>
+            <li>Validasi 5 byte magic dan byte versi sebelum membaca bagian apa pun.</li>
+            <li>Baca garam 32 byte, bangun kembali materi kunci, dan turunkan kunci AES yang sama.</li>
+            <li>Untuk setiap catatan, baca panjang 4 byte little-endian, validasi terhadap byte yang tersisa, lalu pisahkan IV dan ciphertext.</li>
+            <li>Dekripsi setiap bagian; kegagalan GCM dilaporkan sebagai sandi salah, keyfile salah, atau penyusupan.</li>
+            <li>Kumpulkan bagian plaintext ke dalam Blob dan unduh file yang dipulihkan.</li>
+          </ol>
+
+          <h3 class="subhead">Batas data</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Data</th><th>Disimpan di browser</th><th>Dikirim melalui jaringan</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Konten file</td><td>Ya, selama operasi</td><td>Tidak</td></tr>
+                <tr><td>Sandi</td><td>Ya, dalam status React hingga logout atau reload</td><td>Tidak</td></tr>
+                <tr><td>Byte keyfile</td><td>Ya, sebagai <code class="inline">ArrayBuffer</code> saat diaktifkan</td><td>Tidak</td></tr>
+                <tr><td>Salt dan IV</td><td>Ya</td><td>Hanya di dalam container yang diunduh</td></tr>
+                <tr><td>Kunci AES turunan</td><td>Ya, <code class="inline">CryptoKey</code> non-ekstraktibel</td><td>Tidak</td></tr>
+                <tr><td>Aset statis dan font aplikasi</td><td>Cache browser</td><td>Ya, sebagai permintaan HTTP normal</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout danger">
+            <strong>Status sesi tidak dipertahankan</strong>
+            <p>
+              Me-reload halaman, logout, atau menutup tab akan menghapus sesi
+              dari status React. Tidak ada yang ditulis ke localStorage kecuali
+              preferensi terang/gelap.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="usage">
+          <div class="section-head">
+            <span class="section-num">04</span>
+            <h2>Penggunaan</h2>
+          </div>
+
+          <div class="split">
+            <article class="card card-link" style="cursor:default;">
+              <span class="card-tag">Enkripsi</span>
+              <h3>Segel berkas</h3>
+              <ol class="steps">
+                <li>Masukkan sandi utama yang kuat.</li>
+                <li>Opsional: aktifkan keyfile dan pilih berkas.</li>
+                <li>Klik <strong>Mulai Sesi</strong>.</li>
+                <li>Seret berkas atau folder ke antrian.</li>
+                <li>Klik <strong>Enkripsi</strong>. Satu unduhan dipicu per berkas.</li>
+                <li>Izinkan unduhan banyak jika browser meminta.</li>
+              </ol>
+            </article>
+            <article class="card card-link" style="cursor:default;">
+              <span class="card-tag">Dekripsi</span>
+              <h3>Pulihkan berkas</h3>
+              <ol class="steps">
+                <li>Gunakan sandi dan keyfile yang persis sama seperti saat enkripsi.</li>
+                <li>Seret berkas <code class="inline">.aegis</code> ke antrian.</li>
+                <li>Klik <strong>Dekripsi</strong>.</li>
+                <li>Nama file asli dipulihkan saat container diakhiri dengan <code class="inline">.aegis</code>.</li>
+                <li>Verifikasi berkas yang dipulihkan sebelum menghapus container.</li>
+              </ol>
+            </article>
+          </div>
+
+          <h3 class="subhead">Perilaku antrian</h3>
+          <ul class="notes-list">
+            <li>Berkas diproses secara berurutan, dalam urutan yang ditampilkan di antrian.</li>
+            <li>Antrian menerima banyak berkas dan pemilihan folder melalui pemilih berkas atau seret lepas.</li>
+            <li>Setiap berkas diunduh terpisah; browser mungkin memblokir unduhan otomatis banyak hingga Anda mengizinkannya.</li>
+            <li><strong>Batal</strong> menghentikan di antara bagian. Karena unduhan dibuat hanya setelah berkas selesai, berkas yang dibatalkan tidak menghasilkan unduhan sebagian.</li>
+            <li>Setiap berkas berhasil, antrian dikosongkan secara otomatis. Berkas yang gagal tetap berada di antrian untuk diperiksa.</li>
+          </ul>
+
+          <div class="callout info">
+            <strong>Semantik progres</strong>
+            <p>
+              Selama enkripsi, progres menghitung byte plaintext. Selama
+              dekripsi, progres menghitung byte container, termasuk header dan
+              overhead per bagian, jadi persentase relatif terhadap ukuran
+              container.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="file-format">
+          <div class="section-head">
+            <span class="section-num">05</span>
+            <h2>Format File</h2>
+          </div>
+
+          <p class="lead">
+            Container <code class="inline">.aegis</code> v2 adalah header 38
+            byte diikuti oleh satu atau lebih catatan bagian dengan awalan
+            panjang. Semua bilangan bulat little-endian.
+          </p>
+
+          <h3 class="subhead">Header (38 byte)</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Offset</th><th>Ukuran</th><th>Bidang</th><th>Nilai</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>0</td><td>5</td><td>Magic</td><td>ASCII <code class="inline">AEGIS</code> (<code class="inline">41 45 47 49 53</code>)</td></tr>
+                <tr><td>5</td><td>1</td><td>Versi</td><td><code class="inline">0x02</code></td></tr>
+                <tr><td>6</td><td>32</td><td>Salt</td><td>Byte CSPRNG, unik per file</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="subhead">Catatan bagian (berulang)</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Bidang</th><th>Ukuran</th><th>Detail</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Panjang</td><td>4 byte</td><td>Little-endian; sama dengan <code class="inline">12 + panjang ciphertext</code>, termasuk tag GCM 16 byte</td></tr>
+                <tr><td>IV</td><td>12 byte</td><td>Nilai CSPRNG segar untuk setiap bagian</td></tr>
+                <tr><td>Ciphertext + tag</td><td><code class="inline">panjang − 12</code></td><td>Output AES-GCM; tag adalah 16 byte terakhir</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="subhead">Perhitungan ukuran</h3>
+          <p>
+            Untuk file yang dibagi menjadi <code class="inline">n</code>
+            bagian, ukuran container adalah:
+          </p>
+          <div class="code-block">
+            <div class="code-head">
+              <span>rumus</span>
+              <button type="button" data-copy="size-code">Salin</button>
+            </div>
+            <pre id="size-code"><code>container = 38 + fileSize + (32 × n)
+
+# per bagian: panjang 4 byte + IV 12 byte + tag GCM 16 byte
+# bagian penuh 1 MiB: 4 + 12 + 1.048.576 + 16 = 1.048.608 byte</code></pre>
+          </div>
+
+          <ul class="notes-list">
+            <li>Container tidak menyimpan nama berkas, ukuran asli, tipe MIME, stempel waktu, atau metadata kompresi.</li>
+            <li>Nama file output hanya konvensi UI: <code class="inline">nama.ext</code> menjadi <code class="inline">nama.ext.aegis</code>.</li>
+            <li>Berkas input kosong valid: enkripsi hanya menulis header 38 byte, dan dekripsi mengembalikan berkas kosong.</li>
+            <li>Bidang header tidak diteruskan sebagai data terotentikasi tambahan AES-GCM. Garam yang rusak menghasilkan kunci salah dan kegagaan GCM; versi yang rusak ditolak sebelum dekripsi.</li>
+            <li>Hanya versi <code class="inline">2</code> yang diterima. Container versi 1 dan versi yang tidak diketahui ditolak, bukan diurai dengan layout yang salah.</li>
+          </ul>
+
+          <div class="callout warn">
+            <strong>Kompatibilitas</strong>
+            <p>
+              Container versi 2 dimaksudkan untuk interoperabilitas dengan
+              implementasi desktop AegisCrypt yang menggunakan layout bagian
+              yang sama. Selalu lakukan uji round-trip dengan berkas yang tidak
+              penting sebelum mengandalkan pertukaran lintas platform.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="api">
+          <div class="section-head">
+            <span class="section-num">06</span>
+            <h2>Referensi API</h2>
+          </div>
+
+          <p class="lead">
+            Mesin kripto tinggal di
+            <code class="inline">src/services/cryptoService.ts</code>. Setiap
+            fungsi menggunakan
+            <code class="inline">window.crypto.subtle</code> dan berjalan di
+            browser.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Ekspor</th><th>Tanda tangan</th><th>Perilaku</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code class="inline">generateSalt</code></td>
+                  <td><code class="inline">() =&gt; Uint8Array&lt;ArrayBuffer&gt;</code></td>
+                  <td>32 byte acak dari CSPRNG</td>
+                </tr>
+                <tr>
+                  <td><code class="inline">generateIV</code></td>
+                  <td><code class="inline">() =&gt; Uint8Array&lt;ArrayBuffer&gt;</code></td>
+                  <td>12 byte acak dari CSPRNG</td>
+                </tr>
+                <tr>
+                  <td><code class="inline">prepareKeyMaterial</code></td>
+                  <td><code class="inline">(password, keyFileBuffer?) =&gt; Promise&lt;Uint8Array&gt;</code></td>
+                  <td>Byte sandi UTF-8, opsi diikuti oleh <code class="inline">SHA-256(keyfile)</code></td>
+                </tr>
+                <tr>
+                  <td><code class="inline">deriveKey</code></td>
+                  <td><code class="inline">(material, salt, usage) =&gt; Promise&lt;CryptoKey&gt;</code></td>
+                  <td>PBKDF2-HMAC-SHA-256, 100.000 iterasi, kunci AES-GCM-256 non-ekstraktibel</td>
+                </tr>
+                <tr>
+                  <td><code class="inline">processFileEncrypt</code></td>
+                  <td><code class="inline">(file, password, keyFileBuffer, signal, onProgress) =&gt; Promise&lt;Blob&gt;</code></td>
+                  <td>Stream berkas ke container yang disegel; progres menghitung byte plaintext</td>
+                </tr>
+                <tr>
+                  <td><code class="inline">processFileDecrypt</code></td>
+                  <td><code class="inline">(fileBuffer, password, keyFileBuffer, signal, onProgress) =&gt; Promise&lt;Blob&gt;</code></td>
+                  <td>Memvalidasi dan memulihkan container; progres menghitung byte container</td>
+                </tr>
+                <tr>
+                  <td><code class="inline">downloadBlob</code></td>
+                  <td><code class="inline">(data, filename) =&gt; void</code></td>
+                  <td>Membuat URL objek, mengeklik ancoran sementara, lalu mencabut URL</td>
+                </tr>
+                <tr>
+                  <td><code class="inline">getEncryptedFilename</code></td>
+                  <td><code class="inline">(name) =&gt; string</code></td>
+                  <td>Menambahkan <code class="inline">.aegis</code></td>
+                </tr>
+                <tr>
+                  <td><code class="inline">getDecryptedFilename</code></td>
+                  <td><code class="inline">(name) =&gt; string</code></td>
+                  <td>Menghapus <code class="inline">.aegis</code> atau awalan <code class="inline">decrypted_</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-block">
+            <div class="code-head">
+              <span>example.ts</span>
+              <button type="button" data-copy="api-code">Salin</button>
+            </div>
+            <pre id="api-code"><code>import {
+  processFileEncrypt,
+  processFileDecrypt,
+  downloadBlob,
+} from "./services/cryptoService";
+
+const controller = new AbortController();
+
+const sealed = await processFileEncrypt(
+  file,
+  password,
+  keyFileBuffer,          // ArrayBuffer | null
+  controller.signal,
+  (plaintextBytes) => console.log(`${plaintextBytes} byte dibaca`)
+);
+
+downloadBlob(sealed, `${file.name}.aegis`);
+
+const restored = await processFileDecrypt(
+  await sealed.arrayBuffer(),
+  password,
+  keyFileBuffer,
+  controller.signal,
+  (containerBytes) => console.log(`${containerBytes} byte dibaca`)
+);
+
+downloadBlob(restored, file.name);</code></pre>
+          </div>
+
+          <h3 class="subhead">Konstanta</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Konstanta</th><th>Nilai</th><th>Arti</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code class="inline">PBKDF2_ITERATIONS</code></td><td>100.000</td><td>Putaran peregangan kunci</td></tr>
+                <tr><td><code class="inline">SALT_LENGTH</code></td><td>32 byte</td><td>Salt acak per file</td></tr>
+                <tr><td><code class="inline">IV_LENGTH</code></td><td>12 byte</td><td>Vektor inisialisasi GCM</td></tr>
+                <tr><td><code class="inline">TAG_LENGTH_BITS</code></td><td>128</td><td>Tag autentikasi GCM</td></tr>
+                <tr><td><code class="inline">KEY_LENGTH</code></td><td>256 bit</td><td>Ukuran kunci AES</td></tr>
+                <tr><td><code class="inline">CHUNK_SIZE</code></td><td>1.048.576 byte</td><td>Byte plaintext per bagian</td></tr>
+                <tr><td><code class="inline">FILE_MAGIC</code></td><td><code class="inline">AEGIS</code></td><td>5 byte ASCII</td></tr>
+                <tr><td><code class="inline">FILE_VERSION</code></td><td><code class="inline">2</code></td><td>Versi container bagian</td></tr>
+                <tr><td><code class="inline">HEADER_LENGTH</code></td><td>38 byte</td><td>Magic + versi + salt</td></tr>
+                <tr><td><code class="inline">EXTENSION_ENCRYPTED</code></td><td><code class="inline">.aegis</code></td><td>Ekstensi container</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="subhead">Kesalahan</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Pesan</th><th>Penyebab</th><th>Perbaikan</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code class="inline">Format file tidak valid (.aegis diperlukan)</code></td><td>Magic bytes tidak cocok</td><td>Pilih container <code class="inline">.aegis</code> v2</td></tr>
+                <tr><td><code class="inline">Versi file tidak didukung (vX). Perbarui aplikasi Anda.</code></td><td>Byte versi bukan <code class="inline">2</code></td><td>Gunakan container v2 atau perbarui aplikasi</td></tr>
+                <tr><td><code class="inline">File corrupt or tampered: Invalid chunk size definition.</code></td><td>Panjang bagian negatif atau melebihi byte yang tersisa</td><td>Gunakan salinan utuh container</td></tr>
+                <tr><td><code class="inline">Password salah atau file/keyfile tidak cocok.</code></td><td>Autentikasi GCM gagal</td><td>Periksa sandi dan keyfile; konfirmasi file tidak dimodifikasi</td></tr>
+                <tr><td><code class="inline">Operasi Dibatalkan</code></td><td>Sinyal abort mematikan di antara bagian</td><td>Ulangi operasi</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note-line">
+            String kesalahan saat ini ditulis dalam Bahasa Indonesia di
+            <code class="inline">cryptoService.ts</code>.
+          </p>
+        </section>
+
+        <section class="doc-section" id="structure">
+          <div class="section-head">
+            <span class="section-num">07</span>
+            <h2>Struktur Project</h2>
+          </div>
+
+          <div class="code-block">
+            <div class="code-head">
+              <span>repositori</span>
+              <button type="button" data-copy="tree-code">Salin</button>
+            </div>
+            <pre id="tree-code"><code>AegisCrypt-Web/
+├── public/
+│   └── favicon.svg
+├── src/
+│   ├── components/
+│   │   ├── ui/                 # tombol, kartu, input, badge, progres
+│   │   ├── FileList.tsx        # baris antrian dan ikon jenis file
+│   │   ├── LogBox.tsx          # log operasi dengan stempel waktu
+│   │   ├── LoginScreen.tsx     # entri sesi dan pemilih keyfile
+│   │   └── PasswordInput.tsx   # bidang sandi dan pengukur kekuatan
+│   ├── lib/
+│   │   └── utils.ts            # helper cn() kelas
+│   ├── services/
+│   │   └── cryptoService.ts    # mesin AES-GCM dan parser container
+│   ├── App.tsx                 # antrian, progres, logging, orkestrasi
+│   ├── constants.ts            # parameter kripto dan konstanta format
+│   ├── index.css               # tema token Tailwind v4
+│   ├── main.tsx                # titik masuk React
+│   └── types.ts                # AuthSession, CryptoProgress, LogEntry
+├── docs-site/                  # situs dokumentasi (Vite, statis)
+│   ├── src/style.css
+│   ├── src/main.js
+│   ├── cloudflare.config.ts
+│   └── index.html
+├── docs-site-id/               # situs dokumentasi Indonesia (ini)
+│   ├── src/style.css
+│   ├── src/main.js
+│   ├── cloudflare.config.ts
+│   └── index.html
+├── tests/
+│   ├── cryptoService.test.ts   # suite Vitest crypto
+│   ├── e2e/app.spec.ts         # uji perjalanan pengguna Playwright
+│   └── setup.ts
+├── cloudflare.config.ts        # Worker aplikasi + domain kustom
+├── playwright.config.ts
+├── vite.config.ts
+└── package.json</code></pre>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Berkas</th><th>Tanggung jawab</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code class="inline">src/services/cryptoService.ts</code></td><td>Derivasi kunci, enkripsi streaming, parsing container, unduhan</td></tr>
+                <tr><td><code class="inline">src/App.tsx</code></td><td>Status sesi, antrian berkas, pemrosesan berurutan, perhitungan kecepatan/ETA</td></tr>
+                <tr><td><code class="inline">src/constants.ts</code></td><td>Sumber kebenaran tunggal untuk parameter dan konstanta format</td></tr>
+                <tr><td><code class="inline">cloudflare.config.ts</code></td><td>Nama Worker, tanggal kompatibilitas, penanganan aset SPA, domain kustom</td></tr>
+                <tr><td><code class="inline">docs-site-id/cloudflare.config.ts</code></td><td>Worker dokumentasi, penanganan 404, subdomain dokumentasi</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="security">
+          <div class="section-head">
+            <span class="section-num">08</span>
+            <h2>Model Keamanan</h2>
+          </div>
+
+          <p class="lead">
+            AegisCrypt melindungi data saat diam dan saat diteruskan setelah
+            disegel. Ini tidak melindungi endpoint yang sudah terkompromi, dan
+            tidak dapat memulihkan kredensial yang lupa.
+          </p>
+
+          <div class="split">
+            <article class="card">
+              <span class="card-tag">Dalam skope</span>
+              <h3>Apa yang dilindungi</h3>
+              <ul class="check-list">
+                <li>Berkas yang disimpan di disk atau drive cloud yang tidak terpercaya</li>
+                <li>Berkas yang dikirim melalui saluran yang tidak aman</li>
+                <li>Modifikasi ciphertext tanpa sengaja, terdeteksi oleh GCM</li>
+                <li>Tebakan sandi dilambatkan oleh peregangan PBKDF2</li>
+                <li>Kepemilikan keyfile sebagai faktor kedua</li>
+              </ul>
+            </article>
+            <article class="card">
+              <span class="card-tag">Luar skope</span>
+              <h3>Apa yang tidak dapat dilindungi</h3>
+              <ul class="check-list cross">
+                <li>Perangkat, browser, atau ekstensi yang sudah terkompromi</li>
+                <li>Malware, pencetus kunci, atau perekam layar berbahaya</li>
+                <li>Sandi yang lemah, digunakan kembali, atau ditangkap by fishing</li>
+                <li>Kehilangan sandi atau keyfile</li>
+                <li>Paparan metadata seperti nama berkas dan ukuran berkas</li>
+              </ul>
+            </article>
+          </div>
+
+          <h3 class="subhead">Siklus hidup kunci</h3>
+          <ul class="notes-list">
+            <li>Sesi menyimpan string sandi dan buffer keyfile <code class="inline">ArrayBuffer</code> opsional dalam status React hingga logout, reload, atau penutupan tab.</li>
+            <li>Garam baru 32 byte dihasilkan untuk setiap berkas terenkripsi. Sandi dan keyfile di-hash ulang menjadi materi kunci untuk setiap operasi.</li>
+            <li>Kunci AES yang diturunkan non-ekstraktibel dan hanya ada sebagai <code class="inline">CryptoKey</code> selama operasi berlangsung.</li>
+            <li>Keyfile itu sendiri tidak ditulis ke dalam container; hanya hash SHA-256-nya yang berkontribusi pada materi kunci.</li>
+            <li>Tidak ada kunci, sandi, atau plaintext yang disimpan ke localStorage, IndexedDB, cookie, atau server.</li>
+          </ul>
+
+          <h3 class="subhead">Catatan implementasi</h3>
+          <ul class="notes-list">
+            <li>Enkripsi stream irisan 1 MiB dan menyimpan output sebagai bagian Blob, menghindari alokasi tunggal yang besar.</li>
+            <li>Dekripsi saat ini membaca seluruh container ke dalam memori dan mengumpulkan setiap bagian plaintext sebelum membuat output Blob.</li>
+            <li>Setiap bagian menerima IV segar 12 byte. Garam unik per file, bukan per bagian.</li>
+            <li>Panjang bagian divalidasi sebelum pemotongan untuk menolak container yang rusak atau terpotong.</li>
+            <li>Salah kredensial dan ciphertext yang disusupi sama-sama muncul sebagai pesan kegagalan GCM.</li>
+            <li>Header tidak diotentikasi dengan data terotentikasi tambahan AES-GCM. Magic dan versi diperiksa secara eksplisit; garam secara implisit diotentikasi karena garam salah menghasilkan kunci salah.</li>
+          </ul>
+
+          <h3 class="subhead">Batasan yang diketahui</h3>
+          <ul class="notes-list">
+            <li>JavaScript tidak dapat memastikan pengosongan memori. String sandi dan buffer keyfile mungkin tetap ada dalam memori tab hingga pemuntahan sampah.</li>
+            <li>Tidak ada kunci otomatis, waktu tunggu idle, atau otentikasi ulang.</li>
+            <li>PBKDF2-HMAC-SHA-256 pada 100.000 iterasi adalah pilihan kompatibilitas. OWASP saat ini merekomendasikan 600.000 iterasi untuk konstruksi ini, jadi gunakan sandi panjang dan berentropi tinggi.</li>
+            <li>Nama berkas tidak dienkripsi; nama unduhan mengungkap nama asli dan akhiran <code class="inline">.aegis</code>.</li>
+            <li>Aplikasi tidak bertahan terhadap build yang terkompromi, dependensi berbahaya, atau penyerang yang dapat mengeksekusi skrip di halaman.</li>
+          </ul>
+
+          <div class="callout warn">
+            <strong>Saran operasional</strong>
+            <p>
+              Gunakan sandi panjang dan unik, simpan keyfile terpisah dari
+              container, simpan cadangan offline, dan uji dekripsi dengan
+              berkas sampel sebelum menghapus aslinya. Pemulihan sepenuhnya
+              merupakan tanggung jawab Anda.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="performance">
+          <div class="section-head">
+            <span class="section-num">09</span>
+            <h2>Performa & Batasan</h2>
+          </div>
+
+          <p class="lead">
+            Enkripsi dirancang untuk berkas besar. Dekripsi lebih sederhana
+            dan menggunakan lebih banyak memori karena membutuhkan seluruh
+            container dan semua bagian plaintext sekaligus.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Operasi</th><th>Model memori</th><th>Implikasi praktis</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Enkripsi</td><td>Membaca satu bagian plaintext 1 MiB setiap kali; menyimpan output sebagai bagian Blob</td><td>Bekerja untuk berkas multi-gigabyte dengan jejak heap modest</td></tr>
+                <tr><td>Dekripsi</td><td>Membaca seluruh container ke dalam <code class="inline">ArrayBuffer</code> dan menyimpan setiap bagian yang didekripsi</td><td>Memori puncak sekitar ukuran container ditambah ukuran plaintext; berkas yang sangat besar dapat kehabisan tab</td></tr>
+                <tr><td>Batal</td><td>Diperiksa sebelum setiap bagian</td><td>Pembatalan responsif dalam satu bagian; tidak ada unduhan sebagian yang dihasilkan</td></tr>
+                <tr><td>Progres</td><td>Enkripsi: byte plaintext. Dekripsi: byte container</td><td>Persentase dekripsi termasuk overhead header dan bagian</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="subhead">Overhead container</h3>
+          <p>
+            Setiap bagian menambahkan 32 byte: 4 untuk panjang, 12 untuk IV,
+            dan 16 untuk tag GCM. File 10 GiB yang dibagi menjadi 1 MiB bagian
+            memiliki 10.240 bagian dan sekitar 320 KiB overhead, ditambah
+            header 38 byte.
+          </p>
+
+          <h3 class="subhead">Dukungan browser</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Browser</th><th>Status</th><th>Catatan</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Chrome / Edge</td><td>Didukung</td><td>Target pengembangan utama; README melaporkan pengujian hingga 10 GB pada Chrome 120+</td></tr>
+                <tr><td>Firefox</td><td>Didukung</td><td>Memerlukan Web Crypto dan dukungan File/Blob</td></tr>
+                <tr><td>Safari</td><td>Didukung</td><td>Versi modern dengan <code class="inline">crypto.subtle</code>; uji berkas besar pada versi target</td></tr>
+                <tr><td>Internet Explorer</td><td>Tidak didukung</td><td>Tidak ada Web Crypto API</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout info">
+            <strong>Kecepatan dan ETA</strong>
+            <p>
+              Dasbor menghitung kecepatan dari byte plaintext yang diproses dan
+              waktu dinding yang berlalu, dan memperkirakan waktu yang tersisa
+              dari file saat ini. Nilai direset per berkas; bukan benchmark
+              yang terkalibrasi.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="testing">
+          <div class="section-head">
+            <span class="section-num">10</span>
+            <h2>Pengujian</h2>
+          </div>
+
+          <p class="lead">
+            Repositori ini dilengkapi dengan suite Vitest crypto dan perjalanan
+            pengguna Playwright kecil. Keduanya berjalan lokal tanpa backend.
+          </p>
+
+          <div class="code-block">
+            <div class="code-head">
+              <span>perintah pengujian</span>
+              <button type="button" data-copy="test-code">Salin</button>
+            </div>
+            <pre id="test-code"><code>npm run test:unit    # 6 uji di tests/cryptoService.test.ts
+npm run test:e2e     # 2 uji di tests/e2e/app.spec.ts</code></pre>
+          </div>
+
+          <div class="split">
+            <article class="card">
+              <span class="card-tag">Unit</span>
+              <h3>Apa yang dicakupi Vitest</h3>
+              <ul class="check-list">
+                <li>Panjang dan keacakan salt dan IV</li>
+                <li>Derivasi kunci AES-GCM-256 dan non-ekstraktibilitas</li>
+                <li>Enkripsi/dekripsi round trip hanya sandi</li>
+                <li>Round trip keyfile; keyfile yang hilang atau salah ditolak</li>
+                <li>Pembatalan sinyal abort</li>
+                <li>Penolakan panjang bagian yang tidak valid</li>
+              </ul>
+            </article>
+            <article class="card">
+              <span class="card-tag">E2E</span>
+              <h3>Apa yang dicakupi Playwright</h3>
+              <ul class="check-list">
+                <li>Sandi diperlukan sebelum sesi dimulai</li>
+                <li>Tombol Mulai Sesi nonaktif saat kosong</li>
+                <li>Sandi yang valid membuka ruang kerja pemrosesan</li>
+                <li>Antrian, Enkripsi, Dekripsi, dan Logout terlihat</li>
+              </ul>
+            </article>
+          </div>
+
+          <p class="note-line">
+            Suite e2e menggunakan <code class="inline">vite preview</code> di
+            <code class="inline">127.0.0.1:4173</code> dan Chromium melalui
+            Playwright.
+          </p>
+        </section>
+
+        <section class="doc-section" id="deployment">
+          <div class="section-head">
+            <span class="section-num">11</span>
+            <h2>Deployment</h2>
+          </div>
+
+          <p class="lead">
+            Kedua situs adalah Cloudflare Workers dengan aset statis, dibangun
+            oleh Vite dan di-deploy dengan CLI <code class="inline">cf</code>.
+            Setiap Worker memiliki satu domain kustom.
+          </p>
+
+          <div class="split">
+            <a class="card card-link" href="https://aegiscrypt.bangkah.tech">
+              <span class="card-tag">Aplikasi</span>
+              <h3>aegiscrypt.bangkah.tech ↗</h3>
+              <p>Worker <code class="inline">aegiscrypt-web</code>; fallback SPA untuk rute klien.</p>
+            </a>
+            <a class="card card-link" href="https://docs.aegiscrypt.bangkah.tech">
+              <span class="card-tag">Dokumentasi</span>
+              <h3>docs.aegiscrypt.bangkah.tech ↗</h3>
+              <p>Worker <code class="inline">aegiscrypt-docs</code>; aset statis dengan penanganan 404.</p>
+            </a>
+          </div>
+
+          <h3 class="subhead">Konfigurasi aplikasi</h3>
+          <div class="code-block">
+            <div class="code-head">
+              <span>cloudflare.config.ts</span>
+              <button type="button" data-copy="app-config">Salin</button>
+            </div>
+            <pre id="app-config"><code>import { defineConfig } from "cf/config";
+
+export default defineConfig({
+  worker: {
+    name: "aegiscrypt-web",
+    compatibilityDate: "2026-09-21",
+    observability: { enabled: true },
+    assets: { notFoundHandling: "single-page-application" },
+    domains: ["aegiscrypt.bangkah.tech"],
+  },
+});</code></pre>
+          </div>
+
+          <h3 class="subhead">Konfigurasi dokumentasi</h3>
+          <div class="code-block">
+            <div class="code-head">
+              <span>docs-site-id/cloudflare.config.ts</span>
+              <button type="button" data-copy="docs-config">Salin</button>
+            </div>
+            <pre id="docs-config"><code>import { defineConfig } from "cf/config";
+
+export default defineConfig({
+  worker: {
+    name: "aegiscrypt-docs-id",
+    compatibilityDate: "2026-09-21",
+    observability: { enabled: true },
+    assets: { notFoundHandling: "404-page" },
+    domains: ["docs-id.aegiscrypt.bangkah.tech"],
+  },
+});</code></pre>
+          </div>
+
+          <h3 class="subhead">Perintah deploy</h3>
+          <div class="code-block">
+            <div class="code-head">
+              <span>deploy</span>
+              <button type="button" data-copy="deploy-code">Salin</button>
+            </div>
+            <pre id="deploy-code"><code># Aplikasi (root repositori)
+npm run build
+npm run deploy            # atau: cf deploy --message "rilis"
+
+# Situs dokumentasi
+cd docs-site-id
+npm install
+npm run build
+npm run deploy
+
+# Validasi tanpa mengunggah
+cf deploy --dry-run</code></pre>
+          </div>
+
+          <ul class="notes-list">
+            <li>Output build masuk ke <code class="inline">.cloudflare/output/v0/</code>; plugin Vite dan <code class="inline">@cloudflare/vite-plugin@beta</code> harus terinstal.</li>
+            <li>Pada deploy pertama, Cloudflare membuat catatan <code class="inline">AAAA 100::</code> terproxy untuk setiap domain kustom dan menyediakan sertifikat.</li>
+            <li>HTTPS dapat gagal selama beberapa saat sementara sertifikat diterbitkan. Coba lagi nanti akan mengembalikan <code class="inline">200 text/html</code>.</li>
+            <li>Deploy ulang membangun dan mengunggah hash aset baru; domain kustom dan catatan DNS digunakan kembali.</li>
+          </ul>
+
+          <div class="callout info">
+            <strong>Verifikasi deployment</strong>
+            <p>
+              Jalankan <code class="inline">curl -I https://aegiscrypt.bangkah.tech</code>
+              dan <code class="inline">curl -I https://docs.aegiscrypt.bangkah.tech</code>.
+              Keduanya harus mengembalikan <code class="inline">HTTP/2 200</code> dengan
+              <code class="inline">content-type: text/html</code>.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <div class="section-head">
+            <span class="section-num">12</span>
+            <h2>Pemecahan Masalah</h2>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Gejala</th><th>Penyebab</th><th>Perbaikan</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code class="inline">Format file tidak valid (.aegis diperlukan)</code></td><td>Jenis berkas salah atau container yang diubah namanya</td><td>Pilih berkas <code class="inline">.aegis</code> asli</td></tr>
+                <tr><td><code class="inline">Versi file tidak didukung (vX)</code></td><td>Versi container lama atau tidak diketahui</td><td>Gunakan container v2; jangan mengubah nama atau mematang byte versi</td></tr>
+                <tr><td><code class="inline">File corrupt or tampered</code></td><td>Unggahan terpotong, byte diedit, atau salinan yang buruk</td><td>Pulihkan container dari cadangan yang baik</td></tr>
+                <tr><td><code class="inline">Password salah atau file/keyfile tidak cocok</code></td><td>Sandi salah, keyfile salah, atau ciphertext dimodifikasi</td><td>Masukkan ulang kredensial yang persis; verifikasi keyfile identik byte-per-byte</td></tr>
+                <tr><td>Browser memblokir unduhan kedua</td><td>Unduhan otomatis banyak dibatasi</td><td>Izinkan unduhan untuk situs, atau proses berkas satu per satu</td></tr>
+                <tr><td>Dekripsi kehabisan memori</td><td>Seluruh container dan semua bagian plaintext disimpan sekaligus</td><td>Dekripsi satu berkas besar setiap kali; tutup tab lain</td></tr>
+                <tr><td>HTTPS gagal segera setelah deploy pertama</td><td>Penyediaan sertifikat masih berlangsung</td><td>Tunggu beberapa menit dan coba lagi; konfirmasi domain kustom ada</td></tr>
+                <tr><td><code class="inline">no root config found at .cloudflare/output/v0/config.json</code></td><td>Versi CLI dan plugin Vite tidak cocok</td><td>Instal <code class="inline">cf</code> dan <code class="inline">@cloudflare/vite-plugin@beta</code>, lalu jalankan ulang</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout warn">
+            <strong>Sebelum menghapus asli</strong>
+            <p>
+              Selalu dekripsi berkas yang disegel dan bandingkan isinya sebelum
+              menghapus satu salinan saja. Log enkripsi yang berhasil tidak
+              membuktikan sandi atau keyfile tercatat dengan benar.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="faq">
+          <div class="section-head">
+            <span class="section-num">13</span>
+            <h2>FAQ</h2>
+          </div>
+
+          <details class="faq" open>
+            <summary>Apakah saya bisa memulihkan berkas tanpa keyfile?</summary>
+            <p>
+              Tidak. Jika keyfile digunakan, materi kunci mencakup
+              <code class="inline">SHA-256(keyfile)</code>. Tanpa byte yang
+              persis sama, PBKDF2 menurunkan kunci berbeda dan dekripsi GCM
+              gagal.
+            </p>
+          </details>
+
+          <details class="faq">
+            <summary>Apakah Mulai Sesi menurunkan kunci enkripsi?</summary>
+            <p>
+              Tidak. Ini menyimpan sandi dan buffer keyfile opsional. Setiap
+              operasi file menghasilkan garam segar dan menurunkan kunci baru,
+              jadi sandi yang sama menghasilkan kunci berbeda untuk container
+              yang berbeda.
+            </p>
+          </details>
+
+          <details class="faq">
+            <summary>Apakah AegisCrypt mengirimkan sesuatu ke server?</summary>
+            <p>
+              Tidak ada konten file, byte sandi, byte keyfile, atau kunci
+              turunan yang dikirim. Aplikasi adalah bundel statis; satu-satunya
+              permintaan jaringan adalah untuk aset aplikasi dan stylesheet
+              Google Fonts. Kripto tetap bekerja setelah halaman dimuat bahkan
+              jika jaringan putus.
+            </p>
+          </details>
+
+          <details class="faq">
+            <summary>Apakah nama file dienkripsi?</summary>
+            <p>
+              Tidak. Container tidak menyimpan metadata nama berkas, tetapi
+              berkas yang diunduh dinamai <code class="inline">original.ext.aegis</code>,
+              yang mengungkap nama dan ekstensi asli. Ubah nama container jika
+              nama file sensitif.
+            </p>
+          </details>
+
+          <details class="faq">
+            <summary>Mengapa dekripsi gagal dengan sandi yang benar?</summary>
+            <p>
+              Keyfile mungkin berbeda, container dimodifikasi, atau berkas
+              terpotong. GCM autentikasi menolak ketiga hal tersebut. Periksa
+              sumber hash keyfile dan pulihkan container dari cadangan.
+            </p>
+          </details>
+
+          <details class="faq">
+            <summary>Apakah berkas besar didukung?</summary>
+            <p>
+              Enkripsi stream bagian 1 MiB dan menyimpan output sebagai bagian
+              Blob. README melaporkan pengujian hingga 10 GB di Chrome 120+.
+              Dekripsi adalah langkah yang terbatas karena membuffer seluruh
+              container dan semua bagian plaintext.
+            </p>
+          </details>
+
+          <details class="faq">
+            <summary>Apakah berkas kosong dapat dienkripsi?</summary>
+            <p>
+              Ya. Loop hanya menulis header 38 byte, dan dekripsi mengembalikan
+              berkas kosong. Container tetap versi 2 dan membawa garam nyata.
+            </p>
+          </details>
+
+          <details class="faq">
+            <summary>Apakah format kompatibel dengan versi desktop?</summary>
+            <p>
+              Layout bagian v2 dimaksudkan untuk cocok dengan implementasi
+              desktop AegisCrypt. Selalu jalankan uji round-trip dengan berkas
+              yang tidak penting sebelum mengandalkan pertukaran lintas
+              platform.
+            </p>
+          </details>
+
+          <div class="end-card">
+            <h3>Siap mengunci berkas?</h3>
+            <p>Buka aplikasi dan mulai sesi hanya-lokal.</p>
+            <a class="btn btn-primary" href="https://aegiscrypt.bangkah.tech">
+              Buka AegisCrypt &rarr;
+            </a>
+          </div>
+        </section>
+        </div>
+      </main>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-grid">
+        <div>
+          <p class="footer-brand">AegisCrypt<span>Dokumen</span></p>
+          <p class="footer-note">
+            Referensi teknis untuk klien browser AegisCrypt. Dibangun dengan
+            React, Vite, Web Crypto API, dan Cloudflare Workers.
+          </p>
+        </div>
+        <div class="footer-links">
+          <strong>Project</strong>
+          <a href="https://github.com/Bangkahdev/AegisCrypt-Web" target="_blank" rel="noreferrer">GitHub ↗</a>
+          <a href="https://aegiscrypt.bangkah.tech">Aplikasi Web ↗</a>
+          <a href="https://docs.aegiscrypt.bangkah.tech">Dokumentasi</a>
+        </div>
+        <div class="footer-links">
+          <strong>Dibuat oleh</strong>
+          <a href="https://bangkah.tech" target="_blank" rel="noreferrer">bangkah.tech ↗</a>
+          <span>Cloudflare Workers</span>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© <span data-year>2026</span> AegisCrypt</span>
+        <span>AES-256-GCM · PBKDF2 · Format v2</span>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

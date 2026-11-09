@@ -4,18 +4,23 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "fetch-blob": "^4.0.0",
     "lucide-react": "^1.45.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^2.0.0-beta.v.12",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.5.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "cf": "^1.0.0-beta.28",
     "jsdom": "^30.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
@@ -28,6 +33,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:unit": "vitest --run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "deploy": "cf deploy"
   }
 }

@@ -6,6 +6,8 @@
 
 **Professional Client-Side Encryption Suite**
 
+**Live:** [App](https://aegiscrypt.bangkah.tech) · [Documentation](https://docs.aegiscrypt.bangkah.tech)
+
 [![Encryption](https://img.shields.io/badge/Encryption-AES--256--GCM-emerald?style=for-the-badge&logo=shield)](https://en.wikipedia.org/wiki/Galois/Counter_Mode)
 [![KDF](https://img.shields.io/badge/KDF-PBKDF2--HMAC--SHA256-blue?style=for-the-badge&logo=key)](https://en.wikipedia.org/wiki/PBKDF2)
 [![Tests](https://img.shields.io/badge/Tests-Vitest-orange?style=for-the-badge&logo=vitest)](https://vitest.dev/)
@@ -135,9 +137,33 @@ aegiscrypt-web/
 │   └── setup.ts               # Polyfills
 ├── docs/
 │   └── screenshots/           # README screenshots
+├── docs-site/                 # Neo-brutalist documentation site
+├── cloudflare.config.ts       # Cloudflare Worker deployment config
 ├── index.html                 # Entry HTML & Styles
 └── vite.config.ts             # Build Config
 ```
+
+---
+
+## Deployment
+
+Both the app and the documentation site are deployed as Cloudflare Workers with static assets using the [`cf` CLI](https://developers.cloudflare.com/cf/).
+
+| Site | URL | Worker |
+|---|---|---|
+| App | https://aegiscrypt.bangkah.tech | `aegiscrypt-web` |
+| Docs | https://docs.aegiscrypt.bangkah.tech | `aegiscrypt-docs` |
+
+```bash
+# Deploy the app
+npm run deploy
+
+# Deploy the docs
+cd docs-site
+npm run deploy
+```
+
+Custom domains are declared in each project's `cloudflare.config.ts`. Cloudflare creates the DNS records and certificates on deploy.
 
 ---
 
