@@ -1,197 +1,171 @@
 # AegisCrypt Web
 
-> **Indonesia Version:** bisa dilihat [disini](README_id.md)
+> **English Version:** bisa dilihat [disini](README.md).
 
-![AegisCrypt Banner](https://via.placeholder.com/1200x400/0f172a/3b82f6?text=AegisCrypt+Web+Security)
+![AegisCrypt Banner](https://via.placeholder.com/1200x400/0f172a/3b82f6?text=AegisCrypt+Web+Keamanan)
 
-**Professional Client-Side Encryption Suite**
+**Suite Enkripsi Berbasis Klien Profesional**
 
-**Live:** [App](https://aegiscrypt.bangkah.tech) · [Documentation](https://docs.aegiscrypt.bangkah.tech)
+**Live:** [Aplikasi](https://aegiscrypt.bangkah.tech) · [Dokumentasi](https://docs.aegiscrypt.bangkah.tech)
 
-[![Encryption](https://img.shields.io/badge/Encryption-AES--256--GCM-emerald?style=for-the-badge&logo=shield)](https://en.wikipedia.org/wiki/Galois/Counter_Mode)
-[![KDF](https://img.shields.io/badge/KDF-PBKDF2--HMAC--SHA256-blue?style=for-the-badge&logo=key)](https://en.wikipedia.org/wiki/PBKDF2)
-[![Tests](https://img.shields.io/badge/Tests-Vitest-orange?style=for-the-badge&logo=vitest)](https://vitest.dev/)
-[![License](https://img.shields.io/badge/License-MIT-slate?style=for-the-badge)](LICENSE)
-
-AegisCrypt Web is a military-grade, browser-based encryption tool. It is designed to be **Zero-Knowledge**, meaning your files and passwords are processed entirely in your browser's RAM via Web Assembly / Web Crypto API and never transmitted to any server.
+AegisCrypt Web adalah alat enkripsi berbasis browser dengan standar militer. Dirancang dengan prinsip **Zero-Knowledge**, yang berarti file dan kata sandi Anda diproses sepenuhnya di dalam RAM browser melalui Web Crypto API dan tidak pernah dikirimkan ke server eksternal mana pun.
 
 ---
 
-## Features at a Glance
+## Fitur Utama
 
-*   **AES-256-GCM**: Authenticated encryption that detects tampering.
-*   **Two-Factor Authentication**: Combine `Password` + `Keyfile` (e.g., a photo, a document) for ultimate security.
-*   **Streaming Engine (v2)**: Encrypts multi-gigabyte files without crashing the browser (low RAM footprint).
-*   **Cyberpunk Glass UI**: A fully responsive, modern interface with real-time animations.
-*   **Real-time Telemetry**: View encryption speed (MB/s) and ETA.
-*   **Batch Processing**: Drag & drop entire folders to process queue.
-
----
-
-## Screenshots & Demo
-
-### 1. The Dashboard
-The main command center. Monitor your queue, check speeds, and manage sessions.
-
-![Dashboard Interface](docs/screenshots/dashboard.png)
-
-### 2. Login & Session (2FA)
-Secure entry point. Requires password and optional keyfile to derive the master encryption key.
-
-![Login Screen](docs/screenshots/login.png)
-
-### 3. Processing Queue
-Manage your files before committing to encryption.
-
-![File Queue](docs/screenshots/manage.png)
+* **AES-256-GCM**: Enkripsi terotentikasi yang dapat mendeteksi manipulasi data.
+* **Autentikasi Dua Faktor (2FA)**: Menggabungkan `Kata Sandi` + `Keyfile` (misalnya foto, dokumen) untuk keamanan tingkat lanjut.
+* **Streaming Engine (v2)**: Mengenkripsi file berukuran gigabyte tanpa membuat browser *crash* (penggunaan RAM yang sangat efisien).
+* **Neo-Brutalism UI**: Antarmuka modern, tegas, dan sepenuhnya responsif dengan kontras tinggi.
+* **Telemetri Waktu Nyata**: Memantau kecepatan enkripsi (MB/s) dan estimasi waktu selesai (ETA).
+* **Pemrosesan Batch**: Seret dan lepaskan (*drag & drop*) seluruh folder ke dalam antrean pemrosesan.
 
 ---
 
-## Security Architecture
 
-AegisCrypt follows strict cryptographic standards to ensure data integrity and confidentiality.
 
-### 1. Core Algorithm
-*   **Cipher:** AES-256-GCM (Galois/Counter Mode).
-*   **Why GCM?**: Unlike CBC, GCM provides **Authenticated Encryption**. It ensures that if a file is tampered with (even a single bit changed), decryption will fail immediately instead of producing garbage data.
+## Arsitektur Keamanan
 
-### 2. Key Derivation (PBKDF2)
-*   **Function:** `PBKDF2` with `HMAC-SHA-256`.
-*   **Iterations:** 100,000 (exceeds NIST recommendations for password hashing).
-*   **Salt:** 32-byte Cryptographically Secure Random Salt generated per file.
-*   **Purpose:** Protects against Brute-Force and Rainbow Table attacks.
+AegisCrypt mengikuti standar kriptografi yang ketat untuk memastikan integritas dan kerahasiaan data.
 
-### 3. Keyfile Logic (2FA)
-*   **Logic:** `KeyMaterial = Password_Bytes + SHA256(Keyfile_Bytes)`
-*   This ensures that even if an attacker guesses your password, they cannot decrypt the file without the exact physical file used as the key.
+### 1. Algoritma Utama
 
-### 4. Streaming Encryption (v2)
-*   Files are broken into **1MB Chunks**.
-*   Each chunk has a **Unique IV (Initialization Vector)**.
-*   This prevents pattern analysis on large files and protects against IV reuse attacks.
+* **Sandi (Cipher):** AES-256-GCM (Galois/Counter Mode).
+* **Mengapa GCM?:** Berbeda dengan mode CBC, GCM menyediakan **Authenticated Enkripsi**. Sistem ini memastikan bahwa jika sebuah file dirusak (bahkan hanya satu bit yang diubah), proses dekripsi akan langsung gagal alih-alih menghasilkan data korup.
 
----
+### 2. Derivasi Kunci (PBKDF2)
 
-## Getting Started
+* **Fungsi:** `PBKDF2` dengan `HMAC-SHA-256`.
+* **Iterasi:** 100.000 (melebihi rekomendasi NIST untuk *password hashing*).
+* **Garam (Salt):** 32-byte *Cryptographically Secure Random Salt* yang dihasilkan per file.
+* **Tujuan:** Melindungi sistem dari serangan *Brute-Force* dan *Rainbow Table*.
 
-### Prerequisites
-*   Node.js (v18+)
-*   npm or yarn
+### 3. Logika Keyfile (2FA)
 
-### Installation
-```bash
-# 1. Clone the repository
-git clone https://github.com/Bangkah/AegisCrypt-Web.git
+* **Logika:** `KeyMaterial = Password_Bytes + SHA256(Keyfile_Bytes)`
+* **Tujuan:** Memastikan bahwa meskipun seorang penyerang berhasil menebak kata sandi Anda, mereka tetap tidak dapat mendekripsi file tanpa file fisik yang persis sama yang digunakan sebagai kunci.
 
-# 2. Enter directory
-cd AegisCrypt-Web
+### 4. Streaming Enkripsi (v2)
 
-# 3. Install Dependencies
-npm install
-
-# 4. Start Development Server
-npm start
-```
-
-The app will launch at `http://localhost:5173` (Vite default).
+* File dipecah ke dalam **Chunk berukuran 1MB**.
+* Setiap *chunk* memiliki **Initialization Vector (IV) yang unik**.
+* Hal ini mencegah analisis pola pada file berukuran besar serta melindungi dari kerentanan penggunaan ulang IV.
 
 ---
 
-## User Guide
+## Panduan Pengguna
 
-### Encryption Workflow
-1.  **Login**: Enter a strong password. (Optional) Drag a random file (image, song, doc) into the Keyfile area.
-2.  **Add Files**: Drag files or folders into the glass drop zone.
-3.  **Encrypt**: Click the **Blue Lock Button**.
-4.  **Wait**: Watch the progress bar. Large files are streamed efficiently.
-5.  **Download**: The browser will auto-download `.aegis` files.
+Buka aplikasi langsung dan ikuti panduan di dokumentasi:
 
-### Decryption Workflow
-1.  **Login**: **MUST** use the exact same password (and Keyfile if used) as encryption.
-2.  **Add Files**: Drag `.aegis` files into the zone.
-3.  **Decrypt**: Click the **Dark Unlock Button**.
-4.  **Result**: Original files are restored.
+[Buka Aplikasi](https://aegiscrypt.bangkah.tech) ・ [Buka Dokumentasi](https://docs.aegiscrypt.bangkah.tech)
 
----
+--- 
 
-## Project Structure
+## Struktur Project
 
 ```
 aegiscrypt-web/
 ├── public/
-│   └── favicon.svg            # Static assets served as-is
+│   └── favicon.svg            # Aset statis disajikan apa adanya
 ├── src/
 │   ├── components/
-│   │   ├── FileList.tsx       # Queue UI
-│   │   ├── LogBox.tsx         # Operation Logs
-│   │   ├── LoginScreen.tsx    # Auth Entry
-│   │   └── PasswordInput.tsx  # Strength Meter
+│   │   ├── ui/                # tombol, kartu, input, badge, progres
+│   │   ├── FileList.tsx       # UI Antrean File
+│   │   ├── LogBox.tsx         # Log Operasi
+│   │   ├── LoginScreen.tsx    # Entri Autentikasi
+│   │   └── PasswordInput.tsx  # Indikator Kekuatan Sandi
 │   ├── services/
-│   │   └── cryptoService.ts   # core Crypto Engine (AES-GCM)
-│   ├── App.tsx                # Main Controller
-│   ├── main.tsx                # App entry point
-│   ├── constants.ts           # Config & Magic Bytes
-│   └── types.ts               # TypeScript Interfaces
+│   │   └── cryptoService.ts   # Mesin Inti Kriptografi (AES-GCM)
+│   ├── App.tsx                # Kontroler Utama
+│   ├── main.tsx               # Titik Masuk React
+│   ├── constants.ts           # Konfigurasi & Magic Bytes
+│   ├── index.css              # Tema Token Tailwind v4
+│   └── types.ts               # Antarmuka TypeScript
 ├── tests/
-│   ├── cryptoService.test.ts  # Vitest Security Suite
+│   ├── cryptoService.test.ts  # Suite Ujian Vitest
 │   └── setup.ts               # Polyfills
 ├── docs/
-│   └── screenshots/           # README screenshots
-├── docs-site/                 # Neo-brutalist documentation site
-├── cloudflare.config.ts       # Cloudflare Worker deployment config
-├── index.html                 # Entry HTML & Styles
-└── vite.config.ts             # Build Config
+│   └── screenshots/           # Tangkapan layar (sumber dokumentasi)
+├── docs-site/                 # Situs dokumentasi (Docusaurus, statis)
+├── cloudflare.config.ts       # Konfigurasi Deployment Cloudflare Worker
+├── playwright.config.ts
+├── vite.config.ts             # Konfigurasi Build
+├── package.json
+└── index.html                 # HTML & Gaya Entri
 ```
 
 ---
 
 ## Deployment
 
-Both the app and the documentation site are deployed as Cloudflare Workers with static assets using the [`cf` CLI](https://developers.cloudflare.com/cf/).
+Kedua situs (aplikasi dan dokumentasi) di-deploy sebagai Cloudflare Workers dengan aset statis. Aplikasi memakai [`cf` CLI](https://developers.cloudflare.com/cf/); dokumentasi (Docusaurus) memakai [Wrangler](https://developers.cloudflare.com/workers/wrangler/).
 
-| Site | URL | Worker |
+| Situs | URL | Worker |
 |---|---|---|
-| App | https://aegiscrypt.bangkah.tech | `aegiscrypt-web` |
-| Docs | https://docs.aegiscrypt.bangkah.tech | `aegiscrypt-docs` |
+| Aplikasi | https://aegiscrypt.bangkah.tech | `aegiscrypt-web` |
+| Dokumentasi | https://docs.aegiscrypt.bangkah.tech | `aegiscrypt-docs` |
 
 ```bash
-# Deploy the app
-npm run deploy
+# Deploy aplikasi
+npm run build
+npm run deploy            # atau: cf deploy --message "rilis"
 
-# Deploy the docs
+# Deploy dokumentasi
 cd docs-site
-npm run deploy
+npm install
+npm run build
+npm run deploy            # wrangler deploy
+
+# Validasi tanpa mengunggah
+cf deploy --dry-run
+cd docs-site; npx wrangler deploy --dry-run
 ```
 
-Custom domains are declared in each project's `cloudflare.config.ts`. Cloudflare creates the DNS records and certificates on deploy.
+Domain kustom dideklarasikan dalam `cloudflare.config.ts` (aplikasi) dan `docs-site/wrangler.jsonc` (dokumentasi). Cloudflare membuat catatan DNS dan sertifikat pada saat deploy.
 
 ---
 
-## File Format Spec (.aegis v2)
+## Spesifikasi Format File (.aegis v2)
 
-Binary layout for interoperability with the Desktop version:
+Tata letak biner untuk interoperabilitas dengan versi Desktop:
 
-| Byte Offset | Length | Content | Value |
+| Offset Byte | Panjang | Konten | Nilai |
 |---|---|---|---|
 | 0 | 5 | Magic | `AEGIS` |
-| 5 | 1 | Version | `0x02` |
-| 6 | 32 | Salt | Random Bytes |
-| 38 | 4 | Chunk 1 Len | Int32 LE |
-| 42 | 12 | Chunk 1 IV | Random Bytes |
-| 54 | N | Ciphertext | Encrypted Data |
-| ... | ... | ... | Repeat for Chunk 2... |
+| 5 | 1 | Versi | `0x02` |
+| 6 | 32 | Garam | Random Bytes |
+| 38 | 4 | Panjang Chunk 1 | Int32 LE |
+| 42 | 12 | IV Chunk 1 | Random Bytes |
+| 54 | N | Ciphertext | Data Terenkripsi |
+| ... | ... | ... | Berulang untuk Chunk 2... |
 
 ---
 
-## FAQ & Troubleshooting
+## FAQ & Pemecahan Masalah
 
-**Q: I lost my password/keyfile. Can you recover my data?**
-> **No.** AegisCrypt is zero-knowledge. There are no backdoors. If credentials are lost, the data is mathematically unrecoverable.
+**T: Saya kehilangan kata sandi/keyfile saya. Apakah data saya bisa dipulihkan?**
 
-**Q: Why does the browser ask for permission to download multiple files?**
-> When processing a batch, the app triggers a download for each file. Browsers often block automatic multiple downloads. Please click "Allow" when prompted.
+> **Tidak.** AegisCrypt menggunakan prinsip *zero-knowledge* dan tidak memiliki pintu belakang (*backdoor*). Jika kredensial hilang, data secara matematis tidak dapat dipulihkan.
 
-**Q: What is the maximum file size?**
-> Tested up to **10GB** on Chrome 120+. The limitation is the browser's Blob implementation. For 100GB+ files, the AegisCrypt Desktop (C#) version is planned but not yet implemented — see `desktop/README.md`.
+**T: Mengapa browser meminta izin untuk mengunduh banyak file sekaligus?**
+
+> Saat memproses *batch*, aplikasi memicu unduhan untuk setiap file. Browser sering kali memblokir unduhan otomatis ganda. Silakan klik "Allow" saat diminta.
+
+**T: Berapa batas ukuran file maksimum?**
+
+> Telah diuji hingga **10GB** pada Chrome 120+. Batasannya bergantung pada implementasi Blob browser. Untuk file berukuran 100GB+, versi AegisCrypt Desktop (C#) sudah direncanakan tapi belum diimplementasikan — lihat `desktop/README.md`.
+
+**T: Apakah nama file dienkripsi?**
+
+> Tidak. Container tidak menyimpan metadata nama berkas, tetapi berkas yang diunduh dinamai `original.ext.aegis`, yang mengungkap nama dan ekstensi asli. Ubah nama container jika nama file sensitif.
+
+**T: Apakah AegisCrypt mengirimkan sesuatu ke server?**
+
+> Tidak ada konten file, byte kata sandi, byte keyfile, atau kunci turunan yang dikirim. Aplikasi adalah bundel statis; satu-satunya permintaan jaringan adalah untuk aset aplikasi dan stylesheet Google Fonts. Kripto tetap bekerja setelah halaman dimuat bahkan jika jaringan putus.
 
 ---
+
+## Lisensi
+
+[MIT](LICENSE)
