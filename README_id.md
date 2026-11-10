@@ -15,27 +15,13 @@ AegisCrypt Web adalah alat enkripsi berbasis browser dengan standar militer. Dir
 * **AES-256-GCM**: Enkripsi terotentikasi yang dapat mendeteksi manipulasi data.
 * **Autentikasi Dua Faktor (2FA)**: Menggabungkan `Password` + `Keyfile` (misalnya foto, dokumen) untuk keamanan tingkat lanjut.
 * **Streaming Engine (v2)**: Mengenkripsi file berukuran gigabyte tanpa membuat browser *crash* (penggunaan RAM yang sangat efisien).
-* **Cyberpunk Glass UI**: Antarmuka modern yang sepenuhnya responsif dengan animasi waktu nyata (*real-time*).
+* **Neo-Brutalism UI**: Antarmuka modern, tegas, dan sepenuhnya responsif dengan kontras tinggi.
 * **Telemetri Waktu Nyata**: Memantau kecepatan enkripsi (MB/s) dan estimasi waktu selesai (ETA).
 * **Pemrosesan Batch**: Tarik dan letakkan (*drag & drop*) seluruh folder ke dalam antrean pemrosesan.
 
 ---
 
-## Tangkapan Layar & Demo
 
-### 1. Dasbor Utama
-
-Pusat kendali utama untuk memantau antrean, memeriksa kecepatan, dan mengelola sesi aktif.
-
-### 2. Layar Masuk & Sesi (2FA)
-
-Titik masuk yang aman. Membutuhkan kata sandi dan file kunci opsional untuk menurunkan kunci enkripsi master.
-
-### 3. Antrean Pemrosesan
-
-Mengelola file Anda sebelum melakukan proses enkripsi.
-
----
 
 ## Arsitektur Keamanan
 

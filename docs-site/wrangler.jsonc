@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aegiscrypt-docs",
+  "compatibility_date": "2026-09-21",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./build",
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    {
+      "pattern": "docs.aegiscrypt.bangkah.tech",
+      "custom_domain": true
+    }
+  ]
+}
