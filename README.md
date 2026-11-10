@@ -54,51 +54,13 @@ AegisCrypt mengikuti standar kriptografi yang ketat untuk memastikan integritas 
 
 ---
 
-## Memulai
-
-### Prasyarat
-
-* Node.js (v22+)
-* npm atau yarn
-
-### Cara Instalasi
-
-```bash
-# 1. Kloning repositori
-git clone https://github.com/Bangkah/AegisCrypt-Web.git
-
-# 2. Masuk ke direktori
-cd AegisCrypt-Web
-
-# 3. Instal Dependensi
-npm install
-
-# 4. Jalankan Server Pengembangan
-npm start
-```
-
-Aplikasi akan berjalan di `http://localhost:5173` (bawaan Vite).
-
----
-
 ## Panduan Pengguna
 
-### Alur Enkripsi
+Buka aplikasi langsung dan ikuti panduan di dokumentasi:
 
-1. **Masuk (Login):** Masukkan kata sandi yang kuat. (Opsional) Seret file acak (gambar, lagu, dokumen) ke area Keyfile.
-2. **Tambah File:** Seret file atau folder ke zona unggah kaca (*glass drop zone*).
-3. **Enkripsi:** Klik **Tombol Gembok Biru**.
-4. **Tunggu:** Pantau bilah kemajuan. File besar diproses melalui mekanisme *streaming*.
-5. **Unduh:** Browser akan secara otomatis mengunduh file berformat `.aegis`.
+[Buka Aplikasi](https://aegiscrypt.bangkah.tech) ・ [Buka Dokumentasi](https://docs.aegiscrypt.bangkah.tech)
 
-### Alur Dekripsi
-
-1. **Masuk (Login):** **HARUS** menggunakan kata sandi dan Keyfile yang persis sama seperti saat proses enkripsi.
-2. **Tambah File:** Seret file `.aegis` ke dalam zona unggah.
-3. **Dekripsi:** Klik **Tombol Buka Gembok Gelap**.
-4. **Hasil:** File asli Anda berhasil dipulihkan.
-
----
+--- 
 
 ## Struktur Project
 
@@ -124,9 +86,8 @@ aegiscrypt-web/
 │   ├── cryptoService.test.ts  # Suite Ujian Vitest
 │   └── setup.ts               # Polyfills
 ├── docs/
-│   └── screenshots/           # Tangkapan layar README
-├── docs-site/                 # Situs dokumentasi (Vite, statis)
-├── docs-site-id/              # Situs dokumentasi Indonesia (Vite, statis)
+│   └── screenshots/           # Tangkapan layar (sumber dokumentasi)
+├── docs-site/                 # Situs dokumentasi (Docusaurus, statis)
 ├── cloudflare.config.ts       # Konfigurasi Deployment Cloudflare Worker
 ├── playwright.config.ts
 ├── vite.config.ts             # Konfigurasi Build
@@ -138,36 +99,30 @@ aegiscrypt-web/
 
 ## Deployment
 
-Kedua situs (aplikasi dan dokumentasi) di-deploy sebagai Cloudflare Workers dengan aset statis menggunakan [`cf` CLI](https://developers.cloudflare.com/cf/).
+Kedua situs (aplikasi dan dokumentasi) di-deploy sebagai Cloudflare Workers dengan aset statis. Aplikasi memakai [`cf` CLI](https://developers.cloudflare.com/cf/); dokumentasi (Docusaurus) memakai [Wrangler](https://developers.cloudflare.com/workers/wrangler/).
 
 | Situs | URL | Worker |
 |---|---|---|
 | Aplikasi | https://aegiscrypt.bangkah.tech | `aegiscrypt-web` |
 | Dokumentasi | https://docs.aegiscrypt.bangkah.tech | `aegiscrypt-docs` |
-| Dokumentasi (ID) | https://docs-id.aegiscrypt.bangkah.tech | `aegiscrypt-docs-id` |
 
 ```bash
 # Deploy aplikasi
 npm run build
 npm run deploy            # atau: cf deploy --message "rilis"
 
-# Deploy dokumentasi (Inggris)
+# Deploy dokumentasi
 cd docs-site
 npm install
 npm run build
-npm run deploy
-
-# Deploy dokumentasi (Indonesia)
-cd docs-site-id
-npm install
-npm run build
-npm run deploy
+npm run deploy            # wrangler deploy
 
 # Validasi tanpa mengunggah
 cf deploy --dry-run
+cd docs-site; npx wrangler deploy --dry-run
 ```
 
-Domain kustom dideklarasikan dalam `cloudflare.config.ts` masing-masing proyek. Cloudflare membuat catatan DNS dan sertifikat pada saat deploy.
+Domain kustom dideklarasikan dalam `cloudflare.config.ts` (aplikasi) dan `docs-site/wrangler.jsonc` (dokumentasi). Cloudflare membuat catatan DNS dan sertifikat pada saat deploy.
 
 ---
 
