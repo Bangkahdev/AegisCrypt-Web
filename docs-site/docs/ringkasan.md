@@ -35,6 +35,9 @@ AegisCrypt adalah suite enkripsi berkas **zero-knowledge** yang berjalan sepenuh
 |-------|--------|
 | **Enkripsi** | AES-256-GCM terotentikasi — satu bit yang berubah akan menyebabkan dekripsi gagal |
 | **Envelope encryption** | DEK acak per berkas, dibungkus KEK dari kata sandi + keyfile opsional |
+| **Rewrap** | Ganti kata sandi/keyfile tanpa mengenkripsi ulang payload |
+| **Metadata nama** | Nama asli disimpan terenkripsi di kontainer (flag bit2) |
+| **Auto-lock** | Sesi terkunci setelah 10 menit idle; kredensial di memori di-zeroize |
 | **Derivasi kunci** | PBKDF2-HMAC-SHA256, 600.000 iterasi (tersimpan di header, hingga 5.000.000), garam 32 byte per berkas |
 | **Faktor kedua (2FA)** | Keyfile opsional sebagai materi kunci tambahan |
 | **Streaming** | Berkas dipotong per chunk (default 1 MiB; 64 KiB–16 MiB), cocok untuk berkas berukuran gigabyte |

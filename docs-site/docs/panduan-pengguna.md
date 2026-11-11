@@ -46,7 +46,24 @@ Keyfile dapat berupa berkas apa pun — gambar, audio, dokumen, atau berkas acak
 
 ## Pemrosesan batch (banyak berkas)
 
-AegisCrypt mendukung pemrosesan banyak berkas dalam satu antrean. Anda dapat menyeret seluruh folder ke zona unggah, dan aplikasi akan memprosesnya satu per satu melalui mesin streaming per chunk (default 1 MiB).
+AegisCrypt mendukung pemrosesan banyak berkas dalam satu antrean. Anda dapat menyeret seluruh folder ke zona unggah atau memakai tombol **Add a folder**; aplikasi menelusuri isi folder secara rekursif dan memprosesnya satu per satu melalui mesin streaming per chunk (default 1 MiB).
+
+## Mengganti kata sandi (rewrap)
+
+<div className="card">
+
+1. Tambahkan berkas `.aegis` ke antrean.
+2. Klik **Change password** di header.
+3. Masukkan kata sandi baru dua kali; opsional tambahkan keyfile baru dan pilih jumlah iterasi PBKDF2 (600k, 1M, atau 2M).
+4. Klik **Re-wrap files**. Setiap kontainer diunduh ulang dengan header baru; payload tidak dienkripsi ulang.
+
+</div>
+
+Rewrap hanya sah jika kata sandi/keyfile lama masih diketahui. Simpan hasil unduhan dan gunakan kata sandi baru untuk dekripsi berikutnya.
+
+## Auto-lock dan zeroisasi
+
+Sesi terkunci otomatis setelah 10 menit tanpa aktivitas, atau segera lewat tombol **Lock**. Saat terkunci/logout, byte kata sandi dan buffer keyfile di memori diisi nol dan antrean dibersihkan. Proses yang sedang berjalan menunda auto-lock hingga selesai.
 
 ## Peringatan keamanan
 

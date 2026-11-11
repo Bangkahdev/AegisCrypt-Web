@@ -117,9 +117,8 @@ describe("v3 header", () => {
     await expectError(tamper(await encrypt(patternBytes(4)), 6, 2), AegisError.kdf);
   });
 
-  it("rejects unknown and reserved header flags", async () => {
+  it("rejects unknown header flags", async () => {
     await expectError(tamper(await encrypt(patternBytes(4)), 7, 0x08), AegisError.flags);
-    await expectError(tamper(await encrypt(patternBytes(4)), 7, 0x04), AegisError.filenameMetadata);
   });
 
   it("rejects iterations outside the allowed range", async () => {

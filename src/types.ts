@@ -29,7 +29,8 @@ export interface ProcessedResult {
 }
 
 export interface AuthSession {
-  password: string;
+  /** UTF-8 password bytes; zeroized when the session locks or ends. */
+  passwordBytes: Uint8Array;
   keyFile: File | null;
   keyFileBuffer: ArrayBuffer | null;
 }

@@ -7,9 +7,17 @@ interface PasswordInputProps {
   value: string;
   onChange: (val: string) => void;
   disabled: boolean;
+  label?: string;
+  id?: string;
 }
 
-export const PasswordInput: React.FC<PasswordInputProps> = ({ value, onChange, disabled }) => {
+export const PasswordInput: React.FC<PasswordInputProps> = ({
+  value,
+  onChange,
+  disabled,
+  label = "Master password",
+  id = "master-password",
+}) => {
   const [show, setShow] = useState(false);
   const [strength, setStrength] = useState(0);
 
@@ -50,8 +58,8 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({ value, onChange, d
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <label htmlFor="master-password" className="text-sm font-semibold">
-          Master password
+        <label htmlFor={id} className="text-sm font-semibold">
+          {label}
         </label>
         <span className="font-mono text-[11px] text-muted-foreground">
           {value.length} chars
@@ -61,7 +69,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({ value, onChange, d
       <div className="relative">
         <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          id="master-password"
+          id={id}
           type={show ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}

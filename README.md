@@ -17,6 +17,9 @@ AegisCrypt Web adalah alat enkripsi berbasis browser dengan standar militer. Dir
 * **AES-256-GCM**: Enkripsi terotentikasi yang dapat mendeteksi manipulasi data.
 * **Autentikasi Dua Faktor (2FA)**: Menggabungkan `Kata Sandi` + `Keyfile` (misalnya foto, dokumen) untuk keamanan tingkat lanjut.
 * **Streaming Engine (v3)**: Enkripsi envelope per file dengan header 128 byte, record terautentikasi, dan pemrosesan per chunk — cocok untuk file berukuran gigabyte tanpa membuat browser *crash*.
+* **Nama file terenkripsi**: Nama asli disimpan sebagai metadata terenkripsi di container (flag bit2) dan dipulihkan saat dekripsi.
+* **Ganti kata sandi (rewrap)**: Bungkus ulang kunci file dengan kata sandi/keyfile baru tanpa mengenkripsi ulang payload.
+* **Auto-lock & zeroisasi**: Sesi terkunci setelah 10 menit idle; byte kata sandi dan buffer keyfile dihapus dari memori saat lock/logout.
 * **Neo-Brutalism UI**: Antarmuka modern, tegas, dan sepenuhnya responsif dengan kontras tinggi.
 * **Telemetri Waktu Nyata**: Memantau kecepatan enkripsi (MB/s) dan estimasi waktu selesai (ETA).
 * **Pemrosesan Batch**: Seret dan lepaskan (*drag & drop*) seluruh folder ke dalam antrean pemrosesan.
@@ -136,7 +139,7 @@ Header tetap 128 byte, big-endian. Kontainer v2 lama tetap dapat dibaca.
 | 0 | 5 | Magic | `AEGIS` |
 | 5 | 1 | Versi | `0x03` |
 | 6 | 1 | ID KDF | `0x01` (PBKDF2-HMAC-SHA256) |
-| 7 | 1 | Flag | bit0 keyfile, bit1 recovery slot, bit2 metadata nama |
+| 7 | 1 | Flag | bit0 keyfile, bit1 recovery slot, bit2 metadata nama terenkripsi |
 | 8 | 4 | Iterasi PBKDF2 | uint32, 600.000–5.000.000 |
 | 12 | 4 | Ukuran chunk | uint32, 65.536–16.777.216 |
 | 16 | 32 | Salt | Random bytes |
@@ -146,7 +149,7 @@ Header tetap 128 byte, big-endian. Kontainer v2 lama tetap dapat dibaca.
 | 80 | 32 | DEK terbungkus | Ciphertext AES-GCM |
 | 112 | 16 | Tag wrap | 128-bit |
 
-Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu ciphertext + tag. Nonce = `prefix || index`; AAD 43 byte. Detail lengkap ada di dokumentasi.
+Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu ciphertext + tag. Nonce = `prefix || index`; AAD 43 byte. Bila flag bit2 aktif, blok metadata nama terenkripsi (2 byte panjang + ciphertext + tag, nonce indeks `2^64-1`, AAD 36 byte) berada setelah header. Detail lengkap ada di dokumentasi.
 
 ---
 
@@ -166,7 +169,7 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 
 **T: Apakah nama file dienkripsi?**
 
-> Tidak. Container tidak menyimpan metadata nama berkas, tetapi berkas yang diunduh dinamai `original.ext.aegis`, yang mengungkap nama dan ekstensi asli. Ubah nama container jika nama file sensitif.
+> Ya. Nama asli disimpan sebagai metadata terenkripsi di dalam container dan dipakai kembali saat dekripsi. Nama container yang diunduh tetap `original.ext.aegis`, jadi ubah nama container jika nama file itu sendiri sensitif.
 
 **T: Apakah AegisCrypt mengirimkan sesuatu ke server?**
 

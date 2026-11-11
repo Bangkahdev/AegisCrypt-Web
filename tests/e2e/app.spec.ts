@@ -28,7 +28,7 @@ test.describe('AegisCrypt user journey', () => {
     await page.getByPlaceholder('Enter encryption password').fill('RoundTripPassword123!');
     await page.getByRole('button', { name: 'Start Session' }).click();
 
-    await page.locator('input[type=file]').setInputFiles({
+    await page.locator('input[type=file]').first().setInputFiles({
       name: 'round-trip.txt',
       mimeType: 'text/plain',
       buffer: Buffer.from(original, 'utf8'),
@@ -39,19 +39,70 @@ test.describe('AegisCrypt user journey', () => {
       page.waitForEvent('download'),
       page.getByText('Encrypt', { exact: true }).click(),
     ]);
+    expect(encryptedDownload.suggestedFilename()).toBe('round-trip.txt.aegis');
     await encryptedDownload.saveAs(encryptedPath);
     await expect(page.getByText('ENCRYPT Success: round-trip.txt')).toBeVisible();
 
-    await page.locator('input[type=file]').setInputFiles(encryptedPath);
+    await page.locator('input[type=file]').first().setInputFiles(encryptedPath);
     const decryptedPath = testInfo.outputPath('round-trip.txt');
     const [decryptedDownload] = await Promise.all([
       page.waitForEvent('download'),
       page.getByText('Decrypt', { exact: true }).click(),
     ]);
+    expect(decryptedDownload.suggestedFilename()).toBe('round-trip.txt');
     await decryptedDownload.saveAs(decryptedPath);
     await expect(page.getByText('DECRYPT Success: round-trip.txt.aegis')).toBeVisible();
 
     expect(await readFile(encryptedPath)).not.toEqual(Buffer.from(original, 'utf8'));
+    expect((await readFile(decryptedPath)).toString('utf8')).toBe(original);
+  });
+
+  test('changes the password without re-encrypting the payload', async ({ page }, testInfo) => {
+    const original = 'Rewrap keeps this payload intact.\n';
+    await page.goto('/');
+    await page.getByPlaceholder('Enter encryption password').fill('OldPassword123!');
+    await page.getByRole('button', { name: 'Start Session' }).click();
+
+    await page.locator('input[type=file]').first().setInputFiles({
+      name: 'rewrap.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(original, 'utf8'),
+    });
+
+    const oldPath = testInfo.outputPath('rewrap.txt.aegis');
+    const [oldDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByText('Encrypt', { exact: true }).click(),
+    ]);
+    await oldDownload.saveAs(oldPath);
+    await expect(page.getByText('ENCRYPT Success: rewrap.txt')).toBeVisible();
+
+    await page.locator('input[type=file]').first().setInputFiles(oldPath);
+    await page.getByRole('button', { name: 'Change password' }).click();
+    await page.getByLabel('New password', { exact: true }).fill('NewPassword456!');
+    await page.getByLabel('Confirm new password').fill('NewPassword456!');
+
+    const rewrappedPath = testInfo.outputPath('rewrap-new.txt.aegis');
+    const [rewrapDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Re-wrap files' }).click(),
+    ]);
+    await rewrapDownload.saveAs(rewrappedPath);
+    await expect(page.getByText('Rewrap completed.', { exact: false })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Lock' }).click();
+    await page.getByPlaceholder('Enter encryption password').fill('NewPassword456!');
+    await page.getByRole('button', { name: 'Start Session' }).click();
+
+    await page.locator('input[type=file]').first().setInputFiles(rewrappedPath);
+    const decryptedPath = testInfo.outputPath('rewrap-new.txt');
+    const [decryptedDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByText('Decrypt', { exact: true }).click(),
+    ]);
+    expect(decryptedDownload.suggestedFilename()).toBe('rewrap.txt');
+    await decryptedDownload.saveAs(decryptedPath);
+    await expect(page.getByText('DECRYPT Success: rewrap-new.txt.aegis')).toBeVisible();
     expect((await readFile(decryptedPath)).toString('utf8')).toBe(original);
   });
 });
