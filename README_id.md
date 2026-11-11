@@ -14,7 +14,7 @@ AegisCrypt Web adalah alat enkripsi berbasis browser dengan standar militer. Dir
 
 * **AES-256-GCM**: Enkripsi terotentikasi yang dapat mendeteksi manipulasi data.
 * **Autentikasi Dua Faktor (2FA)**: Menggabungkan `Password` + `Keyfile` (misalnya foto, dokumen) untuk keamanan tingkat lanjut.
-* **Streaming Engine (v2)**: Mengenkripsi file berukuran gigabyte tanpa membuat browser *crash* (penggunaan RAM yang sangat efisien).
+* **Streaming Engine (v3)**: Enkripsi envelope per file dengan header 128 byte, record terautentikasi, dan pemrosesan per chunk — cocok untuk file berukuran gigabyte tanpa membuat browser *crash*.
 * **Neo-Brutalism UI**: Antarmuka modern, tegas, dan sepenuhnya responsif dengan kontras tinggi.
 * **Telemetri Waktu Nyata**: Memantau kecepatan enkripsi (MB/s) dan estimasi waktu selesai (ETA).
 * **Pemrosesan Batch**: Tarik dan letakkan (*drag & drop*) seluruh folder ke dalam antrean pemrosesan.
@@ -33,7 +33,7 @@ AegisCrypt mengikuti standar kriptografi yang ketat untuk memastikan integritas 
 ### 2. Derivasi Kunci (PBKDF2)
 
 * **Fungsi:** `PBKDF2` dengan `HMAC-SHA-256`.
-* **Iterasi:** 100.000 (melebihi rekomendasi NIST untuk *password hashing*).
+* **Iterasi:** 600.000 (disimpan di header; rentang 600.000–5.000.000, dapat dinaikkan sesuai kebutuhan).
 * **Salt:** 32-byte *Cryptographically Secure Random Salt* yang dihasilkan per file.
 * **Tujuan:** Melindungi sistem dari serangan *Brute-Force* dan *Rainbow Table*.
 
@@ -42,11 +42,12 @@ AegisCrypt mengikuti standar kriptografi yang ketat untuk memastikan integritas 
 * **Logika:** `KeyMaterial = Password_Bytes + SHA256(Keyfile_Bytes)`
 * **Tujuan:** Memastikan bahwa meskipun seorang penyerang berhasil menebak kata sandi Anda, mereka tetap tidak dapat mendekripsi file tanpa file fisik yang persis sama yang digunakan sebagai kunci.
 
-### 4. Streaming Encryption (v2)
+### 4. Streaming & Envelope Encryption (v3)
 
-* File dipecah ke dalam **Chunk berukuran 1MB**.
-* Setiap *chunk* memiliki **Initialization Vector (IV) yang unik**.
-* Hal ini mencegah analisis pola pada file berukuran besar serta melindungi dari kerentanan penggunaan ulang IV.
+* Setiap file memakai **DEK acak 256-bit** yang dibungkus oleh KEK hasil PBKDF2 (envelope encryption), sehingga rewrap tidak perlu menulis ulang payload.
+* File dipecah ke dalam **chunk** (default 1 MiB; 64 KiB–16 MiB) yang dicatat di header.
+* Setiap record memakai **nonce turunan** `prefix(4) || index(8)` — nonce tidak disimpan di kontainer.
+* **AAD 43 byte** per record mengikat magic, versi, ukuran chunk, file ID, prefix, header record, dan indeks sehingga record tidak dapat dipindah atau dipotong.
 
 ---
 
@@ -83,19 +84,26 @@ aegiscrypt-web/
 
 ---
 
-## Spesifikasi Format File (.aegis v2)
+## Spesifikasi Format File (.aegis v3)
 
-Tata letak biner untuk interoperabilitas dengan versi Desktop:
+Header tetap 128 byte, big-endian. Kontainer v2 lama tetap dapat dibaca.
 
 | Offset Byte | Panjang | Konten | Nilai |
 | --- | --- | --- | --- |
 | 0 | 5 | Magic | `AEGIS` |
-| 5 | 1 | Versi | `0x02` |
-| 6 | 32 | Salt | Random Bytes |
-| 38 | 4 | Panjang Chunk 1 | Int32 LE |
-| 42 | 12 | IV Chunk 1 | Random Bytes |
-| 54 | N | Ciphertext | Data Terenkripsi |
-| ... | ... | ... | Berulang untuk Chunk 2... |
+| 5 | 1 | Versi | `0x03` |
+| 6 | 1 | ID KDF | `0x01` (PBKDF2-HMAC-SHA256) |
+| 7 | 1 | Flag | bit0 keyfile, bit1 recovery slot, bit2 metadata nama |
+| 8 | 4 | Iterasi PBKDF2 | uint32, 600.000–5.000.000 |
+| 12 | 4 | Ukuran chunk | uint32, 65.536–16.777.216 |
+| 16 | 32 | Salt | Random bytes |
+| 48 | 16 | File ID | Random bytes |
+| 64 | 4 | Prefix nonce | Random bytes |
+| 68 | 12 | Nonce wrap | Random bytes |
+| 80 | 32 | DEK terbungkus | Ciphertext AES-GCM |
+| 112 | 16 | Tag wrap | 128-bit |
+
+Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu ciphertext + tag. Nonce = `prefix || index`; AAD 43 byte. Detail lengkap ada di dokumentasi.
 
 ---
 
@@ -112,3 +120,9 @@ Tata letak biner untuk interoperabilitas dengan versi Desktop:
 **T: Berapa batas ukuran file maksimum?**
 
 > Telah diuji hingga **10GB** pada Chrome 120+. Batasannya bergantung pada implementasi Blob browser. Untuk file berukuran 100GB+, versi AegisCrypt Desktop (C#) sudah direncanakan tapi belum diimplementasikan — lihat `desktop/README.md`.
+
+---
+
+## Lisensi
+
+[Apache-2.0](LICENSE)

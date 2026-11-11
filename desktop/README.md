@@ -16,8 +16,8 @@ membingungkan.
 - `Program.cs` / `App.axaml(.cs)` — bootstrap aplikasi Avalonia
 - `MainWindow.axaml(.cs)` — UI utama
 - `Services/CryptoService.cs` — port logika AES-256-GCM + PBKDF2 dari
-  `src/services/cryptoService.ts` (format `.aegis` v2 harus tetap kompatibel
-  dengan versi web)
+  `src/services/cryptoService.ts` (format `.aegis` v3 harus tetap kompatibel
+  dengan versi web; reader v2 lama dipertahankan)
 - `Services/SecureDeleteService.cs` — secure-delete file asli setelah proses
 - `Models/AegisConstants.cs` — konstanta kripto (samakan dengan
   `src/constants.ts` di versi web)

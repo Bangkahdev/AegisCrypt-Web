@@ -5,7 +5,8 @@ slug: /referensi-api
 
 # Referensi API
 
-Antarmuka kriptografi publik yang digunakan oleh aplikasi AegisCrypt.
+Antarmuka kriptografi publik di `src/services/cryptoService.ts` dan konstanta
+kontainer di `src/constants.ts`.
 
 ## Fungsi utama
 
@@ -13,50 +14,90 @@ Antarmuka kriptografi publik yang digunakan oleh aplikasi AegisCrypt.
 
 | Fungsi | Parameter | Hasil |
 |--------|-----------|-------|
-| `processFileEncrypt` | `(file, password, keyFileBuffer, signal, onProgress)` | Blob kontainer `.aegis` terenkripsi |
-| `processFileDecrypt` | `(buffer, password, keyFileBuffer, signal, onProgress)` | Blob berkas asli terdekripsi |
+| `processFileEncrypt` | `(file, password, keyFileBuffer, signal, onProgress, options?)` | `Blob` kontainer `.aegis` v3 |
+| `processFileDecrypt` | `(source, password, keyFileBuffer, signal, onProgress, options?)` | `Blob` berkas asli |
+| `rewrapFile` | `(source, oldPassword, oldKeyFile, newPassword, newKeyFile, options?)` | `Blob` dengan header baru, payload utuh |
+| `prepareKeyMaterial` | `(password, keyFileBuffer?)` | `Uint8Array` materi kunci |
+| `deriveKey` | `(keyMaterial, salt, usage, iterations?)` | `CryptoKey` AES-256 |
+| `createDefaultSink` | `()` | Sink OPFS, atau fallback memori |
+| `createBlobSink` | `()` | Sink memori |
 | `getEncryptedFilename` | `(originalName)` | `originalName` + `.aegis` |
 | `getDecryptedFilename` | `(encryptedName)` | Nama asli tanpa `.aegis`, atau awalan `decrypted_` |
 
 </div>
 
-## Contoh derivasi kunci (konseptual)
+`source` pada dekripsi menerima `File`/`Blob` (dibaca per potongan, memori
+terjaga) atau `ArrayBuffer`. `options` enkripsi: `iterations`, `chunkSize`, dan
+`randomBytes` (untuk uji deterministik). `options` dekripsi: `sink`.
+
+## Pesan kesalahan
+
+`AegisError` memetakan kegagalan ke pesan spesifik: format, versi, KDF,
+iterasi, ukuran chunk, flag, metadata nama, berkas terpotong, record final
+hilang, data sisa, struktur record, autentikasi gagal, kredensial salah, v2
+rusak, dan pembatalan.
+
+## Contoh: membungkus DEK (konseptual)
 
 ```typescript
-const key = await crypto.subtle.deriveKey(
+const salt = crypto.getRandomValues(new Uint8Array(32));
+const dek = crypto.getRandomValues(new Uint8Array(32));
+
+const kek = await crypto.subtle.deriveKey(
   {
     name: "PBKDF2",
     hash: "SHA-256",
-    salt: salt, // 32 byte acak
-    iterations: 100_000,
+    salt,
+    iterations: 600_000,
   },
-  baseKey, // dari kata sandi (+ SHA-256(keyfile) jika ada)
+  await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveKey"],
+  ),
   { name: "AES-GCM", length: 256 },
   false,
-  ["encrypt", "decrypt"],
+  ["encrypt"],
 );
+
+const wrapped = await crypto.subtle.encrypt(
+  {
+    name: "AES-GCM",
+    iv: wrapNonce, // 12 byte
+    additionalData: headerBytes0to67, // 68 byte
+  },
+  kek,
+  dek,
+);
+// 32 byte ciphertext + 16 byte tag disimpan di offset 80 dan 112
 ```
 
-## Contoh enkripsi bagian (konseptual)
+## Contoh: satu record (konseptual)
 
 ```typescript
-// Berkas dipotong menjadi bagian 1 MiB
-const chunk = file.slice(0, 1_048_576);
-const iv = crypto.getRandomValues(new Uint8Array(12)); // 12 byte
+const nonce = new Uint8Array(12);
+nonce.set(prefix, 0);
+new DataView(nonce.buffer).setBigUint64(4, BigInt(index), false);
 
-const encrypted = await crypto.subtle.encrypt(
-  { name: "AES-GCM", iv: iv },
-  key,
-  await chunk.arrayBuffer(),
+const aad = buildRecordAad(chunkSize, fileId, prefix, recordHeader, index); // 43 byte
+
+const ciphertext = await crypto.subtle.encrypt(
+  { name: "AES-GCM", iv: nonce, additionalData: aad, tagLength: 128 },
+  dekKey,
+  plaintextChunk,
 );
-
-// Output: IV + ciphertext + tag autentikasi (128 bit)
 ```
 
 ## Catatan implementasi
 
-- Semua operasi berjalan di browser melalui `crypto.subtle`.
-- Tidak ada permintaan jaringan untuk data kriptografi.
+- Semua operasi berjalan di browser melalui `crypto.subtle`; tidak ada
+  permintaan jaringan untuk data kriptografi.
+- Enkripsi memotong berkas sesuai ukuran chunk di header (default 1 MiB).
+- Dekripsi menulis plaintext ke Origin Private File System bila tersedia;
+  penghapusan berkas sementara dijadwalkan (saat halaman ditutup atau setelah
+  timeout). Jika tidak, hasil disimpan di memori.
 - Progres dan kecepatan dihitung di sisi klien untuk tampilan `Operation Status`.
 
 ## Sumber kode

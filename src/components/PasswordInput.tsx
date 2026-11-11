@@ -91,7 +91,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({ value, onChange, d
         <span className={cn("font-semibold", value ? strengthColor() : "text-muted-foreground")}>
           {value ? strengthLabel() : "Password required"}
         </span>
-        <span className="text-muted-foreground">PBKDF2 / 100k iterations</span>
+            <span className="text-muted-foreground">PBKDF2 / 600k iterations</span>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ AegisCrypt adalah suite enkripsi berkas **zero-knowledge** yang berjalan sepenuh
 <div className="hero">
   <h1>AegisCrypt Docs</h1>
   <p className="lead">
-    Referensi teknis lengkap untuk klien enkripsi berkas berbasis browser: mesin AES-256-GCM, format kontainer .aegis v2, API kriptografi, model keamanan, dan deployment Cloudflare.
+    Referensi teknis lengkap untuk klien enkripsi berkas berbasis browser: mesin AES-256-GCM, format kontainer .aegis v3, API kriptografi, model keamanan, dan deployment Cloudflare.
   </p>
   <div className="hero__buttons">
     <a
@@ -34,9 +34,10 @@ AegisCrypt adalah suite enkripsi berkas **zero-knowledge** yang berjalan sepenuh
 | Fitur | Detail |
 |-------|--------|
 | **Enkripsi** | AES-256-GCM terotentikasi — satu bit yang berubah akan menyebabkan dekripsi gagal |
-| **Derivasi kunci** | PBKDF2-HMAC-SHA256, 100.000 iterasi, garam 32 byte per berkas |
+| **Envelope encryption** | DEK acak per berkas, dibungkus KEK dari kata sandi + keyfile opsional |
+| **Derivasi kunci** | PBKDF2-HMAC-SHA256, 600.000 iterasi (tersimpan di header, hingga 5.000.000), garam 32 byte per berkas |
 | **Faktor kedua (2FA)** | Keyfile opsional sebagai materi kunci tambahan |
-| **Streaming** | Berkas dipotong dalam bagian 1 MiB, cocok untuk berkas berukuran gigabyte |
+| **Streaming** | Berkas dipotong per chunk (default 1 MiB; 64 KiB–16 MiB), cocok untuk berkas berukuran gigabyte |
 | **Tanpa backend** | Tidak ada unggah file, tidak ada sistem akun, tidak ada server |
 
 </div>
@@ -51,6 +52,6 @@ AegisCrypt adalah suite enkripsi berkas **zero-knowledge** yang berjalan sepenuh
 
 ## Bagaimana cara menggunakan dokumentasi ini
 
-Gunakan sidebar di sebelah kiri untuk menavigasi antara topik. Setiap halaman menjelaskan satu aspek AegisCrypt secara detail, mulai dari cara memulai hingga format biner kontainer .aegis v2.
+Gunakan sidebar di sebelah kiri untuk menavigasi antara topik. Setiap halaman menjelaskan satu aspek AegisCrypt secara detail, mulai dari cara memulai hingga format biner kontainer .aegis v3.
 
 Jika Anda ingin langsung mencoba, [buka aplikasi](https://aegiscrypt.bangkah.tech) dan ikuti [Mulai Cepat](/mulai-cepat).

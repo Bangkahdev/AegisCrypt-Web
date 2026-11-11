@@ -1,19 +1,96 @@
-
 export const CRYPTO_CONSTANTS = {
-  PBKDF2_ITERATIONS: 100000,
-  SALT_LENGTH: 32, // Increased to 32 bytes for v2
-  IV_LENGTH: 12, // Standard for GCM
-  TAG_LENGTH_BITS: 128,
-  ALGORITHM_AES: 'AES-GCM',
-  ALGORITHM_KDF: 'PBKDF2',
-  HASH_ALGO: 'SHA-256',
-  KEY_LENGTH: 256,
-  CHUNK_SIZE: 1024 * 1024, // 1MB Chunks for streaming
-};
+  /**
+   * Default PBKDF2 iteration count for newly written v3 files.
+   * v3 allows 600_000 .. 5_000_000 (stored in the header).
+   */
+  PBKDF2_ITERATIONS: 600_000,
+  PBKDF2_ITERATIONS_MIN: 600_000,
+  PBKDF2_ITERATIONS_MAX: 5_000_000,
 
-// Official File Format Specifications
-export const EXTENSION_ENCRYPTED = '.aegis';
+  /** Fixed iteration count used by the legacy v2 format (not stored in header). */
+  LEGACY_PBKDF2_ITERATIONS: 100_000,
+
+  SALT_LENGTH: 32,
+  IV_LENGTH: 12, // GCM nonce length (wrap nonce)
+  TAG_LENGTH_BITS: 128,
+  TAG_LENGTH_BYTES: 16,
+  KEY_LENGTH: 256,
+  DEK_LENGTH: 32,
+
+  ALGORITHM_AES: "AES-GCM",
+  ALGORITHM_KDF: "PBKDF2",
+  HASH_ALGO: "SHA-256",
+
+  /** Default chunk size for new v3 files. Allowed range is stored in the header. */
+  CHUNK_SIZE: 1_048_576, // 1 MiB
+  CHUNK_SIZE_MIN: 65_536, // 64 KiB
+  CHUNK_SIZE_MAX: 16_777_216, // 16 MiB
+} as const;
+
+// ---------------------------------------------------------------------------
+// Container constants
+// ---------------------------------------------------------------------------
+
+export const EXTENSION_ENCRYPTED = ".aegis";
+
 export const FILE_MAGIC = new Uint8Array([0x41, 0x45, 0x47, 0x49, 0x53]); // "AEGIS"
-export const FILE_VERSION = 2; // Bumped to v2 for Chunked Support
-// Header: Magic(5) + Version(1) + Salt(32)
-export const HEADER_LENGTH = FILE_MAGIC.length + 1 + CRYPTO_CONSTANTS.SALT_LENGTH;
+export const FILE_VERSION = 3;
+export const LEGACY_FILE_VERSION = 2;
+
+/** KDF identifiers. 0x01 = PBKDF2-HMAC-SHA256. Others are reserved (e.g. Argon2id). */
+export const KDF_ID_PBKDF2_SHA256 = 0x01;
+
+// ---------------------------------------------------------------------------
+// v3 fixed header layout (128 bytes, all integers big-endian)
+// ---------------------------------------------------------------------------
+//
+//  0   5  magic "AEGIS"
+//  5   1  version 0x03
+//  6   1  KDF id
+//  7   1  flags
+//  8   4  PBKDF2 iterations (uint32 BE)
+// 12   4  chunk size (uint32 BE)
+// 16  32  salt
+// 48  16  file id
+// 64   4  per-file nonce prefix
+// 68  12  wrap nonce
+// 80  32  wrapped DEK
+// 112 16  wrap GCM tag
+//
+export const HEADER_LENGTH = 128;
+export const HEADER_AAD_LENGTH = 68; // bytes 0..67 authenticate the wrap
+
+export const SALT_OFFSET = 16;
+export const FILE_ID_OFFSET = 48;
+export const FILE_ID_LENGTH = 16;
+export const NONCE_PREFIX_OFFSET = 64;
+export const NONCE_PREFIX_LENGTH = 4;
+export const WRAP_NONCE_OFFSET = 68;
+export const WRAPPED_DEK_OFFSET = 80;
+export const WRAP_TAG_OFFSET = 112;
+
+// Header flags
+export const FLAG_KEYFILE = 0x01;
+export const FLAG_RECOVERY = 0x02;
+export const FLAG_FILENAME_METADATA = 0x04;
+export const KNOWN_FLAGS = FLAG_KEYFILE | FLAG_RECOVERY | FLAG_FILENAME_METADATA;
+
+// Optional recovery slot appended after the fixed header: nonce(12) + DEK(32) + tag(16).
+export const RECOVERY_SLOT_LENGTH = 60;
+
+// ---------------------------------------------------------------------------
+// v3 record layout
+// ---------------------------------------------------------------------------
+//
+//  record header 5 bytes: flags(1, bit0=final) + ciphertext length(4, uint32 BE; includes tag)
+//  nonce is derived: nonce = noncePrefix(4) || index(8, uint64 BE); never stored
+//  AAD 43 bytes: magic(5) || version(1) || chunkSize(4) || fileId(16)
+//                || noncePrefix(4) || recordHeader(5) || index(8)
+//
+export const RECORD_HEADER_LENGTH = 5;
+export const RECORD_FLAG_FINAL = 0x01;
+export const RECORD_KNOWN_FLAGS = RECORD_FLAG_FINAL;
+export const RECORD_AAD_LENGTH = 43;
+
+/** Legacy v2 header: magic(5) + version(1) + salt(32). */
+export const LEGACY_HEADER_LENGTH = 38;

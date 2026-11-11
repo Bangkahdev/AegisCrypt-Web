@@ -30,7 +30,7 @@ const FEATURES = [
 
 const FACTS = [
   { label: "Cipher", value: "AES-256-GCM" },
-  { label: "Key derivation", value: "PBKDF2 / 100k" },
+    { label: "Key derivation", value: "PBKDF2 / 600k" },
   { label: "Data path", value: "Browser only" },
 ];
 

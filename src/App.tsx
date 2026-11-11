@@ -175,9 +175,8 @@ export default function App() {
             );
             downloadBlob(resultData, getEncryptedFilename(file.name));
           } else {
-            const buffer = await file.arrayBuffer();
             resultData = await processFileDecrypt(
-              buffer,
+              file,
               session.password,
               session.keyFileBuffer,
               signal,
@@ -482,7 +481,7 @@ export default function App() {
 
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span>AES-256-GCM / PBKDF2</span>
-                  <span className="font-mono">100k iterations</span>
+                  <span className="font-mono">600k iterations</span>
                 </div>
               </CardContent>
             </Card>

@@ -110,7 +110,7 @@ const config = {
                 to: "/arsitektur",
               },
               {
-                label: "Format File (.aegis v2)",
+                label: "Format File (.aegis v3)",
                 to: "/format-file",
               },
               {

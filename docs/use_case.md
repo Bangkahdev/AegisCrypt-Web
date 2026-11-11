@@ -43,11 +43,11 @@ AegisCrypt-Web is a client-side, zero-knowledge encryption suite designed to pro
 When a user initiates an operation, the browser executes the following cryptographic protocols under the hood:
 
 * **Key Derivation (PBKDF2):**
-The user's password (and the SHA-256 hash of the optional keyfile) is processed through **PBKDF2** using **100,000 iterations** combined with a cryptographically secure 32-byte random salt. This mitigates brute-force and rainbow table attacks.
+The user's password (and the SHA-256 hash of the optional keyfile) is processed through **PBKDF2-HMAC-SHA256** using **600,000 iterations** — stored in the header with a supported range of 600,000–5,000,000 — combined with a cryptographically secure 32-byte random salt. This mitigates brute-force and rainbow table attacks.
 * **Authenticated Encryption (AES-256-GCM):**
 Data is secured using **AES-256-GCM** (Galois/Counter Mode). Unlike standard CBC modes, GCM provides built-in authentication. If a file is tampered with—or if incorrect credentials are supplied—decryption fails instantly, protecting against data corruption and tampering.
-* **Streaming Chunk Architecture (v2):**
-To handle multi-gigabyte files without exhausting browser memory, data is split into 1MB chunks. Each chunk is encrypted with a unique, randomly generated 12-byte **Initialization Vector (IV)**, preventing pattern analysis and IV reuse vulnerabilities.
+* **Envelope + Streaming Architecture (v3):**
+Each file gets a random 256-bit Data Encryption Key (DEK) wrapped by a PBKDF2-derived KEK, so changing a password rewrites only the header. Data is split into chunks (default 1 MiB, 64 KiB–16 MiB, recorded in the header) and each record uses a derived nonce (`prefix || index`) plus a 43-byte AAD that binds its position, so records cannot be moved, truncated, or swapped. Legacy v2 containers remain readable.
 
 ---
 
