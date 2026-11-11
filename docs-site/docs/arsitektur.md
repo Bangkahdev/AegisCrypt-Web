@@ -12,9 +12,10 @@ AegisCrypt adalah aplikasi satu halaman (SPA) yang di-deploy sebagai aset statis
 <div className="card">
 
 1. Pengguna memasukkan kata sandi dan (opsional) keyfile.
-2. PBKDF2-HMAC-SHA256 (100.000 iterasi, garam 32 byte) menurunkan kunci AES 256-bit.
-3. Berkas dipotong menjadi bagian 1 MiB, masing-masing dienkripsi dengan AES-256-GCM dan IV unik.
-4. Output disimpan sebagai kontainer `.aegis` v2 dan diunduh ke browser.
+2. `KeyMaterial = Password_Bytes || SHA-256(Keyfile_Bytes)` disiapkan; PBKDF2-HMAC-SHA256 (600.000 iterasi, garam 32 byte) menurunkan KEK AES-256.
+3. DEK acak 256-bit dibungkus oleh KEK dengan AES-256-GCM; header 128 byte mencatat salt, iterasi, ukuran chunk, file ID, dan prefix nonce.
+4. Berkas dipotong menjadi record (default 1 MiB, sesuai header), masing-masing dienkripsi dengan AES-256-GCM memakai nonce turunan `prefix || index` dan AAD 43 byte.
+5. Output disimpan sebagai kontainer `.aegis` v3 dan diunduh ke browser. Kontainer v2 lama tetap dapat dibaca.
 
 </div>
 
@@ -32,7 +33,8 @@ AegisCrypt adalah aplikasi satu halaman (SPA) yang di-deploy sebagai aset statis
 - Tidak ada endpoint unggah file.
 - Tidak ada sistem akun.
 - Tidak ada penanganan kunci di sisi server.
-- Semua data diproses di RAM browser dan tidak pernah meninggalkan perangkat pengguna.
+- Semua data diproses di perangkat pengguna dan tidak pernah meninggalkan perangkat.
+- Dekripsi dapat memakai penyimpanan sementara OPFS untuk menjaga penggunaan memori; penghapusan berkas sementara dijadwalkan (saat halaman ditutup atau setelah timeout).
 
 ## Sumber kode
 

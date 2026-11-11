@@ -41,11 +41,11 @@ AegisCrypt-Web adalah suite enkripsi berbasis klien (*client-side*) dengan arsit
 Ketika pengguna memicu suatu operasi, browser menjalankan protokol kriptografi berikut di latar belakang:
 
 * **Derivasi Kunci (PBKDF2):**
-Kata sandi pengguna (dan hash SHA-256 dari *keyfile* opsional) diproses melalui **PBKDF2** dengan **100.000 iterasi** yang dikombinasikan dengan *salt* acak sepanjang 32-byte yang aman secara kriptografis. Ini efektif mencegah serangan *brute-force* dan *rainbow table*.
+Kata sandi pengguna (dan hash SHA-256 dari *keyfile* opsional) diproses melalui **PBKDF2-HMAC-SHA256** dengan **600.000 iterasi** — tersimpan di header dengan rentang yang didukung 600.000–5.000.000 — dikombinasikan dengan *salt* acak sepanjang 32-byte yang aman secara kriptografis. Ini efektif mencegah serangan *brute-force* dan *rainbow table*.
 * **Enkripsi Terotentikasi (AES-256-GCM):**
 Data diamankan menggunakan **AES-256-GCM** (*Galois/Counter Mode*). Tidak seperti mode CBC standar, GCM menyediakan autentikasi bawaan. Jika file dirusak—atau jika kredensial yang dimasukkan salah—proses dekripsi akan langsung gagal seketika, memberikan perlindungan terhadap korupsi data dan manipulasi.
-* **Arsitektur Streaming Chunk (v2):**
-Untuk menangani file berukuran multi-gigabyte tanpa menghabiskan memori browser, data dipecah menjadi *chunk* berukuran 1MB. Setiap *chunk* dienkripsi menggunakan **Initialization Vector (IV)** unik berukuran 12-byte yang dibangkitkan secara acak, mencegah analisis pola dan kerentanan penggunaan ulang IV.
+* **Arsitektur Envelope + Streaming (v3):**
+Setiap file memakai Data Encryption Key (DEK) acak 256-bit yang dibungkus KEK hasil PBKDF2, sehingga mengganti kata sandi hanya menulis ulang header. Data dipecah menjadi *chunk* (default 1 MiB, 64 KiB–16 MiB, dicatat di header) dan setiap record memakai nonce turunan (`prefix || index`) serta AAD 43 byte yang mengikat posisinya, sehingga record tidak dapat dipindah, dipotong, atau ditukar. Kontainer v2 lama tetap dapat dibaca.
 
 ---
 

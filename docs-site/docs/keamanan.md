@@ -21,9 +21,10 @@ AegisCrypt dirancang dengan prinsip **zero-knowledge**. Berikut adalah model anc
 | Ancaman | Perlindungan |
 |---------|-------------|
 | Manipulasi ciphertext | Enkripsi terotentikasi AES-256-GCM mendeteksi perubahan satu bit |
-| Serangan brute-force pada kata sandi | PBKDF2-HMAC-SHA256 dengan 100.000 iterasi |
+| Serangan brute-force pada kata sandi | PBKDF2-HMAC-SHA256 dengan 600.000 iterasi (dapat dinaikkan hingga 5.000.000) |
 | Dekripsi hanya dengan kata sandi | Keyfile sebagai faktor kedua (2FA opsional) |
-| Kontainer rusak atau dimodifikasi | Parsing ketat magic bytes, versi, dan panjang bagian |
+| Record dipindah atau dipotong | AAD 43 byte per record mengikat indeks, file ID, dan header record |
+| Kontainer rusak atau dimodifikasi | Parsing ketat magic bytes, versi, flag, batas iterasi/chunk, dan panjang record |
 
 </div>
 

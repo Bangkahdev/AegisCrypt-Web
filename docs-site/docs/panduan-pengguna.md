@@ -46,7 +46,7 @@ Keyfile dapat berupa berkas apa pun — gambar, audio, dokumen, atau berkas acak
 
 ## Pemrosesan batch (banyak berkas)
 
-AegisCrypt mendukung pemrosesan banyak berkas dalam satu antrean. Anda dapat menyeret seluruh folder ke zona unggah, dan aplikasi akan memprosesnya satu per satu melalui mesin streaming 1 MiB per bagian.
+AegisCrypt mendukung pemrosesan banyak berkas dalam satu antrean. Anda dapat menyeret seluruh folder ke zona unggah, dan aplikasi akan memprosesnya satu per satu melalui mesin streaming per chunk (default 1 MiB).
 
 ## Peringatan keamanan
 

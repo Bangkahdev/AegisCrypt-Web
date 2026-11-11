@@ -2,6 +2,7 @@
   "name": "aegiscrypt-web",
   "version": "1.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -34,6 +35,7 @@
     "test": "vitest",
     "test:unit": "vitest --run",
     "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
     "deploy": "cf deploy"
   }
 }

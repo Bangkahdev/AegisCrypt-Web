@@ -1,229 +1,893 @@
-
-import { CRYPTO_CONSTANTS, EXTENSION_ENCRYPTED, FILE_MAGIC, FILE_VERSION, HEADER_LENGTH } from '../constants';
-
-
+import {
+  CRYPTO_CONSTANTS,
+  EXTENSION_ENCRYPTED,
+  FILE_MAGIC,
+  FILE_VERSION,
+  LEGACY_FILE_VERSION,
+  KDF_ID_PBKDF2_SHA256,
+  HEADER_LENGTH,
+  HEADER_AAD_LENGTH,
+  FILE_ID_LENGTH,
+  FILE_ID_OFFSET,
+  SALT_OFFSET,
+  NONCE_PREFIX_OFFSET,
+  NONCE_PREFIX_LENGTH,
+  WRAP_NONCE_OFFSET,
+  WRAPPED_DEK_OFFSET,
+  WRAP_TAG_OFFSET,
+  FLAG_KEYFILE,
+  FLAG_RECOVERY,
+  FLAG_FILENAME_METADATA,
+  KNOWN_FLAGS,
+  RECOVERY_SLOT_LENGTH,
+  RECORD_HEADER_LENGTH,
+  RECORD_FLAG_FINAL,
+  RECORD_KNOWN_FLAGS,
+  RECORD_AAD_LENGTH,
+  LEGACY_HEADER_LENGTH,
+} from "../constants";
 
 /**
- * ==========================================
- * AEGISCRYPT CRYPTO ENGINE (Web Crypto API)
- * ==========================================
- * 
- * CORE FEATURES:
- * 1. AES-256-GCM: Authenticated Encryption.
- * 2. PBKDF2: Key derivation with high iteration count (100k).
- * 3. Streaming (v2): Processes files in chunks to support large files with low RAM usage.
- * 
- * AUDIT NOTES:
- * - IV Uniqueness: Generated freshly for EVERY chunk.
- * - Memory Safety: Uses Blob construction to avoid contiguous heap allocation.
+ * ==========================================================
+ * AEGISCRYPT CRYPTO ENGINE
+ * ==========================================================
+ *
+ * v3 uses envelope encryption:
+ *   - a random 256-bit DEK encrypts every record of a single file
+ *   - the DEK is wrapped by a KEK derived from password + optional keyfile
+ *   - STAR (salt, iterations, file id, chunk size, nonce prefix) live in a
+ *     fixed 128-byte header, authenticated as AAD when unwrapping the DEK
+ *   - every record is authenticated with a unique derived nonce and an AAD
+ *     that binds the record index, length and final flag
+ *
+ * The legacy v2 container is still readable (fixed 100k iterations, no AAD)
+ * but is no longer written.
  */
 
-export const generateSalt = (): Uint8Array<ArrayBuffer> => window.crypto.getRandomValues(new Uint8Array(CRYPTO_CONSTANTS.SALT_LENGTH));
-export const generateIV = (): Uint8Array<ArrayBuffer> => window.crypto.getRandomValues(new Uint8Array(CRYPTO_CONSTANTS.IV_LENGTH));
+const webcrypto = globalThis.crypto;
+
+/** Byte buffer backed by a plain ArrayBuffer, as required by WebCrypto. */
+type Bytes = Uint8Array<ArrayBuffer>;
+
+// ---------------------------------------------------------------------------
+// Errors (kept distinct on purpose; the UI maps them to specific messages)
+// ---------------------------------------------------------------------------
+
+export const AegisError = {
+  format: "Format file tidak valid (.aegis tidak dikenali).",
+  version: (v: number) => `Versi file tidak didukung (v${v}). Perbarui aplikasi.`,
+  kdf: "KDF tidak didukung oleh versi aplikasi ini.",
+  iterations: "Parameter iterasi KDF di luar batas yang diizinkan.",
+  chunkSize: "Ukuran chunk di luar batas yang diizinkan.",
+  flags: "Header memuat flag yang tidak dikenal.",
+  filenameMetadata: "Metadata nama berkas terenkripsi belum didukung versi ini.",
+  truncated: "Berkas terpotong atau tidak lengkap.",
+  missingFinal: "Record final tidak ditemukan; berkas mungkin terpotong.",
+  trailing: "Terdapat data setelah record final; berkas dimanipulasi.",
+  record: "Struktur record tidak valid; berkas dimanipulasi atau rusak.",
+  tampered: "Autentikasi berkas gagal; data dimanipulasi atau rusak.",
+  credentials: "Kata sandi atau keyfile salah.",
+  legacyCorrupt: "Berkas corrupt: struktur v2 tidak valid.",
+  cancelled: "Operation Cancelled",
+} as const;
+
+// ---------------------------------------------------------------------------
+// Randomness
+// ---------------------------------------------------------------------------
+
+export type RandomBytes = (length: number) => Bytes;
+
+const defaultRandomBytes: RandomBytes = (length) =>
+  webcrypto.getRandomValues(new Uint8Array(length));
+
+export const generateSalt = (): Bytes =>
+  webcrypto.getRandomValues(new Uint8Array(CRYPTO_CONSTANTS.SALT_LENGTH));
+
+export const generateIV = (): Bytes =>
+  webcrypto.getRandomValues(new Uint8Array(CRYPTO_CONSTANTS.IV_LENGTH));
+
+// ---------------------------------------------------------------------------
+// Key material and KDF
+// ---------------------------------------------------------------------------
 
 /**
- * 🔑 KEY PREPARATION
- * Combines Password + Optional Keyfile into a single byte array.
+ * KeyMaterial = PasswordBytes || SHA-256(KeyfileBytes)  (keyfile optional)
  */
-export const prepareKeyMaterial = async (password: string, keyFileBuffer?: ArrayBuffer | null): Promise<Uint8Array<ArrayBuffer>> => {
-  const encoder = new TextEncoder();
-  const passwordBytes = encoder.encode(password);
+export const prepareKeyMaterial = async (
+  password: string,
+  keyFileBuffer?: ArrayBuffer | null,
+): Promise<Bytes> => {
+  const passwordBytes = new TextEncoder().encode(password);
+  if (!keyFileBuffer) return passwordBytes;
 
-  if (!keyFileBuffer) {
-    return passwordBytes;
-  }
-
-  // Hash keyfile agar ukuran konsisten & aman
-  const keyFileHash = await window.crypto.subtle.digest('SHA-256', keyFileBuffer);
+  const keyFileHash = await webcrypto.subtle.digest("SHA-256", keyFileBuffer);
   const combined = new Uint8Array(passwordBytes.length + keyFileHash.byteLength);
   combined.set(passwordBytes, 0);
   combined.set(new Uint8Array(keyFileHash), passwordBytes.length);
-
   return combined;
 };
 
-/**
- * 🗝️ KEY DERIVATION (PBKDF2)
- */
-export const deriveKey = async (keyMaterialRaw: Uint8Array<ArrayBuffer>, salt: Uint8Array<ArrayBuffer>, usage: KeyUsage[]): Promise<CryptoKey> => {
-  const keyMaterial = await window.crypto.subtle.importKey(
-    'raw',
+export const deriveKey = async (
+  keyMaterialRaw: Bytes,
+  salt: Bytes,
+  usage: KeyUsage[],
+  iterations: number = CRYPTO_CONSTANTS.PBKDF2_ITERATIONS,
+): Promise<CryptoKey> => {
+  const keyMaterial = await webcrypto.subtle.importKey(
+    "raw",
     keyMaterialRaw,
     { name: CRYPTO_CONSTANTS.ALGORITHM_KDF },
     false,
-    ['deriveBits', 'deriveKey']
+    ["deriveBits", "deriveKey"],
   );
 
-  return window.crypto.subtle.deriveKey(
+  return webcrypto.subtle.deriveKey(
     {
       name: CRYPTO_CONSTANTS.ALGORITHM_KDF,
-      salt: salt,
-      iterations: CRYPTO_CONSTANTS.PBKDF2_ITERATIONS,
+      salt,
+      iterations,
       hash: CRYPTO_CONSTANTS.HASH_ALGO,
     },
     keyMaterial,
     { name: CRYPTO_CONSTANTS.ALGORITHM_AES, length: CRYPTO_CONSTANTS.KEY_LENGTH },
     false,
-    usage
+    usage,
   );
 };
 
-/**
- * Helper: Packages an encrypted chunk.
- * Format: [Length (4 bytes)] [IV (12 bytes)] [Ciphertext]
- */
-const packageChunk = (iv: Uint8Array<ArrayBuffer>, ciphertext: ArrayBuffer): Uint8Array<ArrayBuffer> => {
-  const length = iv.byteLength + ciphertext.byteLength;
-  const buffer = new Uint8Array(4 + length);
-  const view = new DataView(buffer.buffer);
-  
-  view.setInt32(0, length, true); // Little Endian Length
-  buffer.set(iv, 4);
-  buffer.set(new Uint8Array(ciphertext), 4 + iv.byteLength);
-  return buffer;
+const importDek = (raw: BufferSource, usage: KeyUsage[]): Promise<CryptoKey> =>
+  webcrypto.subtle.importKey(
+    "raw",
+    raw,
+    { name: CRYPTO_CONSTANTS.ALGORITHM_AES },
+    false,
+    usage,
+  );
+
+// ---------------------------------------------------------------------------
+// Parameter validation
+// ---------------------------------------------------------------------------
+
+const assertIterations = (iterations: number): void => {
+  if (
+    !Number.isInteger(iterations) ||
+    iterations < CRYPTO_CONSTANTS.PBKDF2_ITERATIONS_MIN ||
+    iterations > CRYPTO_CONSTANTS.PBKDF2_ITERATIONS_MAX
+  ) {
+    throw new Error(AegisError.iterations);
+  }
 };
 
-/**
- * 🔒 ENCRYPTION PROCESS (Streaming v2)
- * Returns a Blob instead of ArrayBuffer to handle large files efficiently.
- */
-export const processFileEncrypt = async (
-  file: File,
-  password: string,
-  keyFileBuffer: ArrayBuffer | null,
-  signal: AbortSignal,
-  onProgress: (bytes: number) => void
-): Promise<Blob> => {
-  const salt = generateSalt();
-  const keyMaterial = await prepareKeyMaterial(password, keyFileBuffer);
-  const key = await deriveKey(keyMaterial, salt, ['encrypt']);
+const assertChunkSize = (chunkSize: number): void => {
+  if (
+    !Number.isInteger(chunkSize) ||
+    chunkSize < CRYPTO_CONSTANTS.CHUNK_SIZE_MIN ||
+    chunkSize > CRYPTO_CONSTANTS.CHUNK_SIZE_MAX
+  ) {
+    throw new Error(AegisError.chunkSize);
+  }
+};
 
-  // Construct Header
+// ---------------------------------------------------------------------------
+// v3 header helpers
+// ---------------------------------------------------------------------------
+
+interface HeaderFields {
+  flags: number;
+  iterations: number;
+  chunkSize: number;
+  salt: Bytes;
+  fileId: Bytes;
+  noncePrefix: Bytes;
+  wrapNonce: Bytes;
+  wrappedDek: Bytes;
+  wrapTag: Bytes;
+}
+
+interface ParsedHeader extends HeaderFields {
+  recordsOffset: number;
+}
+
+const buildHeader = (fields: HeaderFields): Bytes => {
   const header = new Uint8Array(HEADER_LENGTH);
   header.set(FILE_MAGIC, 0);
-  header.set([FILE_VERSION], 5);
-  header.set(salt, 6);
+  header[5] = FILE_VERSION;
+  header[6] = KDF_ID_PBKDF2_SHA256;
+  header[7] = fields.flags;
 
-  // Store parts as Blob parts, not a single huge ArrayBuffer
-  const chunks: (Uint8Array<ArrayBuffer> | Blob)[] = [header];
-  let offset = 0;
-  const totalSize = file.size;
+  const view = new DataView(header.buffer);
+  view.setUint32(8, fields.iterations, false);
+  view.setUint32(12, fields.chunkSize, false);
 
-  while (offset < totalSize) {
-    if (signal.aborted) throw new Error("Operation Cancelled");
+  header.set(fields.salt, SALT_OFFSET);
+  header.set(fields.fileId, FILE_ID_OFFSET);
+  header.set(fields.noncePrefix, NONCE_PREFIX_OFFSET);
+  header.set(fields.wrapNonce, WRAP_NONCE_OFFSET);
+  header.set(fields.wrappedDek, WRAPPED_DEK_OFFSET);
+  header.set(fields.wrapTag, WRAP_TAG_OFFSET);
 
-    const chunkEnd = Math.min(offset + CRYPTO_CONSTANTS.CHUNK_SIZE, totalSize);
-    const slice = file.slice(offset, chunkEnd);
-    const chunkBuffer = await slice.arrayBuffer();
-    
-    // Unique IV per chunk maximizes security for GCM
-    const iv = generateIV();
-    const encryptedContent = await window.crypto.subtle.encrypt(
-      { name: CRYPTO_CONSTANTS.ALGORITHM_AES, iv: iv },
-      key,
-      chunkBuffer
-    );
+  return header;
+};
 
-    chunks.push(packageChunk(iv, encryptedContent));
-    
-    offset += chunkBuffer.byteLength;
-    onProgress(offset);
-    
-    await new Promise(r => setTimeout(r, 0)); 
+const assertMagic = (bytes: Bytes): void => {
+  if (bytes.byteLength < FILE_MAGIC.byteLength) throw new Error(AegisError.format);
+  for (let i = 0; i < FILE_MAGIC.byteLength; i++) {
+    if (bytes[i] !== FILE_MAGIC[i]) throw new Error(AegisError.format);
   }
-
-  // Create Blob directly from parts. 
-  // Browser handles memory management better than `new Uint8Array(totalLength)`
-  return new Blob(chunks, { type: 'application/octet-stream' });
 };
 
 /**
- * 🔓 DECRYPTION PROCESS (Streaming v2)
+ * Validates the entire fixed header before any KDF work is performed.
+ * Rejects unknown flags, reserved bits, out-of-range parameters and
+ * unsupported KDF identifiers.
  */
-export const processFileDecrypt = async (
-  fileBuffer: ArrayBuffer,
+const parseHeader = (bytes: Bytes): ParsedHeader => {
+  assertMagic(bytes);
+  if (bytes.byteLength < HEADER_LENGTH) throw new Error(AegisError.truncated);
+
+  if (bytes[5] !== FILE_VERSION) throw new Error(AegisError.version(bytes[5]));
+  if (bytes[6] !== KDF_ID_PBKDF2_SHA256) throw new Error(AegisError.kdf);
+
+  const flags = bytes[7];
+  if ((flags & ~KNOWN_FLAGS) !== 0) throw new Error(AegisError.flags);
+  if ((flags & ~(FLAG_KEYFILE | FLAG_RECOVERY)) !== 0) {
+    // FLAG_FILENAME_METADATA is reserved until Phase 4 (FR-CRY-14).
+    if (flags & FLAG_FILENAME_METADATA) throw new Error(AegisError.filenameMetadata);
+    throw new Error(AegisError.flags);
+  }
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, HEADER_LENGTH);
+  const iterations = view.getUint32(8, false);
+  const chunkSize = view.getUint32(12, false);
+  assertIterations(iterations);
+  assertChunkSize(chunkSize);
+
+  const recordsOffset =
+    HEADER_LENGTH + (flags & FLAG_RECOVERY ? RECOVERY_SLOT_LENGTH : 0);
+
+  return {
+    flags,
+    iterations,
+    chunkSize,
+    salt: bytes.slice(SALT_OFFSET, SALT_OFFSET + CRYPTO_CONSTANTS.SALT_LENGTH),
+    fileId: bytes.slice(FILE_ID_OFFSET, FILE_ID_OFFSET + FILE_ID_LENGTH),
+    noncePrefix: bytes.slice(NONCE_PREFIX_OFFSET, NONCE_PREFIX_OFFSET + NONCE_PREFIX_LENGTH),
+    wrapNonce: bytes.slice(WRAP_NONCE_OFFSET, WRAP_NONCE_OFFSET + CRYPTO_CONSTANTS.IV_LENGTH),
+    wrappedDek: bytes.slice(WRAPPED_DEK_OFFSET, WRAPPED_DEK_OFFSET + CRYPTO_CONSTANTS.DEK_LENGTH),
+    wrapTag: bytes.slice(WRAP_TAG_OFFSET, WRAP_TAG_OFFSET + CRYPTO_CONSTANTS.TAG_LENGTH_BYTES),
+    recordsOffset,
+  };
+};
+
+const makeRecordNonce = (prefix: Bytes, index: number): Bytes => {
+  const nonce = new Uint8Array(CRYPTO_CONSTANTS.IV_LENGTH);
+  nonce.set(prefix, 0);
+  new DataView(nonce.buffer).setBigUint64(4, BigInt(index), false);
+  return nonce;
+};
+
+const makeRecordAad = (
+  chunkSize: number,
+  fileId: Bytes,
+  noncePrefix: Bytes,
+  recordHeader: Bytes,
+  index: number,
+): Bytes => {
+  const aad = new Uint8Array(RECORD_AAD_LENGTH);
+  aad.set(FILE_MAGIC, 0); // 0..4
+  aad[5] = FILE_VERSION; // 5
+  new DataView(aad.buffer).setUint32(6, chunkSize, false); // 6..9
+  aad.set(fileId, 10); // 10..25
+  aad.set(noncePrefix, 26); // 26..29
+  aad.set(recordHeader, 30); // 30..34
+  new DataView(aad.buffer).setBigUint64(35, BigInt(index), false); // 35..42
+  return aad;
+};
+
+const unwrapDekRaw = async (
+  header: ParsedHeader,
+  keyMaterial: Bytes,
+): Promise<ArrayBuffer> => {
+  const kek = await deriveKey(keyMaterial, header.salt, ["decrypt"], header.iterations);
+
+  const sealed = new Uint8Array(
+    CRYPTO_CONSTANTS.DEK_LENGTH + CRYPTO_CONSTANTS.TAG_LENGTH_BYTES,
+  );
+  sealed.set(header.wrappedDek, 0);
+  sealed.set(header.wrapTag, CRYPTO_CONSTANTS.DEK_LENGTH);
+
+  const aad = new Uint8Array(HEADER_AAD_LENGTH);
+  aad.set(FILE_MAGIC, 0);
+  aad[5] = FILE_VERSION;
+  aad[6] = KDF_ID_PBKDF2_SHA256;
+  aad[7] = header.flags;
+  new DataView(aad.buffer).setUint32(8, header.iterations, false);
+  new DataView(aad.buffer).setUint32(12, header.chunkSize, false);
+  aad.set(header.salt, SALT_OFFSET);
+  aad.set(header.fileId, FILE_ID_OFFSET);
+  aad.set(header.noncePrefix, NONCE_PREFIX_OFFSET);
+
+  try {
+    return await webcrypto.subtle.decrypt(
+      {
+        name: CRYPTO_CONSTANTS.ALGORITHM_AES,
+        iv: header.wrapNonce,
+        additionalData: aad,
+        tagLength: CRYPTO_CONSTANTS.TAG_LENGTH_BITS,
+      },
+      kek,
+      sealed,
+    );
+  } catch {
+    throw new Error(AegisError.credentials);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Reader abstraction (Blob => true streaming, ArrayBuffer => zero-copy views)
+// ---------------------------------------------------------------------------
+
+interface Reader {
+  size: number;
+  read(offset: number, length: number): Promise<Bytes>;
+}
+
+const makeReader = (source: Blob | ArrayBuffer): Reader => {
+  if (typeof Blob !== "undefined" && source instanceof Blob) {
+    const blob = source;
+    return {
+      size: blob.size,
+      async read(offset, length) {
+        const end = Math.min(offset + length, blob.size);
+        if (end <= offset) return new Uint8Array(0);
+        return new Uint8Array(await blob.slice(offset, end).arrayBuffer());
+      },
+    };
+  }
+
+  const view = new Uint8Array(source as ArrayBuffer);
+  return {
+    size: view.byteLength,
+    async read(offset, length) {
+      const end = Math.min(offset + length, view.byteLength);
+      if (end <= offset) return new Uint8Array(0);
+      return view.subarray(offset, end);
+    },
+  };
+};
+
+// ---------------------------------------------------------------------------
+// Output sinks
+// ---------------------------------------------------------------------------
+
+export interface DecryptSink {
+  write(chunk: Bytes): Promise<void> | void;
+  finalize(): Promise<Blob> | Blob;
+  abort?(): Promise<void> | void;
+}
+
+/** In-memory sink. Peak JS heap grows with the output size. */
+export const createBlobSink = (): DecryptSink => {
+  const parts: BlobPart[] = [];
+  return {
+    write(chunk) {
+      parts.push(chunk as BlobPart);
+    },
+    finalize() {
+      return new Blob(parts, { type: "application/octet-stream" });
+    },
+  };
+};
+
+/**
+ * Origin Private File System sink. Writes plaintext to a temporary file so
+ * peak memory stays bounded. Cleanup is deferred so the download can read the
+ * file; it runs on page hide or after a timeout, whichever comes first.
+ * Falls back to the in-memory sink when OPFS is unavailable.
+ */
+const createOpfsSink = async (): Promise<DecryptSink | null> => {
+  const storage = (globalThis.navigator as any)?.storage;
+  if (!storage || typeof storage.getDirectory !== "function") return null;
+
+  try {
+    const root = await storage.getDirectory();
+    const name = `.aegis-tmp-${webcrypto.randomUUID()}`;
+    const handle = await root.getFileHandle(name, { create: true });
+    const writable = await handle.createWritable();
+
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      void root.removeEntry(name).catch(() => {
+        /* best effort */
+      });
+    };
+    const scheduleCleanup = () => {
+      setTimeout(cleanup, 60_000);
+      globalThis.addEventListener?.("pagehide", cleanup, { once: true });
+    };
+
+    return {
+      async write(chunk) {
+        await writable.write(chunk);
+      },
+      async finalize() {
+        await writable.close();
+        const file = await handle.getFile();
+        scheduleCleanup();
+        return file;
+      },
+      async abort() {
+        try {
+          await writable.abort();
+        } catch {
+          /* best effort */
+        }
+        cleanup();
+      },
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const createDefaultSink = async (): Promise<DecryptSink> =>
+  (await createOpfsSink()) ?? createBlobSink();
+
+const yieldToEventLoop = (): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, 0));
+
+// ---------------------------------------------------------------------------
+// Encryption (v3 only)
+// ---------------------------------------------------------------------------
+
+export interface EncryptOptions {
+  iterations?: number;
+  chunkSize?: number;
+  /** Deterministic RNG injection for test vectors / property tests. */
+  randomBytes?: RandomBytes;
+}
+
+export const processFileEncrypt = async (
+  file: Blob,
   password: string,
   keyFileBuffer: ArrayBuffer | null,
   signal: AbortSignal,
-  onProgress: (bytes: number) => void
+  onProgress: (bytes: number) => void,
+  options: EncryptOptions = {},
 ): Promise<Blob> => {
-  const dataView = new DataView(fileBuffer);
-  const uint8View = new Uint8Array(fileBuffer);
+  const iterations = options.iterations ?? CRYPTO_CONSTANTS.PBKDF2_ITERATIONS;
+  const chunkSize = options.chunkSize ?? CRYPTO_CONSTANTS.CHUNK_SIZE;
+  const randomBytes = options.randomBytes ?? defaultRandomBytes;
 
-  // 1. Header Validation
-  for (let i = 0; i < FILE_MAGIC.length; i++) {
-    if (uint8View[i] !== FILE_MAGIC[i]) throw new Error("Format file tidak valid (.aegis required)");
-  }
-  
-  const version = uint8View[FILE_MAGIC.length];
-  if (version !== 2) throw new Error(`Versi file tidak didukung (v${version}). Update aplikasi anda.`);
+  assertIterations(iterations);
+  assertChunkSize(chunkSize);
 
-  let offset = 6;
-  const salt = uint8View.slice(offset, offset + CRYPTO_CONSTANTS.SALT_LENGTH);
-  offset += CRYPTO_CONSTANTS.SALT_LENGTH;
+  const salt = randomBytes(CRYPTO_CONSTANTS.SALT_LENGTH);
+  const dekRaw = randomBytes(CRYPTO_CONSTANTS.DEK_LENGTH);
+  const fileId = randomBytes(FILE_ID_LENGTH);
+  const noncePrefix = randomBytes(NONCE_PREFIX_LENGTH);
+  const wrapNonce = randomBytes(CRYPTO_CONSTANTS.IV_LENGTH);
 
-  // 2. Key Derivation
   const keyMaterial = await prepareKeyMaterial(password, keyFileBuffer);
-  const key = await deriveKey(keyMaterial, salt, ['decrypt']);
+  const kek = await deriveKey(keyMaterial, salt, ["encrypt"], iterations);
+  const dek = await importDek(dekRaw, ["encrypt"]);
 
-  const decryptedChunks: ArrayBuffer[] = [];
-  const totalLength = fileBuffer.byteLength;
+  const flags = keyFileBuffer ? FLAG_KEYFILE : 0;
 
-  // 3. Chunk Processing Loop
-  while (offset < totalLength) {
-    if (signal.aborted) throw new Error("Operation Cancelled");
+  const header = buildHeader({
+    flags,
+    iterations,
+    chunkSize,
+    salt,
+    fileId,
+    noncePrefix,
+    wrapNonce,
+    wrappedDek: new Uint8Array(CRYPTO_CONSTANTS.DEK_LENGTH),
+    wrapTag: new Uint8Array(CRYPTO_CONSTANTS.TAG_LENGTH_BYTES),
+  });
 
-    // Read Chunk Structure
-    if (offset + 4 > totalLength) break;
-    const chunkLen = dataView.getInt32(offset, true); // Length includes IV + Ciphertext + Tag
-    offset += 4;
+  const wrapped = new Uint8Array(
+    await webcrypto.subtle.encrypt(
+      {
+        name: CRYPTO_CONSTANTS.ALGORITHM_AES,
+        iv: wrapNonce,
+        additionalData: header.subarray(0, HEADER_AAD_LENGTH),
+        tagLength: CRYPTO_CONSTANTS.TAG_LENGTH_BITS,
+      },
+      kek,
+      dekRaw,
+    ),
+  );
+  header.set(wrapped.subarray(0, CRYPTO_CONSTANTS.DEK_LENGTH), WRAPPED_DEK_OFFSET);
+  header.set(
+    wrapped.subarray(CRYPTO_CONSTANTS.DEK_LENGTH),
+    WRAP_TAG_OFFSET,
+  );
 
-    // Security Audit: Sanity check chunk length
-    if (chunkLen < 0 || offset + chunkLen > totalLength) {
-        throw new Error("File corrupt or tampered: Invalid chunk size definition.");
-    }
+  const parts: BlobPart[] = [header];
+  const totalSize = file.size;
 
-    const iv = uint8View.slice(offset, offset + CRYPTO_CONSTANTS.IV_LENGTH);
-    const ciphertext = uint8View.slice(offset + CRYPTO_CONSTANTS.IV_LENGTH, offset + chunkLen);
+  const encryptRecord = async (
+    index: number,
+    plaintext: Bytes,
+    isFinal: boolean,
+  ): Promise<Bytes> => {
+    const recordHeader = new Uint8Array(RECORD_HEADER_LENGTH);
+    recordHeader[0] = isFinal ? RECORD_FLAG_FINAL : 0;
+    new DataView(recordHeader.buffer).setUint32(
+      1,
+      plaintext.byteLength + CRYPTO_CONSTANTS.TAG_LENGTH_BYTES,
+      false,
+    );
 
-    try {
-      const decrypted = await window.crypto.subtle.decrypt(
-        { name: CRYPTO_CONSTANTS.ALGORITHM_AES, iv: iv },
-        key,
-        ciphertext
-      );
-      decryptedChunks.push(decrypted);
-    } catch (e) {
-      throw new Error("Password salah atau file/keyfile tidak cocok.");
-    }
+    const nonce = makeRecordNonce(noncePrefix, index);
+    const aad = makeRecordAad(chunkSize, fileId, noncePrefix, recordHeader, index);
 
-    offset += chunkLen;
-    onProgress(offset);
-    await new Promise(r => setTimeout(r, 0));
+    const ciphertext = new Uint8Array(
+      await webcrypto.subtle.encrypt(
+        {
+          name: CRYPTO_CONSTANTS.ALGORITHM_AES,
+          iv: nonce,
+          additionalData: aad,
+          tagLength: CRYPTO_CONSTANTS.TAG_LENGTH_BITS,
+        },
+        dek,
+        plaintext,
+      ),
+    );
+
+    const record = new Uint8Array(RECORD_HEADER_LENGTH + ciphertext.byteLength);
+    record.set(recordHeader, 0);
+    record.set(ciphertext, RECORD_HEADER_LENGTH);
+    return record;
+  };
+
+  if (totalSize === 0) {
+    // Empty file => exactly one final record containing only the GCM tag.
+    parts.push(await encryptRecord(0, new Uint8Array(0), true));
+    onProgress(0);
+    return new Blob(parts, { type: "application/octet-stream" });
   }
 
-  return new Blob(decryptedChunks, { type: 'application/octet-stream' });
+  let offset = 0;
+  let index = 0;
+  while (offset < totalSize) {
+    if (signal.aborted) throw new Error(AegisError.cancelled);
+
+    const end = Math.min(offset + chunkSize, totalSize);
+    const plaintext = new Uint8Array(await file.slice(offset, end).arrayBuffer());
+    const isFinal = end === totalSize;
+
+    parts.push(await encryptRecord(index, plaintext, isFinal));
+
+    offset = end;
+    index += 1;
+    onProgress(offset);
+    await yieldToEventLoop();
+  }
+
+  return new Blob(parts, { type: "application/octet-stream" });
 };
 
-// --- Utilities ---
+// ---------------------------------------------------------------------------
+// Decryption
+// ---------------------------------------------------------------------------
+
+export interface DecryptOptions {
+  /** Explicit sink (tests); defaults to OPFS when available, else memory. */
+  sink?: DecryptSink;
+}
+
+const decryptLegacyV2 = async (
+  reader: Reader,
+  password: string,
+  keyFileBuffer: ArrayBuffer | null,
+  signal: AbortSignal,
+  onProgress: (bytes: number) => void,
+  sink: DecryptSink,
+): Promise<Blob> => {
+  if (reader.size < LEGACY_HEADER_LENGTH) throw new Error(AegisError.truncated);
+
+  const header = await reader.read(0, LEGACY_HEADER_LENGTH);
+  assertMagic(header);
+  const salt = header.slice(6, 6 + CRYPTO_CONSTANTS.SALT_LENGTH);
+
+  const keyMaterial = await prepareKeyMaterial(password, keyFileBuffer);
+  const key = await deriveKey(
+    keyMaterial,
+    salt,
+    ["decrypt"],
+    CRYPTO_CONSTANTS.LEGACY_PBKDF2_ITERATIONS,
+  );
+
+  let offset = LEGACY_HEADER_LENGTH;
+  try {
+    while (offset < reader.size) {
+      if (signal.aborted) throw new Error(AegisError.cancelled);
+      if (reader.size - offset < 4) throw new Error(AegisError.legacyCorrupt);
+
+      const lengthBytes = await reader.read(offset, 4);
+      const chunkLength = new DataView(
+        lengthBytes.buffer,
+        lengthBytes.byteOffset,
+        4,
+      ).getInt32(0, true);
+
+      const minimum = CRYPTO_CONSTANTS.IV_LENGTH + CRYPTO_CONSTANTS.TAG_LENGTH_BYTES;
+      if (chunkLength < minimum) throw new Error(AegisError.legacyCorrupt);
+      if (reader.size - offset - 4 < chunkLength) throw new Error(AegisError.legacyCorrupt);
+
+      const payload = await reader.read(offset + 4, chunkLength);
+      const iv = payload.subarray(0, CRYPTO_CONSTANTS.IV_LENGTH);
+      const ciphertext = payload.subarray(CRYPTO_CONSTANTS.IV_LENGTH);
+
+      try {
+        const plaintext = new Uint8Array(
+          await webcrypto.subtle.decrypt(
+            { name: CRYPTO_CONSTANTS.ALGORITHM_AES, iv },
+            key,
+            ciphertext,
+          ),
+        );
+        await sink.write(plaintext);
+      } catch {
+        throw new Error(AegisError.credentials);
+      }
+
+      offset += 4 + chunkLength;
+      onProgress(offset);
+      await yieldToEventLoop();
+    }
+
+    return await sink.finalize();
+  } catch (error) {
+    await sink.abort?.();
+    throw error;
+  }
+};
+
+/**
+ * Decrypts a v3 (or legacy v2) container.
+ *
+ * `source` may be a Blob/File (streamed, constant memory) or an ArrayBuffer.
+ * Output is written to a sink and only finalized after the final record has
+ * been authenticated; on any failure the partial output is discarded.
+ */
+export const processFileDecrypt = async (
+  source: Blob | ArrayBuffer,
+  password: string,
+  keyFileBuffer: ArrayBuffer | null,
+  signal: AbortSignal,
+  onProgress: (bytes: number) => void,
+  options: DecryptOptions = {},
+): Promise<Blob> => {
+  const reader = makeReader(source);
+
+  const prefixBytes = await reader.read(0, 6);
+  assertMagic(prefixBytes);
+  if (prefixBytes.byteLength < 6) throw new Error(AegisError.truncated);
+
+  const version = prefixBytes[5];
+  const sink = options.sink ?? (await createDefaultSink());
+
+  if (version === LEGACY_FILE_VERSION) {
+    return decryptLegacyV2(reader, password, keyFileBuffer, signal, onProgress, sink);
+  }
+  if (version !== FILE_VERSION) throw new Error(AegisError.version(version));
+
+  const headerBytes = await reader.read(0, HEADER_LENGTH);
+  const header = parseHeader(headerBytes);
+
+  if (reader.size < header.recordsOffset) throw new Error(AegisError.truncated);
+
+  const keyMaterial = await prepareKeyMaterial(password, keyFileBuffer);
+  const dekRaw = await unwrapDekRaw(header, keyMaterial);
+  const dek = await importDek(dekRaw, ["decrypt"]);
+
+  let offset = header.recordsOffset;
+  let index = 0;
+  let sawFinal = false;
+
+  try {
+    while (offset < reader.size) {
+      if (signal.aborted) throw new Error(AegisError.cancelled);
+
+      if (reader.size - offset < RECORD_HEADER_LENGTH) {
+        throw new Error(AegisError.truncated);
+      }
+
+      const recordHeader = await reader.read(offset, RECORD_HEADER_LENGTH);
+      const recordFlags = recordHeader[0];
+      if ((recordFlags & ~RECORD_KNOWN_FLAGS) !== 0) throw new Error(AegisError.record);
+
+      const isFinal = (recordFlags & RECORD_FLAG_FINAL) !== 0;
+      const ciphertextLength = new DataView(
+        recordHeader.buffer,
+        recordHeader.byteOffset,
+        RECORD_HEADER_LENGTH,
+      ).getUint32(1, false);
+
+      if (ciphertextLength < CRYPTO_CONSTANTS.TAG_LENGTH_BYTES) {
+        throw new Error(AegisError.record);
+      }
+      if (ciphertextLength > header.chunkSize + CRYPTO_CONSTANTS.TAG_LENGTH_BYTES) {
+        throw new Error(AegisError.record);
+      }
+      if (!isFinal && ciphertextLength !== header.chunkSize + CRYPTO_CONSTANTS.TAG_LENGTH_BYTES) {
+        throw new Error(AegisError.record);
+      }
+      if (reader.size - offset - RECORD_HEADER_LENGTH < ciphertextLength) {
+        throw new Error(AegisError.truncated);
+      }
+
+      const ciphertext = await reader.read(offset + RECORD_HEADER_LENGTH, ciphertextLength);
+      const nonce = makeRecordNonce(header.noncePrefix, index);
+      const aad = makeRecordAad(
+        header.chunkSize,
+        header.fileId,
+        header.noncePrefix,
+        recordHeader,
+        index,
+      );
+
+      let plaintext: Bytes;
+      try {
+        plaintext = new Uint8Array(
+          await webcrypto.subtle.decrypt(
+            {
+              name: CRYPTO_CONSTANTS.ALGORITHM_AES,
+              iv: nonce,
+              additionalData: aad,
+              tagLength: CRYPTO_CONSTANTS.TAG_LENGTH_BITS,
+            },
+            dek,
+            ciphertext,
+          ),
+        );
+      } catch {
+        throw new Error(AegisError.tampered);
+      }
+
+      await sink.write(plaintext);
+
+      offset += RECORD_HEADER_LENGTH + ciphertextLength;
+      index += 1;
+      onProgress(offset);
+
+      if (isFinal) {
+        sawFinal = true;
+        break;
+      }
+
+      await yieldToEventLoop();
+    }
+
+    if (!sawFinal) throw new Error(AegisError.missingFinal);
+    if (offset !== reader.size) throw new Error(AegisError.trailing);
+
+    return await sink.finalize();
+  } catch (error) {
+    await sink.abort?.();
+    throw error;
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Header rewrap (change password / keyfile without re-encrypting payload)
+// ---------------------------------------------------------------------------
+
+export interface RewrapOptions {
+  iterations?: number;
+  randomBytes?: RandomBytes;
+}
+
+/**
+ * Re-wraps the per-file DEK under a new password/keyfile. Only the header is
+ * rewritten; every record is copied byte-for-byte unchanged.
+ */
+export const rewrapFile = async (
+  source: Blob | ArrayBuffer,
+  oldPassword: string,
+  oldKeyFile: ArrayBuffer | null,
+  newPassword: string,
+  newKeyFile: ArrayBuffer | null,
+  options: RewrapOptions = {},
+): Promise<Blob> => {
+  const reader = makeReader(source);
+  const prefixBytes = await reader.read(0, 6);
+  assertMagic(prefixBytes);
+  if (prefixBytes.byteLength < 6) throw new Error(AegisError.truncated);
+  if (prefixBytes[5] !== FILE_VERSION) throw new Error(AegisError.version(prefixBytes[5]));
+
+  const headerBytes = await reader.read(0, HEADER_LENGTH);
+  const header = parseHeader(headerBytes);
+  if (reader.size < header.recordsOffset) throw new Error(AegisError.truncated);
+
+  const oldMaterial = await prepareKeyMaterial(oldPassword, oldKeyFile);
+  const dekRaw = await unwrapDekRaw(header, oldMaterial);
+
+  const iterations = options.iterations ?? header.iterations;
+  const randomBytes = options.randomBytes ?? defaultRandomBytes;
+  assertIterations(iterations);
+
+  const salt = randomBytes(CRYPTO_CONSTANTS.SALT_LENGTH);
+  const wrapNonce = randomBytes(CRYPTO_CONSTANTS.IV_LENGTH);
+  const flags =
+    (newKeyFile ? FLAG_KEYFILE : 0) | (header.flags & FLAG_RECOVERY);
+
+  const newHeader = buildHeader({
+    flags,
+    iterations,
+    chunkSize: header.chunkSize,
+    salt,
+    fileId: header.fileId,
+    noncePrefix: header.noncePrefix,
+    wrapNonce,
+    wrappedDek: new Uint8Array(CRYPTO_CONSTANTS.DEK_LENGTH),
+    wrapTag: new Uint8Array(CRYPTO_CONSTANTS.TAG_LENGTH_BYTES),
+  });
+
+  const newMaterial = await prepareKeyMaterial(newPassword, newKeyFile);
+  const newKek = await deriveKey(newMaterial, salt, ["encrypt"], iterations);
+
+  const wrapped = new Uint8Array(
+    await webcrypto.subtle.encrypt(
+      {
+        name: CRYPTO_CONSTANTS.ALGORITHM_AES,
+        iv: wrapNonce,
+        additionalData: newHeader.subarray(0, HEADER_AAD_LENGTH),
+        tagLength: CRYPTO_CONSTANTS.TAG_LENGTH_BITS,
+      },
+      newKek,
+      dekRaw,
+    ),
+  );
+  newHeader.set(wrapped.subarray(0, CRYPTO_CONSTANTS.DEK_LENGTH), WRAPPED_DEK_OFFSET);
+  newHeader.set(wrapped.subarray(CRYPTO_CONSTANTS.DEK_LENGTH), WRAP_TAG_OFFSET);
+
+  const parts: BlobPart[] = [newHeader];
+
+  if (header.flags & FLAG_RECOVERY) {
+    parts.push(await reader.read(HEADER_LENGTH, RECOVERY_SLOT_LENGTH));
+  }
+
+  if (!(source instanceof Blob)) {
+    const view = new Uint8Array(source as ArrayBuffer);
+    parts.push(view.subarray(header.recordsOffset));
+    return new Blob(parts, { type: "application/octet-stream" });
+  }
+
+  parts.push(source.slice(header.recordsOffset));
+  return new Blob(parts, { type: "application/octet-stream" });
+};
+
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
 
 export const downloadBlob = (data: Blob | ArrayBuffer, filename: string) => {
-  // If input is ArrayBuffer, convert to Blob. If Blob, use directly.
-  const blob = data instanceof Blob ? data : new Blob([data], { type: 'application/octet-stream' });
-  
+  const blob =
+    data instanceof Blob ? data : new Blob([data], { type: "application/octet-stream" });
+
   const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
-  window.URL.revokeObjectURL(url);
   document.body.removeChild(a);
+  // Revoke later: some browsers cancel a download when the URL is revoked in
+  // the same task (notably for File objects backed by OPFS).
+  setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
 };
 
-export const getEncryptedFilename = (originalName: string): string => `${originalName}${EXTENSION_ENCRYPTED}`;
+export const getEncryptedFilename = (originalName: string): string =>
+  `${originalName}${EXTENSION_ENCRYPTED}`;
+
 export const getDecryptedFilename = (encryptedName: string): string => {
-  return encryptedName.endsWith(EXTENSION_ENCRYPTED) 
-    ? encryptedName.slice(0, -EXTENSION_ENCRYPTED.length) 
+  return encryptedName.endsWith(EXTENSION_ENCRYPTED)
+    ? encryptedName.slice(0, -EXTENSION_ENCRYPTED.length)
     : `decrypted_${encryptedName}`;
 };

@@ -1,45 +1,24 @@
-import { vi } from 'vitest';
-import crypto from 'crypto';
+import { webcrypto } from "node:crypto";
 
-// Polyfill window.crypto.subtle untuk environment Node/JSDOM
-Object.defineProperty(global, 'crypto', {
-  value: {
-    getRandomValues: (arr: any) => crypto.randomBytes(arr.length),
-    subtle: (crypto as any).webcrypto.subtle,
-    randomUUID: () => crypto.randomUUID()
-  }
-});
-Object.defineProperty(global, 'window', {
-  value: global,
-  configurable: true
-});
-
-// Polyfill TextEncoder/Decoder jika belum ada
-if (typeof TextEncoder === 'undefined') {
-  global.TextEncoder = require('util').TextEncoder;
-}
-if (typeof TextDecoder === 'undefined') {
-  global.TextDecoder = require('util').TextDecoder;
+// Node >= 20 exposes a WebCrypto implementation compatible with the browser
+// API. Reuse it so tests exercise the same subtle-encrypt code path.
+if (!globalThis.crypto || !globalThis.crypto.subtle) {
+  Object.defineProperty(globalThis, "crypto", {
+    value: webcrypto,
+    configurable: true,
+  });
 }
 
-if (typeof Blob !== 'undefined' && !Blob.prototype.arrayBuffer) {
-  Blob.prototype.arrayBuffer = async function () {
-    return new Promise<ArrayBuffer>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as ArrayBuffer);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsArrayBuffer(this);
-    });
-  };
+if (typeof globalThis.window === "undefined") {
+  Object.defineProperty(globalThis, "window", {
+    value: globalThis,
+    configurable: true,
+  });
 }
 
-if (typeof Blob !== 'undefined' && !Blob.prototype.text) {
-  Blob.prototype.text = async function () {
-    return new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsText(this);
-    });
-  };
+if (typeof globalThis.TextEncoder === "undefined") {
+  globalThis.TextEncoder = require("node:util").TextEncoder;
+}
+if (typeof globalThis.TextDecoder === "undefined") {
+  globalThis.TextDecoder = require("node:util").TextDecoder;
 }

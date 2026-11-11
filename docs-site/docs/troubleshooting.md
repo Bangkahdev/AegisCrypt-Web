@@ -12,7 +12,7 @@ Tabel berikut mencantumkan gejala umum, penyebab, dan perbaikannya.
 | Gejala | Penyebab | Perbaikan |
 |--------|----------|-----------|
 | Format file tidak valid | Berkas bukan `.aegis` asli | Pilih berkas `.aegis` yang benar |
-| Versi kontainer tidak didukung | Versi lama atau tidak diketahui | Gunakan kontainer v2 |
+| Versi kontainer tidak didukung | Versi lebih baru atau tidak diketahui | Gunakan versi AegisCrypt terbaru atau v2 lama yang didukung |
 | Kesalahan sandi atau keyfile | Sandi atau keyfile salah | Masukkan kredensial yang sama persis |
 | File corrupt | Berkas terpotong atau dimodifikasi | Pulihkan dari cadangan yang baik |
 | Dekripsi kehabisan memori | Seluruh kontainer dibuffer di RAM | Dekripsi satu berkas besar per kali |

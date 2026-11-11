@@ -19,7 +19,7 @@ Tidak. Kontainer tidak menyimpan metadata nama berkas, tetapi nama unduhan mengu
 
 ## Apakah berkas besar didukung?
 
-Ya. Enkripsi stream bagian 1 MiB dan menyimpan output sebagai bagian Blob. Pengujian telah dilakukan hingga 10 GB di Chrome 120+. Dekripsi adalah langkah yang terbatas karena membuffer seluruh kontainer dan semua bagian plaintext.
+Ya. Enkripsi memotong berkas per chunk (default 1 MiB, dapat disesuaikan di header) dan menyimpan output sebagai bagian Blob. Pengujian telah dilakukan hingga 10 GB di Chrome 120+. Dekripsi menulis plaintext ke OPFS bila tersedia, sehingga memori tidak perlu menampung seluruh berkas.
 
 ## Mengapa dekripsi gagal dengan sandi yang benar?
 
@@ -27,7 +27,7 @@ Keyfile mungkin berbeda, kontainer dimodifikasi, atau berkas terpotong. GCM aute
 
 ## Apakah format kompatibel dengan versi desktop?
 
-Layout bagian v2 dimaksudkan untuk cocok dengan implementasi desktop AegisCrypt. Selalu jalankan uji round-trip dengan berkas yang tidak penting sebelum mengandalkan pertukaran lintas platform.
+Aplikasi menulis kontainer v3 (envelope encryption, AAD per record). Kontainer v2 dari versi web lama tetap dapat didekripsi. Untuk pertukaran lintas platform, selalu jalankan uji round-trip dengan berkas yang tidak penting.
 
 ## Sumber kode
 
