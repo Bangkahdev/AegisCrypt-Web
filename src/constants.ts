@@ -79,6 +79,24 @@ export const KNOWN_FLAGS = FLAG_KEYFILE | FLAG_RECOVERY | FLAG_FILENAME_METADATA
 export const RECOVERY_SLOT_LENGTH = 60;
 
 // ---------------------------------------------------------------------------
+// Encrypted filename metadata (flag bit2)
+// ---------------------------------------------------------------------------
+//
+// Layout, directly after the fixed header (and recovery slot when present):
+//
+//   length 2 bytes  uint16 BE, ciphertext length including the 16-byte tag
+//   ciphertext+tag  UTF-8 filename bytes encrypted with the file DEK
+//
+// The metadata nonce uses the reserved index 2^64-1 so it can never collide
+// with a payload record (records start at 0 and increment).
+//
+export const FILENAME_METADATA_MAX_LENGTH = 1024;
+export const FILENAME_METADATA_LENGTH_BYTES = 2;
+export const FILENAME_METADATA_INDEX = 0xffffffffffffffffn;
+export const FILENAME_AAD_DOMAIN = new Uint8Array([0x41, 0x45, 0x47, 0x49, 0x53, 0x46, 0x4e, 0x4d]); // "AEGISFNM"
+export const FILENAME_AAD_LENGTH = 36; // magic(5)+version(1)+fileId(16)+prefix(4)+domain(8)+length(2)
+
+// ---------------------------------------------------------------------------
 // v3 record layout
 // ---------------------------------------------------------------------------
 //

@@ -24,6 +24,8 @@ AegisCrypt dirancang dengan prinsip **zero-knowledge**. Berikut adalah model anc
 | Serangan brute-force pada kata sandi | PBKDF2-HMAC-SHA256 dengan 600.000 iterasi (dapat dinaikkan hingga 5.000.000) |
 | Dekripsi hanya dengan kata sandi | Keyfile sebagai faktor kedua (2FA opsional) |
 | Record dipindah atau dipotong | AAD 43 byte per record mengikat indeks, file ID, dan header record |
+| Metadata nama dipalsukan | Blok nama terenkripsi dengan nonce khusus dan AAD 36 byte yang mengikat file ID serta panjangnya |
+| Kredensial tertinggal di memori | Auto-lock 10 menit dan zeroisasi byte kata sandi/buffer keyfile saat lock/logout |
 | Kontainer rusak atau dimodifikasi | Parsing ketat magic bytes, versi, flag, batas iterasi/chunk, dan panjang record |
 
 </div>

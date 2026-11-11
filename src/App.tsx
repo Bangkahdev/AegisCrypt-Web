@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Clock3,
   FilePlus,
@@ -28,14 +28,19 @@ import {
 } from "./components/ui/card";
 import { Progress } from "./components/ui/progress";
 import { ThemeToggle } from "./components/ui/theme-toggle";
+import { RewrapDialog, RewrapRequest } from "./components/RewrapDialog";
+import { collectDroppedFiles } from "./lib/files";
 import {
   downloadBlob,
   getDecryptedFilename,
   getEncryptedFilename,
   processFileDecrypt,
   processFileEncrypt,
+  rewrapFile,
 } from "./services/cryptoService";
 import { cn } from "@/lib/utils";
+
+const AUTO_LOCK_MS = 10 * 60 * 1000;
 
 function formatBytes(bytes: number) {
   if (bytes === 0) return "0 B";
@@ -53,9 +58,14 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState<CryptoProgress | null>(null);
+  const [isRewrapping, setIsRewrapping] = useState(false);
+  const [rewrapOpen, setRewrapOpen] = useState(false);
+  const [lockNotice, setLockNotice] = useState<string | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const sessionRef = useRef<AuthSession | null>(null);
 
   const addLog = useCallback((message: string, level: LogLevel = LogLevel.INFO) => {
     setLogs((prev) => [
@@ -68,6 +78,48 @@ export default function App() {
       },
     ]);
   }, []);
+
+  const zeroizeSession = useCallback((current: AuthSession | null) => {
+    if (!current) return;
+    current.passwordBytes.fill(0);
+    if (current.keyFileBuffer) new Uint8Array(current.keyFileBuffer).fill(0);
+  }, []);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
+
+    let timer: number;
+    const arm = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        // Never interrupt an in-flight operation; re-arm instead.
+        if (abortControllerRef.current) {
+          arm();
+          return;
+        }
+        zeroizeSession(sessionRef.current);
+        setSession(null);
+        setFiles([]);
+        setLogs([]);
+        setProgress(null);
+        setRewrapOpen(false);
+        setLockNotice("Session locked after 10 minutes of inactivity.");
+      }, AUTO_LOCK_MS);
+    };
+
+    arm();
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    events.forEach((event) => window.addEventListener(event, arm, { passive: true }));
+
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach((event) => window.removeEventListener(event, arm));
+    };
+  }, [session, zeroizeSession]);
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -87,14 +139,17 @@ export default function App() {
     setIsDragging(true);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    if (e.dataTransfer.files?.length) {
-      const newFiles = Array.from(e.dataTransfer.files);
+
+    const newFiles = await collectDroppedFiles(e.dataTransfer);
+    if (newFiles.length) {
       setFiles((prev) => [...prev, ...newFiles]);
       addLog(`Added ${newFiles.length} files to queue.`, LogLevel.INFO);
+    } else {
+      addLog("No files found in the drop.", LogLevel.WARNING);
     }
   };
 
@@ -119,11 +174,14 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    if (isProcessing) return;
+    if (isProcessing || isRewrapping) return;
+    zeroizeSession(session);
     setSession(null);
     setFiles([]);
     setLogs([]);
     setProgress(null);
+    setLockNotice(null);
+    setRewrapOpen(false);
   };
 
   const runCrypto = async (mode: "ENCRYPT" | "DECRYPT") => {
@@ -168,21 +226,24 @@ export default function App() {
           if (mode === "ENCRYPT") {
             resultData = await processFileEncrypt(
               file,
-              session.password,
+              session.passwordBytes,
               session.keyFileBuffer,
               signal,
-              updateProgress
+              updateProgress,
+              { filename: file.name }
             );
             downloadBlob(resultData, getEncryptedFilename(file.name));
           } else {
+            let decryptedName: string | null = null;
             resultData = await processFileDecrypt(
               file,
-              session.password,
+              session.passwordBytes,
               session.keyFileBuffer,
               signal,
-              updateProgress
+              updateProgress,
+              { onFilename: (name) => (decryptedName = name) }
             );
-            downloadBlob(resultData, getDecryptedFilename(file.name));
+            downloadBlob(resultData, decryptedName ?? getDecryptedFilename(file.name));
           }
           addLog(`${mode} Success: ${file.name}`, LogLevel.SUCCESS);
           successCount++;
@@ -204,7 +265,86 @@ export default function App() {
     }
   };
 
-  if (!session) return <LoginScreen onLogin={setSession} />;
+  const handleRewrap = async ({ newPassword, newKeyFile, iterations }: RewrapRequest) => {
+    if (!session) return;
+
+    const targets = files.filter((file) => file.name.endsWith(".aegis"));
+    if (targets.length === 0) {
+      setRewrapOpen(false);
+      addLog("No .aegis containers in the queue to re-wrap.", LogLevel.WARNING);
+      return;
+    }
+
+    setRewrapOpen(false);
+    setIsRewrapping(true);
+    setLockNotice(null);
+
+    const newPasswordBytes = new TextEncoder().encode(newPassword);
+    let newKeyFileBuffer: ArrayBuffer | null = null;
+    if (newKeyFile) newKeyFileBuffer = await newKeyFile.arrayBuffer();
+
+    try {
+      for (let i = 0; i < targets.length; i++) {
+        const file = targets[i];
+        addLog(`Re-wrapping credentials: ${file.name}`, LogLevel.INFO);
+        setProgress({
+          percent: Math.round((i / targets.length) * 100),
+          currentFile: file.name,
+          bytesProcessed: i,
+          totalBytes: targets.length,
+          speed: 0,
+          eta: 0,
+        });
+
+        try {
+          const result = await rewrapFile(
+            file,
+            session.passwordBytes,
+            session.keyFileBuffer,
+            newPasswordBytes,
+            newKeyFileBuffer,
+            { iterations }
+          );
+          downloadBlob(result, file.name);
+          addLog(`Re-wrapped ${file.name}`, LogLevel.SUCCESS);
+        } catch (err: any) {
+          addLog(`Failed ${file.name}: ${err.message}`, LogLevel.ERROR);
+        }
+      }
+      setProgress(null);
+      addLog(
+        "Rewrap completed. Unlock with the new password from now on.",
+        LogLevel.SUCCESS
+      );
+    } finally {
+      newPasswordBytes.fill(0);
+      if (newKeyFileBuffer) new Uint8Array(newKeyFileBuffer).fill(0);
+      setIsRewrapping(false);
+      setProgress(null);
+    }
+  };
+
+  const lockNow = () => {
+    if (isProcessing || isRewrapping) return;
+    zeroizeSession(session);
+    setSession(null);
+    setFiles([]);
+    setLogs([]);
+    setProgress(null);
+    setRewrapOpen(false);
+    setLockNotice("Session locked. Enter your password to continue.");
+  };
+
+  if (!session)
+    return (
+      <LoginScreen
+        onLogin={(next) => {
+          setLockNotice(null);
+          setSession(next);
+        }}
+        notice={lockNotice}
+      />
+    );
 
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
   const canProcess = files.length > 0 && !isProcessing;
@@ -243,9 +383,36 @@ export default function App() {
               )}
             </div>
 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRewrapOpen(true)}
+              disabled={isProcessing || isRewrapping}
+              title="Change password for queued .aegis files"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden lg:inline">Change password</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={lockNow}
+              disabled={isProcessing || isRewrapping}
+              title="Lock the session and clear credentials"
+            >
+              <Lock className="h-4 w-4" />
+              <span className="hidden lg:inline">Lock</span>
+            </Button>
+
             <ThemeToggle />
 
-            <Button variant="outline" size="sm" onClick={handleLogout} disabled={isProcessing}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              disabled={isProcessing || isRewrapping}
+            >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Logout</span>
             </Button>
@@ -309,35 +476,58 @@ export default function App() {
                 )}
 
                 {files.length === 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => !isProcessing && fileInputRef.current?.click()}
-                    className="group flex flex-1 flex-col items-start justify-center p-8 text-left"
-                  >
-                    <div className="mb-5 flex h-16 w-16 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
-                      <FilePlus className="h-7 w-7" />
-                    </div>
-                    <h3 className="text-lg font-bold tracking-tight">Drop files to secure</h3>
-                    <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                      Drag and drop documents, images, archives, or entire folders. Bulk
-                      processing is supported.
-                    </p>
-                    <span className="mt-5 inline-flex items-center gap-2 border-2 border-border bg-card px-3 py-1.5 text-xs font-semibold">
-                      Click to browse
-                    </span>
-                  </button>
+                  <div className="flex flex-1 flex-col items-start justify-center gap-4 p-8">
+                    <button
+                      type="button"
+                      onClick={() => !isProcessing && fileInputRef.current?.click()}
+                      className="group flex w-full flex-col items-start text-left"
+                    >
+                      <div className="mb-5 flex h-16 w-16 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
+                        <FilePlus className="h-7 w-7" />
+                      </div>
+                      <h3 className="text-lg font-bold tracking-tight">Drop files to secure</h3>
+                      <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                        Drag and drop documents, images, archives, or entire folders. Bulk
+                        processing is supported.
+                      </p>
+                      <span className="mt-5 inline-flex items-center gap-2 border-2 border-border bg-card px-3 py-1.5 text-xs font-semibold">
+                        Click to browse
+                      </span>
+                    </button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => !isProcessing && folderInputRef.current?.click()}
+                      disabled={isProcessing}
+                      className="border-dashed text-muted-foreground"
+                    >
+                      <FilePlus className="h-4 w-4" />
+                      Add a folder
+                    </Button>
+                  </div>
                 ) : (
                   <div className="flex flex-1 flex-col gap-3 p-3">
                     <FileList files={files} onRemove={removeFile} disabled={isProcessing} />
-                    <Button
-                      variant="outline"
-                      onClick={() => !isProcessing && fileInputRef.current?.click()}
-                      disabled={isProcessing}
-                      className="w-full border-dashed text-muted-foreground"
-                    >
-                      <FilePlus className="h-4 w-4" />
-                      Add more files
-                    </Button>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => !isProcessing && fileInputRef.current?.click()}
+                        disabled={isProcessing}
+                        className="w-full border-dashed text-muted-foreground"
+                      >
+                        <FilePlus className="h-4 w-4" />
+                        Add more files
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => !isProcessing && folderInputRef.current?.click()}
+                        disabled={isProcessing}
+                        className="w-full border-dashed text-muted-foreground"
+                      >
+                        <FilePlus className="h-4 w-4" />
+                        Add a folder
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -347,6 +537,14 @@ export default function App() {
                 ref={fileInputRef}
                 className="hidden"
                 onChange={handleFileSelect}
+              />
+              <input
+                type="file"
+                multiple
+                ref={folderInputRef}
+                className="hidden"
+                onChange={handleFileSelect}
+                {...({ webkitdirectory: "", directory: "" } as Record<string, string>)}
               />
             </div>
           </Card>
@@ -500,6 +698,14 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      <RewrapDialog
+        open={rewrapOpen}
+        fileCount={files.filter((file) => file.name.endsWith(".aegis")).length}
+        isProcessing={isRewrapping}
+        onCancel={() => setRewrapOpen(false)}
+        onSubmit={handleRewrap}
+      />
     </div>
   );
 }

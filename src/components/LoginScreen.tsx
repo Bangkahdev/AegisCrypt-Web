@@ -19,6 +19,8 @@ import { Switch } from "./ui/switch";
 
 interface LoginScreenProps {
   onLogin: (session: AuthSession) => void;
+  /** Optional banner shown after an automatic lock or forced logout. */
+  notice?: string | null;
 }
 
 const FEATURES = [
@@ -34,7 +36,7 @@ const FACTS = [
   { label: "Data path", value: "Browser only" },
 ];
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => {
   const [password, setPassword] = useState("");
   const [keyFile, setKeyFile] = useState<File | null>(null);
   const [useKeyFile, setUseKeyFile] = useState(false);
@@ -53,9 +55,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
       keyFileBuffer = await keyFile.arrayBuffer();
     }
 
+    const passwordBytes = new TextEncoder().encode(password);
+    setPassword("");
+
     setTimeout(() => {
       onLogin({
-        password,
+        passwordBytes,
         keyFile: useKeyFile ? keyFile : null,
         keyFileBuffer,
       });
@@ -133,6 +138,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           </section>
 
           <Card className="order-1 w-full border-2 bg-card p-6 sm:p-8 lg:order-2">
+            {notice && (
+              <div
+                role="status"
+                className="mb-5 border-2 border-border bg-accent px-3 py-2 text-[11px] font-semibold leading-relaxed text-accent-foreground"
+              >
+                {notice}
+              </div>
+            )}
             <div className="mb-7 text-left">
               <div className="mb-4 flex h-12 w-12 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
                 <Shield className="h-6 w-6" />

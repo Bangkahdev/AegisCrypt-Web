@@ -22,7 +22,7 @@ Semua bilangan bulat disimpan **big-endian**.
 | 0 | 5 | Magic | `AEGIS` |
 | 5 | 1 | Versi | `0x03` |
 | 6 | 1 | ID KDF | `0x01` = PBKDF2-HMAC-SHA256 |
-| 7 | 1 | Flag | bit0 keyfile, bit1 recovery slot, bit2 metadata nama (dicadangkan) |
+| 7 | 1 | Flag | bit0 keyfile, bit1 recovery slot, bit2 metadata nama terenkripsi |
 | 8 | 4 | Iterasi PBKDF2 | uint32, 600.000–5.000.000 |
 | 12 | 4 | Ukuran chunk | uint32, 65.536–16.777.216 byte |
 | 16 | 32 | Salt | Acak per berkas |
@@ -71,6 +71,25 @@ Setiap record terdiri dari header 5 byte dan ciphertext beserta tag:
   plaintext).
 - Setelah record final tidak boleh ada byte tambahan.
 
+## Metadata nama terenkripsi (flag bit2)
+
+Bila bit2 aktif, tepat setelah header tetap (dan slot recovery bila ada)
+terdapat satu blok metadata:
+
+| Bagian | Ukuran | Keterangan |
+|--------|--------|------------|
+| Panjang ciphertext | 2 byte | uint16 big-endian, termasuk tag 16 byte |
+| Ciphertext + tag | N byte | Nama UTF-8 dienkripsi dengan DEK berkas |
+
+- **Nonce** memakai indeks khusus `2^64-1`, sehingga tidak mungkin bertabrakan
+  dengan record payload yang mulai dari indeks 0.
+- **AAD 36 byte**: magic(5) + versi(1) + file ID(16) + prefix nonce(4) +
+  domain `AEGISFNM`(8) + panjang ciphertext(2). Metadata terikat ke berkas dan
+  tidak dapat dipindah antar-kontainer.
+- Nama maksimum **1024 byte** UTF-8. Nama kosong, NUL, atau mengandung `/` dan
+  `\` ditolak saat enkripsi maupun dekripsi.
+- File v3 tanpa bit2 tetap sah; nama unduhan diturunkan dari nama kontainer.
+
 ## Slot recovery (dicadangkan)
 
 Bila flag bit1 aktif, slot 60 byte (`nonce 12 + DEK 32 + tag 16`) berada tepat
@@ -91,10 +110,10 @@ menolak menulis v2 baru.
 
 ## Nama berkas
 
-Kontainer tidak menyimpan nama berkas. Saat diunduh, kontainer dinamai
-`original.ext.aegis`, sehingga nama dan ekstensi asli tetap terlihat. Ubah nama
-kontainer jika nama berkas sensitif. Metadata nama terenkripsi dicadangkan untuk
-fase berikutnya (flag bit2).
+Secara default nama asli disimpan **terenkripsi** di blok metadata (flag bit2)
+dan dipakai kembali saat dekripsi. Namun kontainer yang diunduh tetap dinamai
+`original.ext.aegis`, sehingga nama dan ekstensi asli masih terlihat pada nama
+berkas kontainer. Ubah nama kontainer jika nama berkas itu sendiri sensitif.
 
 ## Validasi ketat
 

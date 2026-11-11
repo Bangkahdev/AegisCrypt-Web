@@ -27,15 +27,30 @@ kontainer di `src/constants.ts`.
 </div>
 
 `source` pada dekripsi menerima `File`/`Blob` (dibaca per potongan, memori
-terjaga) atau `ArrayBuffer`. `options` enkripsi: `iterations`, `chunkSize`, dan
-`randomBytes` (untuk uji deterministik). `options` dekripsi: `sink`.
+terjaga) atau `ArrayBuffer`. Kata sandi dapat berupa `string` atau `Uint8Array`
+UTF-8 (memungkinkan zeroisasi di UI).
+
+`options` enkripsi:
+- `iterations`, `chunkSize` — parameter kontainer.
+- `filename` — bila diisi, nama disimpan terenkripsi (flag bit2); `null`/tidak
+  diisi berarti tanpa metadata.
+- `randomBytes` — RNG deterministik untuk uji vektor.
+
+`options` dekripsi:
+- `sink` — tujuan output khusus.
+- `onFilename` — dipanggil dengan nama asli bila kontainer menyimpan metadata.
+
+`options` rewrap:
+- `iterations` — jumlah iterasi header baru (default: pertahankan nilai lama).
+- `randomBytes` — untuk uji deterministik. Flag keyfile dan metadata nama
+  dipertahankan; slot recovery dan blok metadata disalin apa adanya.
 
 ## Pesan kesalahan
 
 `AegisError` memetakan kegagalan ke pesan spesifik: format, versi, KDF,
-iterasi, ukuran chunk, flag, metadata nama, berkas terpotong, record final
-hilang, data sisa, struktur record, autentikasi gagal, kredensial salah, v2
-rusak, dan pembatalan.
+iterasi, ukuran chunk, flag, metadata nama rusak, berkas terpotong, record
+final hilang, data sisa, struktur record, autentikasi gagal, kredensial salah,
+v2 rusak, dan pembatalan.
 
 ## Contoh: membungkus DEK (konseptual)
 
@@ -94,7 +109,8 @@ const ciphertext = await crypto.subtle.encrypt(
 
 - Semua operasi berjalan di browser melalui `crypto.subtle`; tidak ada
   permintaan jaringan untuk data kriptografi.
-- Enkripsi memotong berkas sesuai ukuran chunk di header (default 1 MiB).
+- Enkripsi memotong berkas sesuai ukuran chunk di header (default 1 MiB) dan
+  dapat menyertakan nama berkas terenkripsi (maksimum 1024 byte UTF-8).
 - Dekripsi menulis plaintext ke Origin Private File System bila tersedia;
   penghapusan berkas sementara dijadwalkan (saat halaman ditutup atau setelah
   timeout). Jika tidak, hasil disimpan di memori.

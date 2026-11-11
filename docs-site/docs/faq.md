@@ -15,7 +15,11 @@ Tidak. Jika keyfile digunakan, materi kunci mencakup `SHA-256(keyfile)`. Tanpa b
 
 ## Apakah nama berkas dienkripsi?
 
-Tidak. Kontainer tidak menyimpan metadata nama berkas, tetapi nama unduhan mengungkap nama dan ekstensi asli (`original.ext.aegis`). Ubah nama kontainer jika nama berkas sensitif.
+Ya, secara default. Nama asli disimpan sebagai metadata terenkripsi di dalam kontainer (flag bit2) dan dipakai kembali saat dekripsi. Nama kontainer yang diunduh tetap `original.ext.aegis`, jadi ganti nama kontainer jika nama berkas itu sendiri sensitif.
+
+## Bisakah saya mengganti kata sandi tanpa enkripsi ulang?
+
+Ya. Tombol **Change password** melakukan rewrap: DEK dibuka dengan kredensial lama lalu dibungkus ulang dengan kata sandi/keyfile baru. Hanya header yang ditulis ulang; record payload dan metadata nama tidak berubah.
 
 ## Apakah berkas besar didukung?
 

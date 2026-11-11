@@ -23,6 +23,7 @@ Detail spesifikasi teknis dan batasan penggunaan AegisCrypt.
 | **Versi kontainer** | `0x03` (v2 lama hanya dibaca) |
 | **Ukuran header** | 128 byte (header tetap, tanpa slot recovery) |
 | **Overhead per record** | 5 byte header + 16 byte tag |
+| **Overhead metadata nama** | 2 byte panjang + nama UTF-8 + 16 byte tag (maksimum nama 1024 byte) |
 | **Pengujian berkas besar** | Hingga 10 GB di Chrome 120+ |
 
 </div>

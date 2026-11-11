@@ -13,6 +13,8 @@ Tabel berikut mencantumkan gejala umum, penyebab, dan perbaikannya.
 |--------|----------|-----------|
 | Format file tidak valid | Berkas bukan `.aegis` asli | Pilih berkas `.aegis` yang benar |
 | Versi kontainer tidak didukung | Versi lebih baru atau tidak diketahui | Gunakan versi AegisCrypt terbaru atau v2 lama yang didukung |
+| Metadata nama rusak | Blok nama termodifikasi atau panjang tidak valid | Pulihkan kontainer dari cadangan; dekripsi tanpa metadata tidak dimungkinkan |
+| Sesi terkunci otomatis | Tidak ada aktivitas selama 10 menit | Masuk kembali dengan kata sandi/keyfile yang sama |
 | Kesalahan sandi atau keyfile | Sandi atau keyfile salah | Masukkan kredensial yang sama persis |
 | File corrupt | Berkas terpotong atau dimodifikasi | Pulihkan dari cadangan yang baik |
 | Dekripsi kehabisan memori | Seluruh kontainer dibuffer di RAM | Dekripsi satu berkas besar per kali |
