@@ -25,8 +25,8 @@
   --input: #17150f;
   --ring: #17150f;
   --radius: 0;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: system-ui, ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, monospace;
 }
 
 .dark {

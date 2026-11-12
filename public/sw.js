@@ -2,7 +2,7 @@
  * All cryptography stays local; nothing is ever sent to a server. */
 
 const CACHE_NAME = "aegiscrypt-v1";
-const APP_SHELL = ["/", "/index.html", "/favicon.svg", "/manifest.webmanifest"];
+const APP_SHELL = ["/", "/index.html", "/theme-init.js", "/favicon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
