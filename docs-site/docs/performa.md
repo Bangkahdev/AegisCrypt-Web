@@ -49,7 +49,8 @@ Detail spesifikasi teknis dan batasan penggunaan AegisCrypt.
 
 ## Dukungan browser
 
-AegisCrypt memerlukan browser modern yang mendukung:
+AegisCrypt diuji otomatis pada Chromium, Firefox, dan WebKit (Safari).
+Aplikasi memerlukan browser modern yang mendukung:
 - `crypto.subtle` (Web Crypto API)
 - `File.slice` (pemotongan berkas)
 - `Blob` (penyimpanan hasil output)
@@ -68,6 +69,19 @@ Berkas `.aegis` v2 dari versi lama tetap dapat didekripsi dengan kredensial yang
 sama (100.000 iterasi, tanpa AAD per record). Aplikasi tidak lagi menulis v2.
 Untuk bermigrasi, dekripsi berkas lama lalu enkripsikan ulang.
 
+## Benchmark lokal
+
+`npm run test:bench` menjalankan uji throughput 16 MiB di Chromium melalui Playwright: enkripsi, unduhan, dekripsi, lalu verifikasi nama berkas. Angka mencakup PBKDF2 600.000 iterasi dan unduhan browser, sehingga bukan murni throughput AES.
+
+```bash
+npm run build
+npm run test:bench
+```
+
+Contoh keluaran pada mesin pengembangan: sekitar 20-23 MB/s untuk enkripsi dan dekripsi 16 MiB. Hasil bergantung pada CPU, browser, dan media penyimpanan; gunakan sebagai pembanding antar perubahan, bukan patokan absolut.
+
 ## Sumber kode
 
 Kode sumber aplikasi tersedia di GitHub: https://github.com/Bangkahdev/AegisCrypt-Web
+
+

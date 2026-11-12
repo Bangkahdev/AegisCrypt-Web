@@ -133,6 +133,15 @@ Domain kustom dideklarasikan dalam `cloudflare.config.ts` (aplikasi) dan `docs-s
 
 ---
 
+## Pengujian
+
+```bash
+npm run typecheck
+npm run test:unit                    # Vitest (unit + integrasi)
+npm run build && npm run test:e2e    # Playwright: Chromium, Firefox, WebKit
+npm run test:bench                   # Benchmark throughput 16 MiB
+```
+
 ## Spesifikasi Format File (.aegis v3)
 
 Header tetap 128 byte, big-endian. Kontainer v2 lama tetap dapat dibaca.
@@ -183,5 +192,6 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 ## Lisensi
 
 [Apache-2.0](LICENSE)
+
 
 

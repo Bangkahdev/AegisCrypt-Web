@@ -67,7 +67,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <a href="#main-content" className="skip-link">
+      <a href="#main-content" tabIndex={0} className="skip-link">
         {t("common.skipToContent")}
       </a>
       <header className="border-b-2 border-border bg-card">
@@ -261,4 +261,5 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
     </div>
   );
 };
+
 

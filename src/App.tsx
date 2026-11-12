@@ -71,6 +71,7 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const sessionRef = useRef<AuthSession | null>(null);
+  const changePasswordRef = useRef<HTMLButtonElement>(null);
 
   const addLog = useCallback((message: string, level: LogLevel = LogLevel.INFO) => {
     setLogs((prev) => [
@@ -365,7 +366,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <a href="#main-content" className="skip-link">
+      <a href="#main-content" tabIndex={0} className="skip-link">
         {t("common.skipToContent")}
       </a>
       <header className="sticky top-0 z-30 border-b-2 border-border bg-card">
@@ -401,6 +402,7 @@ export default function App() {
             </div>
 
             <Button
+              ref={changePasswordRef}
               variant="outline"
               size="sm"
               onClick={() => setRewrapOpen(true)}
@@ -745,8 +747,11 @@ export default function App() {
         isProcessing={isRewrapping}
         onCancel={() => setRewrapOpen(false)}
         onSubmit={handleRewrap}
+        returnFocusRef={changePasswordRef}
       />
     </div>
   );
 }
+
+
 

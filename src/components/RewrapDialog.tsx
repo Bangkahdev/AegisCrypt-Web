@@ -18,6 +18,8 @@ interface RewrapDialogProps {
   isProcessing: boolean;
   onCancel: () => void;
   onSubmit: (request: RewrapRequest) => void;
+  /** Element to focus when the dialog closes. */
+  returnFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
 const ITERATION_OPTIONS = [600_000, 1_000_000, 2_000_000];
@@ -28,6 +30,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
   isProcessing,
   onCancel,
   onSubmit,
+  returnFocusRef,
 }) => {
   const { t } = useI18n();
   const [newPassword, setNewPassword] = useState("");
@@ -68,9 +71,9 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      previous?.focus();
+      (returnFocusRef?.current ?? previous)?.focus();
     };
-  }, [open]);
+  }, [open, returnFocusRef]);
 
   useEffect(() => {
     if (!open) {
@@ -257,4 +260,5 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
     </div>
   );
 };
+
 
