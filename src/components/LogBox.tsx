@@ -1,7 +1,8 @@
-﻿import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { AlertTriangle, CheckCircle2, Info, Terminal, XCircle } from "lucide-react";
 import { LogEntry, LogLevel } from "../types";
 import { Button } from "./ui/button";
+import { useI18n } from "@/i18n/I18nProvider";
 
 interface LogBoxProps {
   logs: LogEntry[];
@@ -9,6 +10,7 @@ interface LogBoxProps {
 }
 
 export const LogBox: React.FC<LogBoxProps> = ({ logs, onClear }) => {
+  const { t } = useI18n();
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,21 +49,21 @@ export const LogBox: React.FC<LogBoxProps> = ({ logs, onClear }) => {
         <div className="flex items-center gap-2">
           <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Operation Log
+            {t("logBox.title")}
           </span>
         </div>
         <Button variant="ghost" size="sm" onClick={onClear} className="h-7 px-2 text-[11px]">
-          Clear
+          {t("logBox.clear")}
         </Button>
       </div>
       <div
         role="log"
         aria-live="polite"
-        aria-label="Operation log"
+        aria-label={t("logBox.title")}
         className="scrollbar-thin flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed"
       >
         {logs.length === 0 ? (
-          <p className="px-1 py-2 italic text-muted-foreground">Ready for operations...</p>
+          <p className="px-1 py-2 italic text-muted-foreground">{t("logBox.ready")}</p>
         ) : (
           <div className="space-y-1.5">
             {logs.map((log) => (
@@ -80,3 +82,5 @@ export const LogBox: React.FC<LogBoxProps> = ({ logs, onClear }) => {
     </div>
   );
 };
+
+

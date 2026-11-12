@@ -27,6 +27,7 @@ import {
   CardTitle,
 } from "./components/ui/card";
 import { Progress } from "./components/ui/progress";
+import { LanguageToggle } from "./components/ui/language-toggle";
 import { ThemeToggle } from "./components/ui/theme-toggle";
 import { RewrapDialog, RewrapRequest } from "./components/RewrapDialog";
 import { collectDroppedFiles } from "./lib/files";
@@ -41,6 +42,7 @@ import {
   rewrapFileTask,
 } from "./services/cryptoWorkerClient";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/I18nProvider";
 
 const AUTO_LOCK_MS = 10 * 60 * 1000;
 
@@ -53,6 +55,7 @@ function formatBytes(bytes: number) {
 }
 
 export default function App() {
+  const { t } = useI18n();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -109,7 +112,7 @@ export default function App() {
         setLogs([]);
         setProgress(null);
         setRewrapOpen(false);
-        setLockNotice("Session locked after 10 minutes of inactivity.");
+        setLockNotice(t("login.noticeLockedInactivity"));
       }, AUTO_LOCK_MS);
     };
 
@@ -121,7 +124,7 @@ export default function App() {
       window.clearTimeout(timer);
       events.forEach((event) => window.removeEventListener(event, arm));
     };
-  }, [session, zeroizeSession]);
+  }, [session, zeroizeSession, t]);
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -149,9 +152,9 @@ export default function App() {
     const newFiles = await collectDroppedFiles(e.dataTransfer);
     if (newFiles.length) {
       setFiles((prev) => [...prev, ...newFiles]);
-      addLog(`Added ${newFiles.length} files to queue.`, LogLevel.INFO);
+      addLog(t("logs.added", { count: newFiles.length }), LogLevel.INFO);
     } else {
-      addLog("No files found in the drop.", LogLevel.WARNING);
+      addLog(t("logs.noneInDrop"), LogLevel.WARNING);
     }
   };
 
@@ -159,7 +162,7 @@ export default function App() {
     if (e.target.files?.length) {
       const newFiles = Array.from(e.target.files);
       setFiles((prev) => [...prev, ...newFiles]);
-      addLog(`Added ${newFiles.length} files to queue.`, LogLevel.INFO);
+      addLog(t("logs.added", { count: newFiles.length }), LogLevel.INFO);
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -171,7 +174,7 @@ export default function App() {
   const cancelOperation = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
-      addLog("Operation cancelled by user.", LogLevel.WARNING);
+      addLog(t("logs.cancelled"), LogLevel.WARNING);
     }
   };
 
@@ -188,7 +191,7 @@ export default function App() {
 
   const runCrypto = async (mode: "ENCRYPT" | "DECRYPT") => {
     if (!session) return;
-    if (!files.length) return addLog("No files in queue.", LogLevel.WARNING);
+    if (!files.length) return addLog(t("logs.noFiles"), LogLevel.WARNING);
 
     setIsProcessing(true);
     abortControllerRef.current = new AbortController();
@@ -203,7 +206,13 @@ export default function App() {
         const file = files[i];
         const startTime = performance.now();
 
-        addLog(`Starting ${mode}: ${file.name}`, LogLevel.INFO);
+        addLog(
+          t("logs.starting", {
+            mode: t(mode === "ENCRYPT" ? "mode.encrypt" : "mode.decrypt"),
+            name: file.name,
+          }),
+          LogLevel.INFO,
+        );
 
         let resultData: Blob | ArrayBuffer;
 
@@ -247,21 +256,27 @@ export default function App() {
             );
             downloadBlob(resultData, decryptedName ?? getDecryptedFilename(file.name));
           }
-          addLog(`${mode} Success: ${file.name}`, LogLevel.SUCCESS);
+          addLog(
+            t("logs.success", {
+              mode: t(mode === "ENCRYPT" ? "mode.encrypt" : "mode.decrypt"),
+              name: file.name,
+            }),
+            LogLevel.SUCCESS,
+          );
           successCount++;
         } catch (err: any) {
           if (signal.aborted) break;
-          addLog(`Failed ${file.name}: ${err.message}`, LogLevel.ERROR);
+          addLog(t("logs.failed", { name: file.name, error: err.message }), LogLevel.ERROR);
         }
       }
     } catch (err: any) {
-      if (!signal.aborted) addLog(`System Error: ${err.message}`, LogLevel.ERROR);
+      if (!signal.aborted) addLog(t("logs.systemError", { error: err.message }), LogLevel.ERROR);
     } finally {
       setIsProcessing(false);
       setProgress(null);
       abortControllerRef.current = null;
       if (successCount === files.length && files.length > 0 && !signal.aborted) {
-        addLog("Batch Process Completed.", LogLevel.SUCCESS);
+        addLog(t("logs.batchComplete"), LogLevel.SUCCESS);
         setFiles([]);
       }
     }
@@ -273,7 +288,7 @@ export default function App() {
     const targets = files.filter((file) => file.name.endsWith(".aegis"));
     if (targets.length === 0) {
       setRewrapOpen(false);
-      addLog("No .aegis containers in the queue to re-wrap.", LogLevel.WARNING);
+      addLog(t("logs.noContainers"), LogLevel.WARNING);
       return;
     }
 
@@ -288,7 +303,7 @@ export default function App() {
     try {
       for (let i = 0; i < targets.length; i++) {
         const file = targets[i];
-        addLog(`Re-wrapping credentials: ${file.name}`, LogLevel.INFO);
+        addLog(t("logs.rewrapping", { name: file.name }), LogLevel.INFO);
         setProgress({
           percent: Math.round((i / targets.length) * 100),
           currentFile: file.name,
@@ -308,16 +323,13 @@ export default function App() {
             { iterations }
           );
           downloadBlob(result, file.name);
-          addLog(`Re-wrapped ${file.name}`, LogLevel.SUCCESS);
+          addLog(t("logs.rewrapped", { name: file.name }), LogLevel.SUCCESS);
         } catch (err: any) {
-          addLog(`Failed ${file.name}: ${err.message}`, LogLevel.ERROR);
+          addLog(t("logs.failed", { name: file.name, error: err.message }), LogLevel.ERROR);
         }
       }
       setProgress(null);
-      addLog(
-        "Rewrap completed. Unlock with the new password from now on.",
-        LogLevel.SUCCESS
-      );
+      addLog(t("logs.rewrapComplete"), LogLevel.SUCCESS);
     } finally {
       newPasswordBytes.fill(0);
       if (newKeyFileBuffer) new Uint8Array(newKeyFileBuffer).fill(0);
@@ -334,7 +346,7 @@ export default function App() {
     setLogs([]);
     setProgress(null);
     setRewrapOpen(false);
-    setLockNotice("Session locked. Enter your password to continue.");
+    setLockNotice(t("login.noticeLockedManual"));
   };
 
   if (!session)
@@ -354,7 +366,7 @@ export default function App() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <a href="#main-content" className="skip-link">
-        Skip to main content
+        {t("common.skipToContent")}
       </a>
       <header className="sticky top-0 z-30 border-b-2 border-border bg-card">
         <div className="flex h-16 w-full items-center justify-between gap-3 px-4 sm:px-8">
@@ -366,11 +378,11 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-base font-bold tracking-tight">AegisCrypt</h1>
                 <Badge variant="outline" className="hidden font-mono text-[9px] sm:inline-flex">
-                  ZERO-KNOWLEDGE
+                  {t("app.badge")}
                 </Badge>
               </div>
               <p className="truncate text-[11px] text-muted-foreground">
-                Secure workspace / session active
+                {t("app.workspaceActive")}
               </p>
             </div>
           </div>
@@ -378,8 +390,8 @@ export default function App() {
           <div className="flex items-center gap-2">
             <div className="hidden items-center gap-2 border-2 border-border bg-secondary px-3 py-1.5 text-[11px] md:flex">
               <span className="h-2 w-2 bg-success" />
-              <span className="text-muted-foreground">Auth</span>
-              <span className="font-semibold">Password</span>
+              <span className="text-muted-foreground">{t("app.auth")}</span>
+              <span className="font-semibold">{t("app.password")}</span>
               {session.keyFile && (
                 <>
                   <span className="text-muted-foreground">+</span>
@@ -393,10 +405,10 @@ export default function App() {
               size="sm"
               onClick={() => setRewrapOpen(true)}
               disabled={isProcessing || isRewrapping}
-              title="Change password for queued .aegis files"
+              title={t("app.changePasswordTitle")}
             >
               <RefreshCw className="h-4 w-4" />
-              <span className="hidden lg:inline">Change password</span>
+              <span className="hidden lg:inline">{t("app.changePassword")}</span>
             </Button>
 
             <Button
@@ -404,12 +416,13 @@ export default function App() {
               size="sm"
               onClick={lockNow}
               disabled={isProcessing || isRewrapping}
-              title="Lock the session and clear credentials"
+              title={t("app.lockTitle")}
             >
               <Lock className="h-4 w-4" />
-              <span className="hidden lg:inline">Lock</span>
+              <span className="hidden lg:inline">{t("app.lock")}</span>
             </Button>
 
+            <LanguageToggle />
             <ThemeToggle />
 
             <Button
@@ -419,7 +432,7 @@ export default function App() {
               disabled={isProcessing || isRewrapping}
             >
               <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">{t("app.logout")}</span>
             </Button>
           </div>
         </div>
@@ -437,15 +450,15 @@ export default function App() {
               <div className="space-y-1">
                 <CardTitle className="flex items-center gap-2">
                   <FilePlus className="h-4 w-4 text-muted-foreground" />
-                  Processing Queue
+                  {t("queue.title")}
                   <Badge variant="secondary" className="font-mono text-[10px]">
                     {files.length}
                   </Badge>
                 </CardTitle>
                 <CardDescription>
                   {files.length
-                    ? `${formatBytes(totalSize)} queued for processing`
-                    : "Drop files or folders to get started"}
+                    ? t("queue.queued", { size: formatBytes(totalSize) })
+                    : t("queue.empty")}
                 </CardDescription>
               </div>
               {files.length > 0 && (
@@ -457,7 +470,7 @@ export default function App() {
                   className="h-8 shrink-0 text-xs text-muted-foreground"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  Clear all
+                  {t("queue.clearAll")}
                 </Button>
               )}
             </CardHeader>
@@ -478,9 +491,9 @@ export default function App() {
                 {isDragging && (
                   <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-start justify-center gap-2 bg-accent p-8">
                     <FilePlus className="h-9 w-9 text-accent-foreground" />
-                    <p className="text-sm font-semibold text-accent-foreground">Drop files to secure</p>
+                    <p className="text-sm font-semibold text-accent-foreground">{t("queue.dropTitle")}</p>
                     <p className="text-[11px] text-accent-foreground">
-                      Release to add them to the queue
+                      {t("queue.dropRelease")}
                     </p>
                   </div>
                 )}
@@ -495,13 +508,12 @@ export default function App() {
                       <div className="mb-5 flex h-16 w-16 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
                         <FilePlus className="h-7 w-7" />
                       </div>
-                      <h3 className="text-lg font-bold tracking-tight">Drop files to secure</h3>
+                      <h3 className="text-lg font-bold tracking-tight">{t("queue.dropTitle")}</h3>
                       <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                        Drag and drop documents, images, archives, or entire folders. Bulk
-                        processing is supported.
+                        {t("queue.dropDescription")}
                       </p>
                       <span className="mt-5 inline-flex items-center gap-2 border-2 border-border bg-card px-3 py-1.5 text-xs font-semibold">
-                        Click to browse
+                        {t("queue.browse")}
                       </span>
                     </button>
                     <Button
@@ -512,7 +524,7 @@ export default function App() {
                       className="border-dashed text-muted-foreground"
                     >
                       <FilePlus className="h-4 w-4" />
-                      Add a folder
+                      {t("queue.addFolder")}
                     </Button>
                   </div>
                 ) : (
@@ -526,7 +538,7 @@ export default function App() {
                         className="w-full border-dashed text-muted-foreground"
                       >
                         <FilePlus className="h-4 w-4" />
-                        Add more files
+                        {t("queue.addMoreFiles")}
                       </Button>
                       <Button
                         variant="outline"
@@ -535,7 +547,7 @@ export default function App() {
                         className="w-full border-dashed text-muted-foreground"
                       >
                         <FilePlus className="h-4 w-4" />
-                        Add a folder
+                        {t("queue.addFolder")}
                       </Button>
                     </div>
                   </div>
@@ -581,9 +593,9 @@ export default function App() {
                   <Lock className="h-4 w-4" />
                 </span>
                 <span>
-                  <span className="block text-sm font-bold">Encrypt</span>
+                  <span className="block text-sm font-bold">{t("actions.encrypt")}</span>
                   <span className="mt-0.5 block text-[11px]">
-                    Seal into .aegis
+                    {t("actions.encryptHint")}
                   </span>
                 </span>
               </button>
@@ -603,9 +615,9 @@ export default function App() {
                   <Unlock className="h-4 w-4" />
                 </span>
                 <span>
-                  <span className="block text-sm font-bold">Decrypt</span>
+                  <span className="block text-sm font-bold">{t("actions.decrypt")}</span>
                   <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                    Restore originals
+                    {t("actions.decryptHint")}
                   </span>
                 </span>
               </button>
@@ -620,7 +632,7 @@ export default function App() {
                       isProcessing && "text-primary"
                     )}
                   />
-                  Operation Status
+                  {t("status.title")}
                 </CardTitle>
                 {isProcessing ? (
                   <Button
@@ -630,18 +642,18 @@ export default function App() {
                     className="h-7 px-2 text-[11px] text-muted-foreground"
                   >
                     <StopCircle className="h-3.5 w-3.5" />
-                    Cancel
+                    {t("status.cancel")}
                   </Button>
                 ) : (
                   <Badge variant="outline" className="font-mono text-[10px]">
-                    IDLE
+                    {t("status.idleBadge")}
                   </Badge>
                 )}
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Progress</span>
+                    <span className="text-muted-foreground">{t("status.progress")}</span>
                     <span className="font-mono font-medium">
                       {Math.round(progress?.percent ?? 0)}%
                     </span>
@@ -649,28 +661,33 @@ export default function App() {
                   <Progress
                     value={progress?.percent ?? 0}
                     indicatorClassName="bg-primary"
-                    aria-label="Batch progress"
+                    aria-label={t("status.batchProgress")}
                     aria-valuetext={
                       progress
-                        ? `${Math.round(progress.percent)}% of ${progress.currentFile}`
-                        : "Idle"
+                        ? t("status.percentOf", {
+                            percent: Math.round(progress.percent),
+                            file: progress.currentFile,
+                          })
+                        : t("status.idle")
                     }
                   />
                 </div>
 
                 <p role="status" aria-live="polite" className="sr-only">
                   {isProcessing
-                    ? `Processing ${progress?.currentFile ?? "files"}`
+                    ? progress
+                      ? t("status.processing", { file: progress.currentFile })
+                      : t("status.processingFiles")
                     : isRewrapping
-                      ? "Re-wrapping files"
-                      : "Idle"}
+                      ? t("status.rewrapping")
+                      : t("status.idle")}
                 </p>
 
                 <div className="grid grid-cols-3 gap-2">
                   <div className="border-2 border-border bg-secondary p-2.5">
                     <div className="flex items-center gap-1 text-[9px] uppercase tracking-wide text-muted-foreground">
                       <Gauge className="h-3 w-3" />
-                      Speed
+                      {t("status.speed")}
                     </div>
                     <p className="mt-1 font-mono text-sm font-semibold">
                       {progress ? progress.speed.toFixed(1) : "0.0"}
@@ -682,7 +699,7 @@ export default function App() {
                   <div className="border-2 border-border bg-secondary p-2.5">
                     <div className="flex items-center gap-1 text-[9px] uppercase tracking-wide text-muted-foreground">
                       <Clock3 className="h-3 w-3" />
-                      ETA
+                      {t("status.eta")}
                     </div>
                     <p className="mt-1 font-mono text-sm font-semibold">
                       {progress ? progress.eta.toFixed(0) : "0"}
@@ -693,7 +710,7 @@ export default function App() {
                   </div>
                   <div className="border-2 border-border bg-secondary p-2.5">
                     <div className="text-[9px] uppercase tracking-wide text-muted-foreground">
-                      Current
+                      {t("status.current")}
                     </div>
                     <p className="mt-1 truncate font-mono text-[11px] font-medium">
                       {progress ? progress.currentFile : "—"}
@@ -702,8 +719,8 @@ export default function App() {
                 </div>
 
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span>AES-256-GCM / PBKDF2</span>
-                  <span className="font-mono">600k iterations</span>
+                  <span>{t("status.aesLine")}</span>
+                  <span className="font-mono">{t("status.iterations")}</span>
                 </div>
               </CardContent>
             </Card>
@@ -715,8 +732,7 @@ export default function App() {
             <div className="flex items-start gap-2 border-2 border-dashed border-border bg-card p-3 text-[11px] leading-relaxed text-muted-foreground">
               <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground" />
               <span>
-                Zero-knowledge by design. Files are sealed in browser memory and never
-                uploaded to a server.
+                {t("app.zeroKnowledgeFooter")}
               </span>
             </div>
           </div>
@@ -733,3 +749,4 @@ export default function App() {
     </div>
   );
 }
+

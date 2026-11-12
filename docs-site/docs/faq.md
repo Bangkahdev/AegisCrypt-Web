@@ -13,6 +13,10 @@ Tidak. Aplikasi adalah bundel statis; semua kriptografi dilakukan di browser mel
 
 Tidak. Jika keyfile digunakan, materi kunci mencakup `SHA-256(keyfile)`. Tanpa byte yang sama persis, PBKDF2 menurunkan kunci berbeda dan dekripsi GCM gagal.
 
+## Apakah antarmuka tersedia dalam bahasa Indonesia?
+
+Ya. Tombol bahasa di header mengganti seluruh antarmuka antara Inggris dan Indonesia, dan pilihan tersebut disimpan untuk kunjungan berikutnya. Secara bawaan aplikasi mengikuti bahasa browser.
+
 ## Apakah aplikasi bisa dipakai offline?
 
 Ya. Setelah kunjungan pertama, service worker menyimpan app shell sehingga AegisCrypt dapat dibuka tanpa jaringan, dan seluruh enkripsi/dekripsi tetap berjalan lokal. Service worker tidak menyimpan berkas, kata sandi, atau keyfile Anda.
@@ -44,3 +48,4 @@ Aplikasi menulis kontainer v3 (envelope encryption, AAD per record). Kontainer v
 ## Sumber kode
 
 Kode sumber aplikasi tersedia di GitHub: https://github.com/Bangkahdev/AegisCrypt-Web
+

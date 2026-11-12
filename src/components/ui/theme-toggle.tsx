@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "./button";
+import { useI18n } from "@/i18n/I18nProvider";
 
 const STORAGE_KEY = "aegiscrypt-theme";
 
@@ -10,6 +11,7 @@ function getInitialTheme() {
 }
 
 export function ThemeToggle() {
+  const { t } = useI18n();
   const [isDark, setIsDark] = React.useState(getInitialTheme);
 
   const toggle = () => {
@@ -35,3 +37,4 @@ export function ThemeToggle() {
     </Button>
   );
 }
+

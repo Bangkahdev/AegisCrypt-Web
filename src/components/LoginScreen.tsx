@@ -16,6 +16,8 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Switch } from "./ui/switch";
+import { LanguageToggle } from "./ui/language-toggle";
+import { useI18n } from "@/i18n/I18nProvider";
 
 interface LoginScreenProps {
   onLogin: (session: AuthSession) => void;
@@ -23,20 +25,16 @@ interface LoginScreenProps {
   notice?: string | null;
 }
 
-const FEATURES = [
-  "AES-256-GCM authenticated encryption",
-  "PBKDF2-HMAC-SHA256 key derivation",
-  "Optional keyfile as a second factor",
-  "Streaming engine for multi-gigabyte files",
-];
+const FEATURES = ["login.feature1", "login.feature2", "login.feature3", "login.feature4"] as const;
 
 const FACTS = [
-  { label: "Cipher", value: "AES-256-GCM" },
-    { label: "Key derivation", value: "PBKDF2 / 600k" },
-  { label: "Data path", value: "Browser only" },
-];
+  { label: "login.factCipher", value: "AES-256-GCM" },
+  { label: "login.factKdf", value: "PBKDF2 / 600k" },
+  { label: "login.factDataPath", value: "login.factDataPathValue" },
+] as const;
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => {
+  const { t } = useI18n();
   const [password, setPassword] = useState("");
   const [keyFile, setKeyFile] = useState<File | null>(null);
   const [useKeyFile, setUseKeyFile] = useState(false);
@@ -70,7 +68,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <a href="#main-content" className="skip-link">
-        Skip to main content
+        {t("common.skipToContent")}
       </a>
       <header className="border-b-2 border-border bg-card">
         <div className="flex h-16 w-full items-center justify-between gap-4 px-4 sm:px-8">
@@ -81,7 +79,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
             <div className="leading-tight">
               <p className="text-sm font-bold tracking-tight">AegisCrypt</p>
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Zero-knowledge suite
+                {t("login.zeroKnowledgeSuite")}
               </p>
             </div>
           </div>
@@ -90,9 +88,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
               href="https://docs.aegiscrypt.bangkah.tech"
               className="hidden items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground sm:flex"
             >
-              Documentation
+              {t("common.documentation")}
               <ArrowUpRight className="h-3.5 w-3.5" />
             </a>
+            <LanguageToggle />
             <ThemeToggle />
           </div>
         </div>
@@ -107,18 +106,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
           <section className="order-2 text-left lg:order-1">
             <Badge variant="outline" className="bg-accent">
               <span className="h-2 w-2 bg-accent-foreground" />
-              RUNS ENTIRELY IN YOUR BROWSER
+              {t("login.badge")}
             </Badge>
             <h2 className="mt-5 max-w-2xl text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
-              Private by default.
+              {t("login.headline1")}
               <br />
-              Encrypted by you.
+              {t("login.headline2")}
             </h2>
             <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground">
-              AegisCrypt turns any file into a sealed{" "}
-              <span className="font-mono text-foreground">.aegis</span> container
-              using AES-256-GCM. Keys are derived on your device and never
-              transmitted, logged, or stored.
+              {t("login.introBefore")}{" "}
+              <span className="font-mono text-foreground">.aegis</span>{" "}
+              {t("login.introAfter")}
             </p>
 
             <ul className="mt-7 grid max-w-xl gap-3">
@@ -127,7 +125,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
                     <Check className="h-3 w-3" />
                   </span>
-                  <span className="text-muted-foreground">{feature}</span>
+                  <span className="text-muted-foreground">{t(feature)}</span>
                 </li>
               ))}
             </ul>
@@ -136,9 +134,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
               {FACTS.map((fact) => (
                 <div key={fact.label} className="border-2 border-border bg-card p-3">
                   <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-                    {fact.label}
+                    {t(fact.label)}
                   </p>
-                  <p className="mt-1 text-xs font-bold">{fact.value}</p>
+                  <p className="mt-1 text-xs font-bold">
+                    {fact.value.startsWith("login.") ? t(fact.value as "login.factDataPathValue") : fact.value}
+                  </p>
                 </div>
               ))}
             </div>
@@ -159,7 +159,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
               </div>
               <h1 className="text-2xl font-extrabold tracking-tight">AegisCrypt</h1>
               <p className="mt-1 text-xs text-muted-foreground">
-                Start a secure, local-only session
+                {t("login.startSubtitle")}
               </p>
             </div>
 
@@ -175,8 +175,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
                   <div className="flex items-center gap-2.5">
                     <Key className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-semibold">Use keyfile</p>
-                      <p className="text-[11px] text-muted-foreground">Second factor (2FA)</p>
+                      <p className="text-sm font-semibold">{t("login.useKeyfile")}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("login.secondFactor")}</p>
                     </div>
                   </div>
                   <Switch
@@ -186,7 +186,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
                       if (!checked) setKeyFile(null);
                     }}
                     disabled={isAnimating}
-                    aria-label="Toggle keyfile second factor"
+                    aria-label={t("login.toggleKeyfile")}
                   />
                 </div>
 
@@ -204,10 +204,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">
-                        {keyFile ? keyFile.name : "Select keyfile..."}
+                        {keyFile ? keyFile.name : t("login.selectKeyfile")}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        Image, audio, document - any file works
+                        {t("login.keyfileHint")}
                       </p>
                     </div>
                     <input
@@ -229,11 +229,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
                 {isAnimating ? (
                   <>
                     <Lock className="h-4 w-4" />
-                    Initializing...
+                    {t("login.initializing")}
                   </>
                 ) : (
                   <>
-                    Start Session
+                    {t("login.startSession")}
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
@@ -241,7 +241,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
 
               <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Lock className="h-3 w-3" />
-                Files never leave your device
+                {t("login.filesNeverLeave")}
               </p>
             </form>
           </Card>
@@ -249,15 +249,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
       </main>
 
       <footer className="flex flex-col justify-between gap-2 border-t-2 border-border bg-card px-4 py-4 text-[11px] text-muted-foreground sm:flex-row sm:px-8">
-        <p>AegisCrypt Web / Zero-knowledge encryption workspace</p>
+        <p>{t("login.footer")}</p>
         <a
           href="https://docs.aegiscrypt.bangkah.tech"
           className="flex items-center gap-1 font-semibold hover:text-foreground"
         >
-          Read the docs
+          {t("common.readDocs")}
           <ArrowUpRight className="h-3 w-3" />
         </a>
       </footer>
     </div>
   );
 };
+

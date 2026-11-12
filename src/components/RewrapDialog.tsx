@@ -4,6 +4,7 @@ import { PasswordInput } from "./PasswordInput";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Switch } from "./ui/switch";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export interface RewrapRequest {
   newPassword: string;
@@ -19,11 +20,7 @@ interface RewrapDialogProps {
   onSubmit: (request: RewrapRequest) => void;
 }
 
-const ITERATION_OPTIONS = [
-  { value: 600_000, label: "600k (default)" },
-  { value: 1_000_000, label: "1M" },
-  { value: 2_000_000, label: "2M" },
-];
+const ITERATION_OPTIONS = [600_000, 1_000_000, 2_000_000];
 
 export const RewrapDialog: React.FC<RewrapDialogProps> = ({
   open,
@@ -32,6 +29,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
   onCancel,
   onSubmit,
 }) => {
+  const { t } = useI18n();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [useKeyFile, setUseKeyFile] = useState(false);
@@ -105,11 +103,11 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (newPassword !== confirmPassword) {
-      setError("New passwords do not match.");
+      setError(t("rewrap.mismatch"));
       return;
     }
     if (!newPassword) {
-      setError("Enter a new password.");
+      setError(t("rewrap.enterPassword"));
       return;
     }
     setError(null);
@@ -133,11 +131,10 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
             </div>
             <div>
               <h2 id="rewrap-title" className="text-lg font-bold tracking-tight">
-                Change password
+                {t("rewrap.title")}
               </h2>
               <p id="rewrap-description" className="mt-0.5 text-[11px] text-muted-foreground">
-                Re-wraps the file key for {fileCount} container{fileCount === 1 ? "" : "s"}.
-                Records are not re-encrypted.
+                {t("rewrap.description", { count: fileCount })}
               </p>
             </div>
           </div>
@@ -147,7 +144,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
             className="h-8 w-8 shrink-0 p-0"
             onClick={onCancel}
             disabled={isProcessing}
-            aria-label="Close change password dialog"
+            aria-label={t("rewrap.close")}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -158,13 +155,13 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
             value={newPassword}
             onChange={setNewPassword}
             disabled={isProcessing}
-            label="New password"
+            label={t("rewrap.newPassword")}
             id="rewrap-password"
           />
 
           <div className="space-y-2">
             <label htmlFor="rewrap-confirm" className="text-sm font-semibold">
-              Confirm new password
+              {t("rewrap.confirmPassword")}
             </label>
             <Input
               id="rewrap-confirm"
@@ -172,7 +169,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               disabled={isProcessing}
-              placeholder="Repeat new password"
+              placeholder={t("rewrap.confirmPlaceholder")}
               autoComplete="new-password"
               className="h-11"
             />
@@ -180,7 +177,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
 
           <div className="space-y-2">
             <label htmlFor="rewrap-iterations" className="text-sm font-semibold">
-              PBKDF2 iterations
+              {t("rewrap.iterations")}
             </label>
             <select
               id="rewrap-iterations"
@@ -189,9 +186,9 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
               disabled={isProcessing}
               className="h-11 w-full border-2 border-border bg-card px-3 text-sm font-medium outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50"
             >
-              {ITERATION_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              {ITERATION_OPTIONS.map((value) => (
+                <option key={value} value={value}>
+                  {value === 600_000 ? t("rewrap.iterationsDefault") : `${value / 1_000_000}M`}
                 </option>
               ))}
             </select>
@@ -202,9 +199,9 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
               <div className="flex items-center gap-2.5">
                 <Key className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-semibold">New keyfile</p>
+                  <p className="text-sm font-semibold">{t("rewrap.newKeyfile")}</p>
                   <p className="text-[11px] text-muted-foreground">
-                    Optional second factor for the new password
+                    {t("rewrap.newKeyfileHint")}
                   </p>
                 </div>
               </div>
@@ -215,7 +212,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
                   if (!checked) setKeyFile(null);
                 }}
                 disabled={isProcessing}
-                aria-label="Toggle new keyfile"
+                aria-label={t("rewrap.toggleNewKeyfile")}
               />
             </div>
 
@@ -223,7 +220,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
               <label className="mt-3 flex cursor-pointer items-center gap-3 border-2 border-dashed border-border bg-card p-3 hover:bg-secondary">
                 <FileUp className="h-4 w-4 text-muted-foreground" />
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                  {keyFile ? keyFile.name : "Select keyfile..."}
+                  {keyFile ? keyFile.name : t("rewrap.selectKeyfile")}
                 </span>
                 <input
                   type="file"
@@ -243,7 +240,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button type="submit" disabled={!canSubmit} className="flex-1">
               <RefreshCw className="h-4 w-4" />
-              {isProcessing ? "Re-wrapping..." : "Re-wrap files"}
+              {isProcessing ? t("rewrap.submitting") : t("rewrap.submit")}
             </Button>
             <Button
               type="button"
@@ -252,7 +249,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
               disabled={isProcessing}
               className="flex-1"
             >
-              Cancel
+              {t("rewrap.cancel")}
             </Button>
           </div>
         </form>
@@ -260,3 +257,4 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
     </div>
   );
 };
+

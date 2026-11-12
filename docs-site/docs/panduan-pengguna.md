@@ -65,6 +65,10 @@ Rewrap hanya sah jika kata sandi/keyfile lama masih diketahui. Simpan hasil undu
 
 Sesi terkunci otomatis setelah 10 menit tanpa aktivitas, atau segera lewat tombol **Lock**. Saat terkunci/logout, byte kata sandi dan buffer keyfile di memori diisi nol dan antrean dibersihkan. Proses yang sedang berjalan menunda auto-lock hingga selesai.
 
+## Bahasa antarmuka
+
+AegisCrypt tersedia dalam bahasa Inggris dan Indonesia. Gunakan tombol bahasa (**EN** / **ID**) di header untuk berganti; pilihan disimpan di `localStorage` sehingga bertahan setelah muat ulang. Bila belum pernah memilih, aplikasi mengikuti bahasa browser (`id` ? Indonesia, lainnya ? Inggris).
+
 ## Memasang aplikasi dan mode offline
 
 AegisCrypt dapat dipasang sebagai aplikasi (PWA):
@@ -84,3 +88,4 @@ Berkas pengguna, kata sandi, dan keyfile tidak pernah disimpan di cache. Untuk m
 ## Sumber kode
 
 Kode sumber aplikasi tersedia di GitHub: https://github.com/Bangkahdev/AegisCrypt-Web
+
