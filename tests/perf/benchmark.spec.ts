@@ -1,29 +1,64 @@
-import { expect, test } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { WriteStream, createWriteStream } from 'node:fs';
+import { test, expect } from '@playwright/test';
 
-const SIZE_MB = 16;
-const SIZE_BYTES = SIZE_MB * 1024 * 1024;
+const SIZE_MB = Number(process.env.BENCH_SIZE_MB ?? 16);
+const CHUNK_BYTES = 1024 * 1024;
 
-const makePayload = (): Buffer => {
-  const buffer = Buffer.alloc(SIZE_BYTES);
-  for (let i = 0; i < buffer.length; i++) buffer[i] = (i * 31 + 7) & 0xff;
-  return buffer;
+if (!Number.isInteger(SIZE_MB) || SIZE_MB < 1) {
+  throw new Error('BENCH_SIZE_MB must be a positive integer');
+}
+
+const writeChunk = (stream: WriteStream, chunk: Buffer): Promise<void> =>
+  new Promise((resolve, reject) => {
+    stream.write(chunk, (error) => (error ? reject(error) : resolve()));
+  });
+
+const writePayload = async (filePath: string): Promise<string> => {
+  const hash = createHash('sha256');
+  const stream = createWriteStream(filePath);
+
+  for (let index = 0; index < SIZE_MB; index++) {
+    const chunk = Buffer.alloc(CHUNK_BYTES);
+    chunk.fill((index * 31 + 7) & 0xff);
+    chunk.writeUInt32BE(index, 0);
+    hash.update(chunk);
+    await writeChunk(stream, chunk);
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    stream.on('error', reject);
+    stream.end(resolve);
+  });
+
+  return hash.digest('hex');
 };
 
+const sha256File = (filePath: string): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const hash = createHash('sha256');
+    createReadStream(filePath)
+      .on('data', (data) => hash.update(data))
+      .on('end', () => resolve(hash.digest('hex')))
+      .on('error', reject);
+  });
+
 test('reports encrypt and decrypt throughput', async ({ page }, testInfo) => {
-  const original = makePayload();
+  test.setTimeout(600_000);
+
+  const inputPath = testInfo.outputPath('benchmark-input.bin');
+  const inputHash = await writePayload(inputPath);
 
   await page.goto('/');
   await page.getByPlaceholder('Enter encryption password').fill('BenchmarkPassword123!');
   await page.getByRole('button', { name: 'Start Session' }).click();
 
-  await page.locator('input[type=file]').first().setInputFiles({
-    name: 'benchmark.bin',
-    mimeType: 'application/octet-stream',
-    buffer: original,
-  });
+  const fileInput = page.locator('input[type=file]').first();
+  await fileInput.setInputFiles(inputPath);
 
-  const encryptedPath = testInfo.outputPath('benchmark.bin.aegis');
+  const encryptedPath = testInfo.outputPath('benchmark-input.bin.aegis');
   const encryptStart = performance.now();
   const [encryptDownload] = await Promise.all([
     page.waitForEvent('download'),
@@ -32,12 +67,12 @@ test('reports encrypt and decrypt throughput', async ({ page }, testInfo) => {
   await encryptDownload.saveAs(encryptedPath);
   const encryptSeconds = (performance.now() - encryptStart) / 1000;
 
-  const encrypted = await readFile(encryptedPath);
-  expect(encrypted.length).toBeGreaterThan(SIZE_BYTES);
+  const [plainStat, encryptedStat] = await Promise.all([stat(inputPath), stat(encryptedPath)]);
+  expect(encryptedStat.size).toBeGreaterThan(plainStat.size);
 
-  await page.locator('input[type=file]').first().setInputFiles(encryptedPath);
+  await fileInput.setInputFiles(encryptedPath);
 
-  const decryptedPath = testInfo.outputPath('benchmark.decrypted.bin');
+  const decryptedPath = testInfo.outputPath('benchmark-decrypted.bin');
   const decryptStart = performance.now();
   const [decryptDownload] = await Promise.all([
     page.waitForEvent('download'),
@@ -46,10 +81,8 @@ test('reports encrypt and decrypt throughput', async ({ page }, testInfo) => {
   await decryptDownload.saveAs(decryptedPath);
   const decryptSeconds = (performance.now() - decryptStart) / 1000;
 
-  expect(decryptDownload.suggestedFilename()).toBe('benchmark.bin');
-
-  const decrypted = await readFile(decryptedPath);
-  expect(decrypted.length).toBe(SIZE_BYTES);
+  expect(decryptDownload.suggestedFilename()).toBe('benchmark-input.bin');
+  expect(await sha256File(decryptedPath)).toBe(inputHash);
 
   const encryptMbps = SIZE_MB / encryptSeconds;
   const decryptMbps = SIZE_MB / decryptSeconds;

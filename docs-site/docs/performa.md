@@ -78,10 +78,21 @@ npm run build
 npm run test:bench
 ```
 
-Contoh keluaran pada mesin pengembangan: sekitar 20-23 MB/s untuk enkripsi dan dekripsi 16 MiB. Hasil bergantung pada CPU, browser, dan media penyimpanan; gunakan sebagai pembanding antar perubahan, bukan patokan absolut.
+Ukuran bawaan adalah 16 MiB. Untuk berkas besar, atur lewat variabel lingkungan `BENCH_SIZE_MB` (payload ditulis ke disk dan diverifikasi dengan SHA-256, jadi memori tetap terbatas):
+
+```bash
+BENCH_SIZE_MB=256 npm run test:bench
+```
+
+```powershell
+$env:BENCH_SIZE_MB=256; npm run test:bench
+```
+
+Contoh keluaran pada mesin pengembangan: sekitar 20-23 MB/s untuk enkripsi dan dekripsi 16 MiB. Hasil bergantung pada CPU, browser, dan media penyimpanan; gunakan sebagai pembanding antar perubahan, bukan patokan absolut. Unduhan besar juga menambah overhead protokol Playwright, sehingga angka pada 256 MiB atau lebih akan lebih rendah.
 
 ## Sumber kode
 
 Kode sumber aplikasi tersedia di GitHub: https://github.com/Bangkahdev/AegisCrypt-Web
+
 
 
