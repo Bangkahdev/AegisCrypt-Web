@@ -31,6 +31,7 @@ import { LanguageToggle } from "./components/ui/language-toggle";
 import { ThemeToggle } from "./components/ui/theme-toggle";
 import { RewrapDialog, RewrapRequest } from "./components/RewrapDialog";
 import { collectDroppedFiles } from "./lib/files";
+import { isStorageQuotaMessage } from "./lib/errors";
 import {
   downloadBlob,
   getDecryptedFilename,
@@ -72,6 +73,14 @@ export default function App() {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const sessionRef = useRef<AuthSession | null>(null);
   const changePasswordRef = useRef<HTMLButtonElement>(null);
+
+  const describeError = useCallback(
+    (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      return isStorageQuotaMessage(message) ? t("errors.storageQuota") : message;
+    },
+    [t]
+  );
 
   const addLog = useCallback((message: string, level: LogLevel = LogLevel.INFO) => {
     setLogs((prev) => [
@@ -267,11 +276,11 @@ export default function App() {
           successCount++;
         } catch (err: any) {
           if (signal.aborted) break;
-          addLog(t("logs.failed", { name: file.name, error: err.message }), LogLevel.ERROR);
+          addLog(t("logs.failed", { name: file.name, error: describeError(err) }), LogLevel.ERROR);
         }
       }
     } catch (err: any) {
-      if (!signal.aborted) addLog(t("logs.systemError", { error: err.message }), LogLevel.ERROR);
+      if (!signal.aborted) addLog(t("logs.systemError", { error: describeError(err) }), LogLevel.ERROR);
     } finally {
       setIsProcessing(false);
       setProgress(null);
@@ -326,7 +335,7 @@ export default function App() {
           downloadBlob(result, file.name);
           addLog(t("logs.rewrapped", { name: file.name }), LogLevel.SUCCESS);
         } catch (err: any) {
-          addLog(t("logs.failed", { name: file.name, error: err.message }), LogLevel.ERROR);
+          addLog(t("logs.failed", { name: file.name, error: describeError(err) }), LogLevel.ERROR);
         }
       }
       setProgress(null);
@@ -752,6 +761,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 

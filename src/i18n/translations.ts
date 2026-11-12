@@ -11,6 +11,9 @@ export const en = {
   "common.skipToContent": "Skip to main content",
   "common.documentation": "Documentation",
   "common.readDocs": "Read the docs",
+  "errors.storageQuota":
+    "The browser does not have enough storage to process this file. Free up space and try again.",
+
   "common.switchLanguage": "Switch language",
   "common.themeLight": "Switch to light mode",
   "common.themeDark": "Switch to dark mode",
@@ -155,6 +158,9 @@ export const id: Record<TranslationKey, string> = {
   "common.skipToContent": "Lewati ke konten utama",
   "common.documentation": "Dokumentasi",
   "common.readDocs": "Baca dokumentasi",
+  "errors.storageQuota":
+    "Penyimpanan browser tidak cukup untuk memproses berkas ini. Kosongkan ruang penyimpanan lalu coba lagi.",
+
   "common.switchLanguage": "Ganti bahasa",
   "common.themeLight": "Ganti ke mode terang",
   "common.themeDark": "Ganti ke mode gelap",
@@ -292,3 +298,4 @@ export const id: Record<TranslationKey, string> = {
 export const translations = { en, id } as const;
 
 export type Locale = keyof typeof translations;
+
