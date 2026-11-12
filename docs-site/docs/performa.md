@@ -31,6 +31,13 @@ Detail spesifikasi teknis dan batasan penggunaan AegisCrypt.
 ## Memori
 
 <div className="callout">
+  <div className="callout-title">Thread UI tetap responsif</div>
+  PBKDF2 (600.000+ iterasi) dan enkripsi/dekripsi berjalan di Web Worker.
+  Antarmuka, tombol Cancel, dan animasi progres tetap merespons selama operasi
+  berjalan. Worker dihentikan setelah setiap pekerjaan selesai.
+</div>
+
+<div className="callout">
   <div className="callout-title">Enkripsi dan dekripsi streaming</div>
   Enkripsi membaca berkas per chunk dan menyusun output sebagai bagian Blob.
   Dekripsi menulis plaintext ke <strong>Origin Private File System</strong> bila
@@ -48,6 +55,12 @@ AegisCrypt memerlukan browser modern yang mendukung:
 - `Blob` (penyimpanan hasil output)
 
 OPFS bersifat opsional dan hanya meningkatkan batas memori saat dekripsi.
+
+## Offline dan instalasi
+
+Aplikasi dapat dipasang sebagai PWA dan dibuka tanpa koneksi setelah kunjungan
+pertama. Service worker hanya menyimpan app shell; berkas yang diproses tetap
+berada di memori perangkat dan tidak pernah di-cache.
 
 ## Kompatibilitas
 

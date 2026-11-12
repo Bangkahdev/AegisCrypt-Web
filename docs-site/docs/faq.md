@@ -13,6 +13,14 @@ Tidak. Aplikasi adalah bundel statis; semua kriptografi dilakukan di browser mel
 
 Tidak. Jika keyfile digunakan, materi kunci mencakup `SHA-256(keyfile)`. Tanpa byte yang sama persis, PBKDF2 menurunkan kunci berbeda dan dekripsi GCM gagal.
 
+## Apakah aplikasi bisa dipakai offline?
+
+Ya. Setelah kunjungan pertama, service worker menyimpan app shell sehingga AegisCrypt dapat dibuka tanpa jaringan, dan seluruh enkripsi/dekripsi tetap berjalan lokal. Service worker tidak menyimpan berkas, kata sandi, atau keyfile Anda.
+
+## Apakah antarmuka macet saat memproses berkas besar?
+
+Tidak. PBKDF2 dan enkripsi/dekripsi berjalan di Web Worker terpisah, sehingga progres, tombol Cancel, dan navigasi tetap responsif. Pada lingkungan tanpa dukungan Worker, operasi dijalankan di thread utama.
+
 ## Apakah nama berkas dienkripsi?
 
 Ya, secara default. Nama asli disimpan sebagai metadata terenkripsi di dalam kontainer (flag bit2) dan dipakai kembali saat dekripsi. Nama kontainer yang diunduh tetap `original.ext.aegis`, jadi ganti nama kontainer jika nama berkas itu sendiri sensitif.

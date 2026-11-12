@@ -21,6 +21,8 @@ AegisCrypt Web adalah alat enkripsi berbasis browser dengan standar militer. Dir
 * **Neo-Brutalism UI**: Antarmuka modern, tegas, dan sepenuhnya responsif dengan kontras tinggi.
 * **Telemetri Waktu Nyata**: Memantau kecepatan enkripsi (MB/s) dan estimasi waktu selesai (ETA).
 * **Pemrosesan Batch**: Tarik dan letakkan (*drag & drop*) seluruh folder ke dalam antrean pemrosesan.
+* **Kripto di Web Worker**: PBKDF2 dan enkripsi/dekripsi berjalan di luar thread UI sehingga antarmuka tetap responsif.
+* **PWA & offline**: Dapat dipasang sebagai aplikasi dan dibuka tanpa jaringan; cache hanya berisi app shell.
 
 ---
 

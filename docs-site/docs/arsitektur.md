@@ -24,6 +24,8 @@ AegisCrypt adalah aplikasi satu halaman (SPA) yang di-deploy sebagai aset statis
 | Komponen | Tanggung jawab |
 |----------|---------------|
 | **Web Crypto API** | Operasi kriptografi di browser (AES-GCM, PBKDF2, SHA-256) |
+| **Web Worker** | Menjalankan PBKDF2 dan enkripsi/dekripsi di luar thread UI agar antarmuka tetap responsif |
+| **Service Worker** | Cache app shell agar aplikasi dapat dibuka offline; tidak pernah menyimpan berkas pengguna |
 | **React 19** | Antarmuka pengguna dan manajemen status |
 | **Vite 8** | Build tool dan bundler |
 | **Cloudflare Workers** | Penyajian aset statis dan domain kustom |
@@ -35,6 +37,14 @@ AegisCrypt adalah aplikasi satu halaman (SPA) yang di-deploy sebagai aset statis
 - Tidak ada penanganan kunci di sisi server.
 - Semua data diproses di perangkat pengguna dan tidak pernah meninggalkan perangkat.
 - Dekripsi dapat memakai penyimpanan sementara OPFS untuk menjaga penggunaan memori; penghapusan berkas sementara dijadwalkan (saat halaman ditutup atau setelah timeout).
+
+## Web Worker dan offline
+
+- Setiap operasi membuat satu Web Worker; worker menjalankan PBKDF2, enkripsi, dekripsi, dan rewrap, lalu dihentikan setelah selesai.
+- Progres dikirim ke thread UI sebagai pesan; pembatalan mengirim sinyal abort ke worker.
+- Bila lingkungan tidak mendukung Worker (misalnya pengujian), operasi yang sama dijalankan langsung di thread utama sebagai fallback.
+- Service worker menyimpan app shell (HTML, CSS, JavaScript, ikon, manifest) sehingga halaman dapat dibuka tanpa jaringan. Berkas pengguna, kata sandi, dan keyfile tidak pernah masuk cache.
+- Aplikasi tetap berfungsi penuh secara offline karena seluruh kriptografi bersifat lokal.
 
 ## Sumber kode
 

@@ -34,10 +34,12 @@ import {
   downloadBlob,
   getDecryptedFilename,
   getEncryptedFilename,
-  processFileDecrypt,
-  processFileEncrypt,
-  rewrapFile,
 } from "./services/cryptoService";
+import {
+  decryptFileTask,
+  encryptFileTask,
+  rewrapFileTask,
+} from "./services/cryptoWorkerClient";
 import { cn } from "@/lib/utils";
 
 const AUTO_LOCK_MS = 10 * 60 * 1000;
@@ -224,7 +226,7 @@ export default function App() {
 
         try {
           if (mode === "ENCRYPT") {
-            resultData = await processFileEncrypt(
+            resultData = await encryptFileTask(
               file,
               session.passwordBytes,
               session.keyFileBuffer,
@@ -235,13 +237,13 @@ export default function App() {
             downloadBlob(resultData, getEncryptedFilename(file.name));
           } else {
             let decryptedName: string | null = null;
-            resultData = await processFileDecrypt(
+            resultData = await decryptFileTask(
               file,
               session.passwordBytes,
               session.keyFileBuffer,
               signal,
               updateProgress,
-              { onFilename: (name) => (decryptedName = name) }
+              (name) => (decryptedName = name)
             );
             downloadBlob(resultData, decryptedName ?? getDecryptedFilename(file.name));
           }
@@ -297,7 +299,7 @@ export default function App() {
         });
 
         try {
-          const result = await rewrapFile(
+          const result = await rewrapFileTask(
             file,
             session.passwordBytes,
             session.keyFileBuffer,
@@ -351,6 +353,9 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <header className="sticky top-0 z-30 border-b-2 border-border bg-card">
         <div className="flex h-16 w-full items-center justify-between gap-3 px-4 sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
@@ -420,7 +425,12 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex w-full flex-1 flex-col px-4 py-6 sm:px-8 lg:py-8">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        aria-busy={isProcessing || isRewrapping}
+        className="flex w-full flex-1 flex-col px-4 py-6 sm:px-8 lg:py-8"
+      >
         <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <Card className="flex min-h-[480px] flex-col overflow-hidden">
             <CardHeader className="flex-row items-start justify-between space-y-0 border-b-2 border-border bg-secondary py-4">
@@ -639,8 +649,22 @@ export default function App() {
                   <Progress
                     value={progress?.percent ?? 0}
                     indicatorClassName="bg-primary"
+                    aria-label="Batch progress"
+                    aria-valuetext={
+                      progress
+                        ? `${Math.round(progress.percent)}% of ${progress.currentFile}`
+                        : "Idle"
+                    }
                   />
                 </div>
+
+                <p role="status" aria-live="polite" className="sr-only">
+                  {isProcessing
+                    ? `Processing ${progress?.currentFile ?? "files"}`
+                    : isRewrapping
+                      ? "Re-wrapping files"
+                      : "Idle"}
+                </p>
 
                 <div className="grid grid-cols-3 gap-2">
                   <div className="border-2 border-border bg-secondary p-2.5">

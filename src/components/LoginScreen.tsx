@@ -69,6 +69,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <header className="border-b-2 border-border bg-card">
         <div className="flex h-16 w-full items-center justify-between gap-4 px-4 sm:px-8">
           <div className="flex items-center gap-3">
@@ -95,7 +98,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col px-4 py-8 sm:px-8 lg:py-12">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex flex-1 flex-col px-4 py-8 sm:px-8 lg:py-12"
+      >
         <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
           <section className="order-2 text-left lg:order-1">
             <Badge variant="outline" className="bg-accent">

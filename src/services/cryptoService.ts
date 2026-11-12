@@ -517,6 +517,8 @@ export interface DecryptSink {
   write(chunk: Bytes): Promise<void> | void;
   finalize(): Promise<Blob> | Blob;
   abort?(): Promise<void> | void;
+  /** OPFS temp file name, when the sink spilled to disk. */
+  tempName?: string;
 }
 
 /** In-memory sink. Peak JS heap grows with the output size. */
@@ -562,6 +564,7 @@ const createOpfsSink = async (): Promise<DecryptSink | null> => {
     };
 
     return {
+      tempName: name,
       async write(chunk) {
         await writable.write(chunk);
       },
