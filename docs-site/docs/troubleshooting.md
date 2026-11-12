@@ -19,6 +19,8 @@ Tabel berikut mencantumkan gejala umum, penyebab, dan perbaikannya.
 | File corrupt | Berkas terpotong atau dimodifikasi | Pulihkan dari cadangan yang baik |
 | Dekripsi kehabisan memori | Seluruh kontainer dibuffer di RAM | Dekripsi satu berkas besar per kali |
 | HTTPS gagal setelah deploy pertama | Sertifikat masih sedang diterbitkan | Tunggu beberapa menit dan coba lagi |
+| Aplikasi masih menampilkan versi lama | Service worker menyajikan app shell dari cache | Muat ulang saat online; jika tetap, hapus data situs di pengaturan browser |
+| Halaman tidak terbuka saat offline | Kunjungan pertama belum menyelesaikan cache app shell | Buka sekali saat online, lalu coba lagi |
 
 </div>
 
@@ -27,6 +29,7 @@ Tabel berikut mencantumkan gejala umum, penyebab, dan perbaikannya.
 - Pastikan keyfile yang digunakan saat dekripsi adalah **byte-for-byte identik** dengan yang digunakan saat enkripsi.
 - Jika dekripsi gagal meskipun sandi benar, periksa apakah keyfile telah berubah atau kontainer telah dimodifikasi.
 - Untuk berkas sangat besar, proses satu berkas pada satu waktu untuk menghindari kehabisan memori.
+- Jika tombol Install PWA tidak muncul, pastikan situs diakses lewat HTTPS dan bukan mode penyamaran.
 
 ## Sumber kode
 

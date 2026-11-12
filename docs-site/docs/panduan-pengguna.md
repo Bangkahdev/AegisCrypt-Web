@@ -65,6 +65,16 @@ Rewrap hanya sah jika kata sandi/keyfile lama masih diketahui. Simpan hasil undu
 
 Sesi terkunci otomatis setelah 10 menit tanpa aktivitas, atau segera lewat tombol **Lock**. Saat terkunci/logout, byte kata sandi dan buffer keyfile di memori diisi nol dan antrean dibersihkan. Proses yang sedang berjalan menunda auto-lock hingga selesai.
 
+## Memasang aplikasi dan mode offline
+
+AegisCrypt dapat dipasang sebagai aplikasi (PWA):
+
+1. Buka situs di Chrome atau Edge, lalu pilih ikon **Install** di bilah alamat.
+2. Setelah kunjungan pertama, service worker menyimpan app shell sehingga halaman tetap terbuka tanpa jaringan.
+3. Enkripsi dan dekripsi tetap berjalan penuh secara offline karena semua kriptografi lokal.
+
+Berkas pengguna, kata sandi, dan keyfile tidak pernah disimpan di cache. Untuk memperbarui versi aplikasi setelah deploy baru, muat ulang halaman saat online.
+
 ## Peringatan keamanan
 
 - File, kata sandi, dan keyfile **tidak pernah ditransmisikan** ke server.

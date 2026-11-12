@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FileUp, Key, RefreshCw, X } from "lucide-react";
 import { PasswordInput } from "./PasswordInput";
 import { Button } from "./ui/button";
@@ -38,6 +38,41 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
   const [keyFile, setKeyFile] = useState<File | null>(null);
   const [iterations, setIterations] = useState(600_000);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+
+    const firstField = document.getElementById("rewrap-password");
+    firstField?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || !dialog) return;
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      previous?.focus();
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -84,9 +119,11 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background p-4 sm:items-center">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="rewrap-title"
+        aria-describedby="rewrap-description"
         className="w-full max-w-md border-2 border-border bg-card p-5 sm:p-6"
       >
         <div className="mb-5 flex items-start justify-between gap-4">
@@ -98,7 +135,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
               <h2 id="rewrap-title" className="text-lg font-bold tracking-tight">
                 Change password
               </h2>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p id="rewrap-description" className="mt-0.5 text-[11px] text-muted-foreground">
                 Re-wraps the file key for {fileCount} container{fileCount === 1 ? "" : "s"}.
                 Records are not re-encrypted.
               </p>

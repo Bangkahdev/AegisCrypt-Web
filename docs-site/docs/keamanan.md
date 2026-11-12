@@ -26,6 +26,7 @@ AegisCrypt dirancang dengan prinsip **zero-knowledge**. Berikut adalah model anc
 | Record dipindah atau dipotong | AAD 43 byte per record mengikat indeks, file ID, dan header record |
 | Metadata nama dipalsukan | Blok nama terenkripsi dengan nonce khusus dan AAD 36 byte yang mengikat file ID serta panjangnya |
 | Kredensial tertinggal di memori | Auto-lock 10 menit dan zeroisasi byte kata sandi/buffer keyfile saat lock/logout |
+| Cache offline membocorkan data | Service worker hanya menyimpan app shell statis; berkas, kata sandi, dan keyfile tidak pernah di-cache |
 | Kontainer rusak atau dimodifikasi | Parsing ketat magic bytes, versi, flag, batas iterasi/chunk, dan panjang record |
 
 </div>

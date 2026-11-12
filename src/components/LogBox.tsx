@@ -54,7 +54,12 @@ export const LogBox: React.FC<LogBoxProps> = ({ logs, onClear }) => {
           Clear
         </Button>
       </div>
-      <div className="scrollbar-thin flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed">
+      <div
+        role="log"
+        aria-live="polite"
+        aria-label="Operation log"
+        className="scrollbar-thin flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed"
+      >
         {logs.length === 0 ? (
           <p className="px-1 py-2 italic text-muted-foreground">Ready for operations...</p>
         ) : (
