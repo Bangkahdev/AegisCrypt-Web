@@ -44,6 +44,29 @@ Artinya:
 
 Keyfile dapat berupa berkas apa pun — gambar, audio, dokumen, atau berkas acak. Simpan keyfile dengan aman. Hilangnya keyfile berarti berkas tidak dapat didekripsi.
 
+## Menggunakan kunci recovery
+
+Kunci recovery adalah kunci 256-bit terpisah yang dapat membuka berkas tanpa
+kata sandi. Kunci ini berguna sebagai jalur pemulihan bila kata sandi atau
+keyfile hilang.
+
+1. Masuk dengan kata sandi, lalu klik **Recovery key** di header.
+2. Klik **Generate recovery key**, lalu salin atau unduh berkas `.txt`.
+3. Semua berkas yang dienkripsi selama kunci tersebut aktif akan menyertakan
+   slot recovery (flag bit1).
+4. Untuk memulihkan, pilih tab **Recovery key** di layar masuk dan tempel
+   kuncinya.
+
+Catatan:
+
+- Sesi recovery bersifat **hanya-dekripsi**; tombol Encrypt dan Change password
+  dinonaktifkan.
+- AegisCrypt tidak menyimpan kunci recovery. Jika kunci hilang, tidak ada cara
+  memulihkannya.
+- Rewrap tidak membatalkan kunci recovery, tetapi berkas lama yang dienkripsi
+  sebelum fitur ini aktif tidak memiliki slot dan tetap memerlukan kata sandi
+  atau keyfile aslinya.
+
 ## Pemrosesan batch (banyak berkas)
 
 AegisCrypt mendukung pemrosesan banyak berkas dalam satu antrean. Anda dapat menyeret seluruh folder ke zona unggah atau memakai tombol **Add a folder**; aplikasi menelusuri isi folder secara rekursif dan memprosesnya satu per satu melalui mesin streaming per chunk (default 1 MiB).

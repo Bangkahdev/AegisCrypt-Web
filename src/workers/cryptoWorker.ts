@@ -43,6 +43,13 @@ scope.onmessage = async (event) => {
 
   const passwords: Uint8Array[] = [];
   const keyFiles: ArrayBuffer[] = [];
+  const recoveryKeys: Uint8Array[] = [];
+  if (job.kind === "encrypt" && job.options.recoveryKey) {
+    recoveryKeys.push(job.options.recoveryKey);
+  }
+  if (job.kind === "decrypt" && job.options.recoveryKey) {
+    recoveryKeys.push(job.options.recoveryKey);
+  }
 
   try {
     let blob: Blob;
@@ -72,6 +79,7 @@ scope.onmessage = async (event) => {
         {
           sink,
           onFilename: (filename) => post({ id: job.id, type: "filename", filename }),
+          recoveryKey: job.options.recoveryKey,
         },
       );
       tempName = sink.tempName;
@@ -96,5 +104,6 @@ scope.onmessage = async (event) => {
     active = null;
     for (const password of passwords) password.fill(0);
     for (const keyFile of keyFiles) new Uint8Array(keyFile).fill(0);
+    for (const recoveryKey of recoveryKeys) recoveryKey.fill(0);
   }
 };

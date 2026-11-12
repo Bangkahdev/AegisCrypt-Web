@@ -8,6 +8,34 @@ export const en = {
   "meta.description":
     "AegisCrypt is a zero-knowledge, browser-based AES-256-GCM file encryption suite. Your files never leave your device.",
 
+  "recovery.title": "Recovery key",
+  "recovery.description":
+    "Attach an independent recovery key to the files you encrypt from now on.",
+  "recovery.activeDescription":
+    "This key opens .aegis files that were sealed while it was active.",
+  "recovery.generate": "Generate recovery key",
+  "recovery.generateHint":
+    "AegisCrypt can attach a second, independent key to every file you encrypt from now on. The key is never stored in the browser or on a server.",
+  "recovery.generateWarning":
+    "You will see the key once. Without it, a forgotten password cannot be recovered.",
+  "recovery.warning":
+    "Store this key offline. Anyone who has it can decrypt files that carry a recovery slot.",
+  "recovery.copy": "Copy key",
+  "recovery.copied": "Copied",
+  "recovery.download": "Download .txt",
+  "recovery.remove": "Remove recovery key from this session",
+  "recovery.close": "Close recovery dialog",
+  "recovery.fileContent":
+    "AegisCrypt recovery key\n=======================\n\n{key}\n\nKeep this file offline. It can decrypt .aegis files sealed with a recovery slot. AegisCrypt never stores this key.\n",
+
+  "login.modePassword": "Password",
+  "login.modeRecovery": "Recovery key",
+  "login.recoveryLabel": "Recovery key",
+  "login.recoveryPlaceholder": "XXXX-XXXX-XXXX-...",
+  "login.recoveryHint":
+    "Paste the 64-character key you saved when enabling recovery. Recovery sessions can only decrypt.",
+  "login.recoveryInvalid": "Enter a valid 64-character recovery key.",
+
   "common.skipToContent": "Skip to main content",
   "common.documentation": "Documentation",
   "common.readDocs": "Read the docs",
@@ -51,6 +79,8 @@ export const en = {
   "app.workspaceActive": "Secure workspace / session active",
   "app.auth": "Auth",
   "app.password": "Password",
+  "app.recoveryKey": "Recovery key",
+  "app.recoveryActive": "RECOVERY",
   "app.changePassword": "Change password",
   "app.changePasswordTitle": "Change password for queued .aegis files",
   "app.lock": "Lock",
@@ -155,6 +185,34 @@ export const id: Record<TranslationKey, string> = {
   "meta.description":
     "AegisCrypt adalah aplikasi enkripsi berkas AES-256-GCM berbasis browser dengan model zero-knowledge. Berkas Anda tidak pernah meninggalkan perangkat.",
 
+  "recovery.title": "Kunci recovery",
+  "recovery.description":
+    "Tambahkan kunci recovery independen ke berkas yang Anda enkripsi mulai sekarang.",
+  "recovery.activeDescription":
+    "Kunci ini membuka berkas .aegis yang dibuat saat kunci aktif.",
+  "recovery.generate": "Buat kunci recovery",
+  "recovery.generateHint":
+    "AegisCrypt dapat menambahkan kunci kedua yang independen ke setiap berkas yang Anda enkripsi mulai sekarang. Kunci ini tidak disimpan di browser maupun server.",
+  "recovery.generateWarning":
+    "Kunci hanya ditampilkan sekali. Tanpa kunci ini, kata sandi yang lupa tidak dapat dipulihkan.",
+  "recovery.warning":
+    "Simpan kunci ini secara offline. Siapa pun yang memilikinya dapat mendekripsi berkas yang memiliki slot recovery.",
+  "recovery.copy": "Salin kunci",
+  "recovery.copied": "Tersalin",
+  "recovery.download": "Unduh .txt",
+  "recovery.remove": "Hapus kunci recovery dari sesi ini",
+  "recovery.close": "Tutup dialog recovery",
+  "recovery.fileContent":
+    "Kunci recovery AegisCrypt\n=========================\n\n{key}\n\nSimpan berkas ini secara offline. Berkas ini dapat mendekripsi berkas .aegis yang dibuat dengan slot recovery. AegisCrypt tidak pernah menyimpan kunci ini.\n",
+
+  "login.modePassword": "Kata sandi",
+  "login.modeRecovery": "Kunci recovery",
+  "login.recoveryLabel": "Kunci recovery",
+  "login.recoveryPlaceholder": "XXXX-XXXX-XXXX-...",
+  "login.recoveryHint":
+    "Tempel kunci 64 karakter yang Anda simpan saat mengaktifkan recovery. Sesi recovery hanya dapat mendekripsi.",
+  "login.recoveryInvalid": "Masukkan kunci recovery 64 karakter yang valid.",
+
   "common.skipToContent": "Lewati ke konten utama",
   "common.documentation": "Dokumentasi",
   "common.readDocs": "Baca dokumentasi",
@@ -198,6 +256,8 @@ export const id: Record<TranslationKey, string> = {
   "app.workspaceActive": "Ruang kerja aman / sesi aktif",
   "app.auth": "Autentikasi",
   "app.password": "Kata sandi",
+  "app.recoveryKey": "Kunci recovery",
+  "app.recoveryActive": "RECOVERY",
   "app.changePassword": "Ganti kata sandi",
   "app.changePasswordTitle": "Ganti kata sandi untuk berkas .aegis dalam antrean",
   "app.lock": "Kunci",
@@ -298,4 +358,3 @@ export const id: Record<TranslationKey, string> = {
 export const translations = { en, id } as const;
 
 export type Locale = keyof typeof translations;
-

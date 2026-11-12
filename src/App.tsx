@@ -4,6 +4,7 @@ import {
   FilePlus,
   Gauge,
   Key,
+  KeyRound,
   Lock,
   LogOut,
   RefreshCw,
@@ -29,9 +30,11 @@ import {
 import { Progress } from "./components/ui/progress";
 import { LanguageToggle } from "./components/ui/language-toggle";
 import { ThemeToggle } from "./components/ui/theme-toggle";
+import { RecoveryDialog } from "./components/RecoveryDialog";
 import { RewrapDialog, RewrapRequest } from "./components/RewrapDialog";
 import { collectDroppedFiles } from "./lib/files";
 import { isStorageQuotaMessage } from "./lib/errors";
+import { generateRecoveryKey } from "./lib/recovery";
 import {
   downloadBlob,
   getDecryptedFilename,
@@ -66,6 +69,7 @@ export default function App() {
   const [progress, setProgress] = useState<CryptoProgress | null>(null);
   const [isRewrapping, setIsRewrapping] = useState(false);
   const [rewrapOpen, setRewrapOpen] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [lockNotice, setLockNotice] = useState<string | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -73,6 +77,7 @@ export default function App() {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const sessionRef = useRef<AuthSession | null>(null);
   const changePasswordRef = useRef<HTMLButtonElement>(null);
+  const recoveryButtonRef = useRef<HTMLButtonElement>(null);
 
   const describeError = useCallback(
     (error: unknown) => {
@@ -97,6 +102,7 @@ export default function App() {
   const zeroizeSession = useCallback((current: AuthSession | null) => {
     if (!current) return;
     current.passwordBytes.fill(0);
+    current.recoveryKey?.fill(0);
     if (current.keyFileBuffer) new Uint8Array(current.keyFileBuffer).fill(0);
   }, []);
 
@@ -122,6 +128,7 @@ export default function App() {
         setLogs([]);
         setProgress(null);
         setRewrapOpen(false);
+        setRecoveryOpen(false);
         setLockNotice(t("login.noticeLockedInactivity"));
       }, AUTO_LOCK_MS);
     };
@@ -197,6 +204,7 @@ export default function App() {
     setProgress(null);
     setLockNotice(null);
     setRewrapOpen(false);
+    setRecoveryOpen(false);
   };
 
   const runCrypto = async (mode: "ENCRYPT" | "DECRYPT") => {
@@ -251,7 +259,7 @@ export default function App() {
               session.keyFileBuffer,
               signal,
               updateProgress,
-              { filename: file.name }
+              { filename: file.name, recoveryKey: session.recoveryKey }
             );
             downloadBlob(resultData, getEncryptedFilename(file.name));
           } else {
@@ -262,7 +270,11 @@ export default function App() {
               session.keyFileBuffer,
               signal,
               updateProgress,
-              (name) => (decryptedName = name)
+              (name) => (decryptedName = name),
+              {
+                recoveryKey:
+                  session.passwordBytes.length === 0 ? session.recoveryKey : null,
+              }
             );
             downloadBlob(resultData, decryptedName ?? getDecryptedFilename(file.name));
           }
@@ -356,6 +368,7 @@ export default function App() {
     setLogs([]);
     setProgress(null);
     setRewrapOpen(false);
+    setRecoveryOpen(false);
     setLockNotice(t("login.noticeLockedManual"));
   };
 
@@ -372,6 +385,7 @@ export default function App() {
 
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
   const canProcess = files.length > 0 && !isProcessing;
+  const canEncrypt = canProcess && session.passwordBytes.length > 0;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -390,6 +404,14 @@ export default function App() {
                 <Badge variant="outline" className="hidden font-mono text-[9px] sm:inline-flex">
                   {t("app.badge")}
                 </Badge>
+                {session.recoveryKey && (
+                  <Badge
+                    variant="outline"
+                    className="hidden border-2 font-mono text-[9px] sm:inline-flex"
+                  >
+                    {t("app.recoveryActive")}
+                  </Badge>
+                )}
               </div>
               <p className="truncate text-[11px] text-muted-foreground">
                 {t("app.workspaceActive")}
@@ -401,7 +423,9 @@ export default function App() {
             <div className="hidden items-center gap-2 border-2 border-border bg-secondary px-3 py-1.5 text-[11px] md:flex">
               <span className="h-2 w-2 bg-success" />
               <span className="text-muted-foreground">{t("app.auth")}</span>
-              <span className="font-semibold">{t("app.password")}</span>
+              <span className="font-semibold">
+                {session.passwordBytes.length === 0 ? t("app.recoveryKey") : t("app.password")}
+              </span>
               {session.keyFile && (
                 <>
                   <span className="text-muted-foreground">+</span>
@@ -410,12 +434,27 @@ export default function App() {
               )}
             </div>
 
+            {session.passwordBytes.length > 0 && (
+              <Button
+                ref={recoveryButtonRef}
+                variant="outline"
+                size="sm"
+                onClick={() => setRecoveryOpen(true)}
+                disabled={isProcessing || isRewrapping}
+                title={t("recovery.title")}
+                aria-label={t("recovery.title")}
+              >
+                <KeyRound className="h-4 w-4" />
+                <span className="hidden xl:inline">{t("recovery.title")}</span>
+              </Button>
+            )}
+
             <Button
               ref={changePasswordRef}
               variant="outline"
               size="sm"
               onClick={() => setRewrapOpen(true)}
-              disabled={isProcessing || isRewrapping}
+              disabled={session.passwordBytes.length === 0 || isProcessing || isRewrapping}
               title={t("app.changePasswordTitle")}
             >
               <RefreshCw className="h-4 w-4" />
@@ -587,10 +626,10 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => runCrypto("ENCRYPT")}
-                disabled={!canProcess}
+                disabled={!canEncrypt}
                 className={cn(
                   "flex flex-col items-start gap-3 border-2 border-border p-4 text-left",
-                  canProcess
+                  canEncrypt
                     ? "bg-accent text-accent-foreground hover:bg-primary hover:text-primary-foreground"
                     : "cursor-not-allowed bg-muted text-muted-foreground"
                 )}
@@ -598,7 +637,7 @@ export default function App() {
                 <span
                   className={cn(
                     "flex h-9 w-9 items-center justify-center border-2 border-border",
-                    canProcess ? "bg-card text-foreground" : "bg-background"
+                    canEncrypt ? "bg-card text-foreground" : "bg-background"
                   )}
                 >
                   <Lock className="h-4 w-4" />
@@ -758,10 +797,22 @@ export default function App() {
         onSubmit={handleRewrap}
         returnFocusRef={changePasswordRef}
       />
+
+      <RecoveryDialog
+        open={recoveryOpen}
+        recoveryKey={session.recoveryKey}
+        onGenerate={() =>
+          setSession((current) =>
+            current ? { ...current, recoveryKey: generateRecoveryKey() } : current
+          )
+        }
+        onRemove={() => {
+          session.recoveryKey?.fill(0);
+          setSession({ ...session, recoveryKey: null });
+        }}
+        onClose={() => setRecoveryOpen(false)}
+        returnFocusRef={recoveryButtonRef}
+      />
     </div>
   );
 }
-
-
-
-

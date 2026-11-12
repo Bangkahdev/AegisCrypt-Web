@@ -20,6 +20,13 @@ import {
   FLAG_FILENAME_METADATA,
   KNOWN_FLAGS,
   RECOVERY_SLOT_LENGTH,
+  RECOVERY_SLOT_OFFSET,
+  RECOVERY_KEY_LENGTH,
+  RECOVERY_NONCE_OFFSET,
+  RECOVERY_WRAPPED_DEK_OFFSET,
+  RECOVERY_TAG_OFFSET,
+  RECOVERY_HKDF_DOMAIN,
+  RECOVERY_AAD_LENGTH,
   RECORD_HEADER_LENGTH,
   RECORD_FLAG_FINAL,
   RECORD_KNOWN_FLAGS,
@@ -72,6 +79,8 @@ export const AegisError = {
   record: "Struktur record tidak valid; berkas dimanipulasi atau rusak.",
   tampered: "Autentikasi berkas gagal; data dimanipulasi atau rusak.",
   credentials: "Kata sandi atau keyfile salah.",
+  recoveryMissing: "Berkas ini tidak memiliki slot recovery.",
+  recoveryKey: "Kunci recovery salah atau slot rusak.",
   legacyCorrupt: "Berkas corrupt: struktur v2 tidak valid.",
   cancelled: "Operation Cancelled",
 } as const;
@@ -476,6 +485,136 @@ const unwrapDekRaw = async (
   }
 };
 
+const assertRecoveryKey = (recoveryKey: Uint8Array): void => {
+  if (recoveryKey.byteLength !== RECOVERY_KEY_LENGTH) {
+    throw new Error(AegisError.recoveryKey);
+  }
+};
+
+const deriveRecoveryKek = async (
+  recoveryKey: Uint8Array,
+  fileId: Bytes,
+  usage: KeyUsage[],
+): Promise<CryptoKey> => {
+  const keyMaterial = await webcrypto.subtle.importKey(
+    "raw",
+    new Uint8Array(recoveryKey),
+    "HKDF",
+    false,
+    ["deriveBits"],
+  );
+  const info = new Uint8Array(RECOVERY_HKDF_DOMAIN.length + fileId.byteLength);
+  info.set(RECOVERY_HKDF_DOMAIN, 0);
+  info.set(fileId, RECOVERY_HKDF_DOMAIN.length);
+
+  const bits = await webcrypto.subtle.deriveBits(
+    { name: "HKDF", hash: CRYPTO_CONSTANTS.HASH_ALGO, salt: new Uint8Array(0), info },
+    keyMaterial,
+    CRYPTO_CONSTANTS.KEY_LENGTH,
+  );
+
+  return webcrypto.subtle.importKey(
+    "raw",
+    bits,
+    { name: CRYPTO_CONSTANTS.ALGORITHM_AES },
+    false,
+    usage,
+  );
+};
+
+/**
+ * AAD for the recovery slot. Deliberately excludes every field that rewrap
+ * changes (salt, iterations, wrap nonce/DEK/tag) so the slot can be copied
+ * verbatim when the password changes.
+ */
+const makeRecoveryAad = (fileId: Bytes): Bytes => {
+  const aad = new Uint8Array(RECOVERY_AAD_LENGTH);
+  aad.set(FILE_MAGIC, 0);
+  aad[5] = FILE_VERSION;
+  aad.set(RECOVERY_HKDF_DOMAIN, 6);
+  aad.set(fileId, 6 + RECOVERY_HKDF_DOMAIN.length);
+  return aad;
+};
+
+const sealRecoverySlot = async (
+  dekRaw: Uint8Array<ArrayBuffer> | ArrayBuffer,
+  recoveryKey: Uint8Array,
+  fileId: Bytes,
+  randomBytes: RandomBytes,
+): Promise<Bytes> => {
+  assertRecoveryKey(recoveryKey);
+
+  const nonce = randomBytes(CRYPTO_CONSTANTS.IV_LENGTH);
+  const kek = await deriveRecoveryKek(recoveryKey, fileId, ["encrypt"]);
+  const sealed = new Uint8Array(
+    await webcrypto.subtle.encrypt(
+      {
+        name: CRYPTO_CONSTANTS.ALGORITHM_AES,
+        iv: nonce,
+        additionalData: makeRecoveryAad(fileId),
+        tagLength: CRYPTO_CONSTANTS.TAG_LENGTH_BITS,
+      },
+      kek,
+      dekRaw,
+    ),
+  );
+
+  const slot = new Uint8Array(RECOVERY_SLOT_LENGTH);
+  slot.set(nonce, RECOVERY_NONCE_OFFSET);
+  slot.set(sealed.subarray(0, CRYPTO_CONSTANTS.DEK_LENGTH), RECOVERY_WRAPPED_DEK_OFFSET);
+  slot.set(sealed.subarray(CRYPTO_CONSTANTS.DEK_LENGTH), RECOVERY_TAG_OFFSET);
+  return slot;
+};
+
+const unwrapRecoveryDekRaw = async (
+  reader: { size: number; read(offset: number, length: number): Promise<Bytes> },
+  fileId: Bytes,
+  recoveryKey: Uint8Array,
+): Promise<ArrayBuffer> => {
+  assertRecoveryKey(recoveryKey);
+  if (reader.size < RECOVERY_SLOT_OFFSET + RECOVERY_SLOT_LENGTH) {
+    throw new Error(AegisError.recoveryMissing);
+  }
+
+  const slot = await reader.read(RECOVERY_SLOT_OFFSET, RECOVERY_SLOT_LENGTH);
+  const nonce = slot.slice(
+    RECOVERY_NONCE_OFFSET,
+    RECOVERY_NONCE_OFFSET + CRYPTO_CONSTANTS.IV_LENGTH,
+  );
+  const sealed = new Uint8Array(
+    CRYPTO_CONSTANTS.DEK_LENGTH + CRYPTO_CONSTANTS.TAG_LENGTH_BYTES,
+  );
+  sealed.set(
+    slot.subarray(
+      RECOVERY_WRAPPED_DEK_OFFSET,
+      RECOVERY_WRAPPED_DEK_OFFSET + CRYPTO_CONSTANTS.DEK_LENGTH,
+    ),
+    0,
+  );
+  sealed.set(
+    slot.subarray(
+      RECOVERY_TAG_OFFSET,
+      RECOVERY_TAG_OFFSET + CRYPTO_CONSTANTS.TAG_LENGTH_BYTES,
+    ),
+    CRYPTO_CONSTANTS.DEK_LENGTH,
+  );
+
+  const kek = await deriveRecoveryKek(recoveryKey, fileId, ["decrypt"]);
+  try {
+    return await webcrypto.subtle.decrypt(
+      {
+        name: CRYPTO_CONSTANTS.ALGORITHM_AES,
+        iv: nonce,
+        additionalData: makeRecoveryAad(fileId),
+        tagLength: CRYPTO_CONSTANTS.TAG_LENGTH_BITS,
+      },
+      kek,
+      sealed,
+    );
+  } catch {
+    throw new Error(AegisError.recoveryKey);
+  }
+};
 // ---------------------------------------------------------------------------
 // Reader abstraction (Blob => true streaming, ArrayBuffer => zero-copy views)
 // ---------------------------------------------------------------------------
@@ -603,6 +742,8 @@ export interface EncryptOptions {
   chunkSize?: number;
   /** Encrypt the original filename into the container (flag bit2). */
   filename?: string | null;
+  /** 256-bit recovery key; when set a recovery slot is written (flag bit1). */
+  recoveryKey?: Uint8Array | null;
   /** Deterministic RNG injection for test vectors / property tests. */
   randomBytes?: RandomBytes;
 }
@@ -634,7 +775,8 @@ export const processFileEncrypt = async (
 
   const flags =
     (keyFileBuffer ? FLAG_KEYFILE : 0) |
-    (options.filename != null ? FLAG_FILENAME_METADATA : 0);
+    (options.filename != null ? FLAG_FILENAME_METADATA : 0) |
+    (options.recoveryKey ? FLAG_RECOVERY : 0);
   if (options.filename != null) assertFilename(options.filename);
 
   const header = buildHeader({
@@ -668,6 +810,9 @@ export const processFileEncrypt = async (
   );
 
   const parts: BlobPart[] = [header];
+  if (options.recoveryKey) {
+    parts.push(await sealRecoverySlot(dekRaw, options.recoveryKey, fileId, randomBytes));
+  }
   if (options.filename != null) {
     parts.push(await encryptFilename(dek, fileId, noncePrefix, options.filename));
   }
@@ -744,6 +889,8 @@ export interface DecryptOptions {
   sink?: DecryptSink;
   /** Called with the encrypted filename when the container stores one. */
   onFilename?: (filename: string) => void;
+  /** Decrypt using the recovery slot instead of password + keyfile. */
+  recoveryKey?: Uint8Array | null;
 }
 
 const decryptLegacyV2 = async (
@@ -839,6 +986,7 @@ export const processFileDecrypt = async (
   const sink = options.sink ?? (await createDefaultSink());
 
   if (version === LEGACY_FILE_VERSION) {
+    if (options.recoveryKey) throw new Error(AegisError.recoveryMissing);
     return decryptLegacyV2(reader, password, keyFileBuffer, signal, onProgress, sink);
   }
   if (version !== FILE_VERSION) throw new Error(AegisError.version(version));
@@ -848,8 +996,14 @@ export const processFileDecrypt = async (
 
   if (reader.size < header.metadataOffset) throw new Error(AegisError.truncated);
 
-  const keyMaterial = await prepareKeyMaterial(password, keyFileBuffer);
-  const dekRaw = await unwrapDekRaw(header, keyMaterial);
+  let dekRaw: ArrayBuffer;
+  if (options.recoveryKey) {
+    if (!(header.flags & FLAG_RECOVERY)) throw new Error(AegisError.recoveryMissing);
+    dekRaw = await unwrapRecoveryDekRaw(reader, header.fileId, options.recoveryKey);
+  } else {
+    const keyMaterial = await prepareKeyMaterial(password, keyFileBuffer);
+    dekRaw = await unwrapDekRaw(header, keyMaterial);
+  }
   const dek = await importDek(dekRaw, ["decrypt"]);
 
   const { recordsOffset, filename } = await resolveRecordsOffset(reader, header, dek);
@@ -1023,15 +1177,16 @@ export const rewrapFile = async (
 
   const parts: BlobPart[] = [newHeader];
 
-  // Recovery slot and encrypted filename metadata are DEK-protected, so they
-  // are copied unchanged alongside the payload records.
+  // The recovery slot and encrypted filename metadata are DEK-protected, so
+  // they are copied unchanged alongside the payload records. Copying from
+  // HEADER_LENGTH (not metadataOffset) keeps the recovery slot in place.
   if (!(source instanceof Blob)) {
     const view = new Uint8Array(source as ArrayBuffer);
-    parts.push(view.subarray(header.metadataOffset));
+    parts.push(view.subarray(HEADER_LENGTH));
     return new Blob(parts, { type: "application/octet-stream" });
   }
 
-  parts.push(source.slice(header.metadataOffset));
+  parts.push(source.slice(HEADER_LENGTH));
   return new Blob(parts, { type: "application/octet-stream" });
 };
 

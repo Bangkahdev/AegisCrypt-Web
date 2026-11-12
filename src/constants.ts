@@ -75,8 +75,19 @@ export const FLAG_RECOVERY = 0x02;
 export const FLAG_FILENAME_METADATA = 0x04;
 export const KNOWN_FLAGS = FLAG_KEYFILE | FLAG_RECOVERY | FLAG_FILENAME_METADATA;
 
-// Optional recovery slot appended after the fixed header: nonce(12) + DEK(32) + tag(16).
+// Recovery slot appended after the fixed header when bit1 is set. The DEK is
+// wrapped under a KEK derived from a 256-bit recovery key (never stored in the
+// container), bound to fileId so rewrap can copy the slot verbatim.
+//
+// Layout: nonce(12) + wrapped DEK(32) + tag(16).
 export const RECOVERY_SLOT_LENGTH = 60;
+export const RECOVERY_SLOT_OFFSET = HEADER_LENGTH;
+export const RECOVERY_KEY_LENGTH = 32;
+export const RECOVERY_NONCE_OFFSET = 0;
+export const RECOVERY_WRAPPED_DEK_OFFSET = 12;
+export const RECOVERY_TAG_OFFSET = 44;
+export const RECOVERY_HKDF_DOMAIN = new Uint8Array([0x41, 0x45, 0x47, 0x49, 0x53, 0x52, 0x43, 0x56]); // "AEGISRCV"
+export const RECOVERY_AAD_LENGTH = 5 + 1 + 8 + 16; // magic + version + domain + fileId
 
 // ---------------------------------------------------------------------------
 // Encrypted filename metadata (flag bit2)
