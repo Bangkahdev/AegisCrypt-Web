@@ -154,4 +154,33 @@ test.describe('AegisCrypt user journey', () => {
     await expect(page.getByText('DECRYPT Success: recovery.txt.aegis')).toBeVisible();
     expect((await readFile(decryptedPath)).toString('utf8')).toBe(original);
   });
+
+  test('shows a localized error for a wrong password', async ({ page }, testInfo) => {
+    await page.goto('/');
+    await page.getByPlaceholder('Enter encryption password').fill('CorrectPassword123!');
+    await page.getByRole('button', { name: 'Start Session' }).click();
+    await page.locator('input[type=file]').first().setInputFiles({
+      name: 'wrong-password.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('wrong password probe\n', 'utf8'),
+    });
+
+    const encryptedPath = testInfo.outputPath('wrong-password.txt.aegis');
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByText('Encrypt', { exact: true }).click(),
+    ]);
+    await download.saveAs(encryptedPath);
+
+    await page.getByRole('button', { name: 'Lock' }).click();
+    await page.getByPlaceholder('Enter encryption password').fill('WrongPassword123!');
+    await page.getByRole('button', { name: 'Start Session' }).click();
+
+    await page.locator('input[type=file]').first().setInputFiles(encryptedPath);
+    await page.getByText('Decrypt', { exact: true }).click();
+
+    await expect(page.getByText(/Incorrect password or keyfile\./)).toBeVisible({
+      timeout: 15_000,
+    });
+  });
 });

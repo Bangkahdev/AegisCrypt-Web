@@ -33,7 +33,7 @@ import { ThemeToggle } from "./components/ui/theme-toggle";
 import { RecoveryDialog } from "./components/RecoveryDialog";
 import { RewrapDialog, RewrapRequest } from "./components/RewrapDialog";
 import { collectDroppedFiles } from "./lib/files";
-import { isStorageQuotaMessage } from "./lib/errors";
+import { localizeErrorMessage } from "./lib/errors";
 import { generateRecoveryKey } from "./lib/recovery";
 import {
   downloadBlob,
@@ -82,7 +82,7 @@ export default function App() {
   const describeError = useCallback(
     (error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      return isStorageQuotaMessage(message) ? t("errors.storageQuota") : message;
+      return localizeErrorMessage(message, t);
     },
     [t]
   );
