@@ -15,8 +15,11 @@ import { ThemeToggle } from "./ui/theme-toggle";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { Input } from "./ui/input";
 import { Switch } from "./ui/switch";
 import { LanguageToggle } from "./ui/language-toggle";
+import { parseRecoveryKey } from "../lib/recovery";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/I18nProvider";
 
 interface LoginScreenProps {
@@ -35,15 +38,40 @@ const FACTS = [
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => {
   const { t } = useI18n();
+  const [mode, setMode] = useState<"password" | "recovery">("password");
   const [password, setPassword] = useState("");
   const [keyFile, setKeyFile] = useState<File | null>(null);
   const [useKeyFile, setUseKeyFile] = useState(false);
+  const [recoveryInput, setRecoveryInput] = useState("");
   const [isAnimating, setIsAnimating] = useState(false);
 
   const keyFileInputRef = useRef<HTMLInputElement>(null);
+  const parsedRecovery = parseRecoveryKey(recoveryInput);
+
+  const switchMode = (next: "password" | "recovery") => {
+    setMode(next);
+    setPassword("");
+    setRecoveryInput("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (mode === "recovery") {
+      if (!parsedRecovery) return;
+      setIsAnimating(true);
+      setRecoveryInput("");
+      setTimeout(() => {
+        onLogin({
+          passwordBytes: new Uint8Array(0),
+          keyFile: null,
+          keyFileBuffer: null,
+          recoveryKey: parsedRecovery,
+        });
+      }, 450);
+      return;
+    }
+
     if (!password) return;
 
     setIsAnimating(true);
@@ -61,6 +89,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
         passwordBytes,
         keyFile: useKeyFile ? keyFile : null,
         keyFileBuffer,
+        recoveryKey: null,
       });
     }, 450);
   };
@@ -164,66 +193,117 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              <PasswordInput value={password} onChange={setPassword} disabled={isAnimating} />
-
-              <div
-                className={`border-2 border-border p-3.5 ${
-                  useKeyFile ? "bg-accent" : "bg-card"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2.5">
-                    <Key className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-semibold">{t("login.useKeyfile")}</p>
-                      <p className="text-[11px] text-muted-foreground">{t("login.secondFactor")}</p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={useKeyFile}
-                    onCheckedChange={(checked) => {
-                      setUseKeyFile(checked);
-                      if (!checked) setKeyFile(null);
-                    }}
+              <div className="grid grid-cols-2 gap-2" role="group" aria-label={t("login.modePassword")}>
+                {(["password", "recovery"] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={mode === value}
+                    onClick={() => switchMode(value)}
                     disabled={isAnimating}
-                    aria-label={t("login.toggleKeyfile")}
-                  />
-                </div>
-
-                {useKeyFile && (
-                  <div
-                    onClick={() => keyFileInputRef.current?.click()}
-                    className="mt-3 flex cursor-pointer items-center gap-3 border-2 border-dashed border-border bg-card p-3 hover:bg-secondary"
+                    className={cn(
+                      "border-2 border-border px-3 py-2 text-xs font-bold uppercase tracking-wide outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50",
+                      mode === value
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-card text-muted-foreground hover:bg-secondary",
+                    )}
                   >
-                    <div className="flex h-8 w-8 items-center justify-center border-2 border-border bg-background text-muted-foreground">
-                      {keyFile ? (
-                        <FileCheck className="h-4 w-4 text-foreground" />
-                      ) : (
-                        <FileUp className="h-4 w-4" />
-                      )}
+                    {t(value === "password" ? "login.modePassword" : "login.modeRecovery")}
+                  </button>
+                ))}
+              </div>
+
+              <div className={mode === "recovery" ? "hidden" : "space-y-5"}>
+                <PasswordInput value={password} onChange={setPassword} disabled={isAnimating} />
+
+                <div
+                  className={`border-2 border-border p-3.5 ${
+                    useKeyFile ? "bg-accent" : "bg-card"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2.5">
+                      <Key className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-semibold">{t("login.useKeyfile")}</p>
+                        <p className="text-[11px] text-muted-foreground">{t("login.secondFactor")}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">
-                        {keyFile ? keyFile.name : t("login.selectKeyfile")}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {t("login.keyfileHint")}
-                      </p>
-                    </div>
-                    <input
-                      type="file"
-                      ref={keyFileInputRef}
-                      className="hidden"
-                      onChange={(e) => setKeyFile(e.target.files?.[0] || null)}
+                    <Switch
+                      checked={useKeyFile}
+                      onCheckedChange={(checked) => {
+                        setUseKeyFile(checked);
+                        if (!checked) setKeyFile(null);
+                      }}
+                      disabled={isAnimating}
+                      aria-label={t("login.toggleKeyfile")}
                     />
                   </div>
-                )}
+
+                  {useKeyFile && (
+                    <div
+                      onClick={() => keyFileInputRef.current?.click()}
+                      className="mt-3 flex cursor-pointer items-center gap-3 border-2 border-dashed border-border bg-card p-3 hover:bg-secondary"
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center border-2 border-border bg-background text-muted-foreground">
+                        {keyFile ? (
+                          <FileCheck className="h-4 w-4 text-foreground" />
+                        ) : (
+                          <FileUp className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">
+                          {keyFile ? keyFile.name : t("login.selectKeyfile")}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {t("login.keyfileHint")}
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        ref={keyFileInputRef}
+                        className="hidden"
+                        onChange={(e) => setKeyFile(e.target.files?.[0] || null)}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {mode === "recovery" && (
+                <div className="space-y-2">
+                  <label htmlFor="recovery-key" className="text-sm font-semibold">
+                    {t("login.recoveryLabel")}
+                  </label>
+                  <Input
+                    id="recovery-key"
+                    value={recoveryInput}
+                    onChange={(event) => setRecoveryInput(event.target.value)}
+                    disabled={isAnimating}
+                    placeholder={t("login.recoveryPlaceholder")}
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="h-11 font-mono text-xs"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("login.recoveryHint")}
+                  </p>
+                  {recoveryInput.length > 0 && !parsedRecovery && (
+                    <p role="alert" className="text-[11px] font-semibold text-destructive">
+                      {t("login.recoveryInvalid")}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <Button
                 type="submit"
                 size="lg"
-                disabled={!password || isAnimating || (useKeyFile && !keyFile)}
+                disabled={
+                  isAnimating ||
+                  (mode === "password" ? !password || (useKeyFile && !keyFile) : !parsedRecovery)
+                }
                 className="w-full"
               >
                 {isAnimating ? (
@@ -261,5 +341,3 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
     </div>
   );
 };
-
-

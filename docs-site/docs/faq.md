@@ -11,7 +11,11 @@ Tidak. Aplikasi adalah bundel statis; semua kriptografi dilakukan di browser mel
 
 ## Apakah saya bisa memulihkan berkas tanpa keyfile?
 
-Tidak. Jika keyfile digunakan, materi kunci mencakup `SHA-256(keyfile)`. Tanpa byte yang sama persis, PBKDF2 menurunkan kunci berbeda dan dekripsi GCM gagal.
+Tidak, kecuali berkas tersebut memiliki slot recovery. Jika keyfile digunakan, materi kunci mencakup `SHA-256(keyfile)`; tanpa byte yang sama persis, PBKDF2 menurunkan kunci berbeda dan dekripsi GCM gagal. Bila Anda mengaktifkan kunci recovery sebelum enkripsi, kunci 256-bit itu dapat membuka DEK secara mandiri.
+
+## Apakah kunci recovery menggantikan kata sandi?
+
+Tidak. Kunci recovery adalah kunci independen yang hanya dapat mendekripsi berkas yang memang membawa slot recovery. Aktifkan lewat tombol **Recovery key** di header, simpan kuncinya offline, dan gunakan tab **Recovery key** di layar masuk untuk memulihkan. Sesi recovery tidak dapat mengenkripsi atau mengganti kata sandi, dan AegisCrypt tidak menyimpan kunci tersebut.
 
 ## Apakah antarmuka tersedia dalam bahasa Indonesia?
 

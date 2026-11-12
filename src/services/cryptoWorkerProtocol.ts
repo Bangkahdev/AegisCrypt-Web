@@ -7,6 +7,11 @@ export interface EncryptJobOptions {
   iterations?: number;
   chunkSize?: number;
   filename?: string | null;
+  recoveryKey?: Uint8Array | null;
+}
+
+export interface DecryptJobOptions {
+  recoveryKey?: Uint8Array | null;
 }
 
 export interface RewrapJobOptions {
@@ -28,6 +33,7 @@ export type CryptoJobRequest =
       source: Blob;
       password: Uint8Array;
       keyFile: ArrayBuffer | null;
+      options: DecryptJobOptions;
     }
   | {
       id: number;

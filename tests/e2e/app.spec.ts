@@ -105,4 +105,53 @@ test.describe('AegisCrypt user journey', () => {
     await expect(page.getByText('DECRYPT Success: rewrap-new.txt.aegis')).toBeVisible();
     expect((await readFile(decryptedPath)).toString('utf8')).toBe(original);
   });
+
+  test('decrypts with only a recovery key', async ({ page }, testInfo) => {
+    const original = 'recovery slot browser round-trip\n';
+    await page.goto('/');
+    await page.getByPlaceholder('Enter encryption password').fill('RecoveryPassword123!');
+    await page.getByRole('button', { name: 'Start Session' }).click();
+
+    await page.getByRole('button', { name: 'Recovery key' }).click();
+    await expect(page.getByRole('heading', { name: 'Recovery key' })).toBeVisible();
+    await page.getByRole('button', { name: 'Generate recovery key' }).click();
+
+    const recoveryKey = (await page.getByTestId('recovery-key-value').textContent())?.trim() ?? '';
+    expect(recoveryKey).toMatch(/^[0-9A-F]{8}(-[0-9A-F]{8}){7}$/);
+    await page.getByRole('button', { name: 'Close recovery dialog' }).click();
+
+    await page.locator('input[type=file]').first().setInputFiles({
+      name: 'recovery.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(original, 'utf8'),
+    });
+
+    const encryptedPath = testInfo.outputPath('recovery.txt.aegis');
+    const [encryptedDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByText('Encrypt', { exact: true }).click(),
+    ]);
+    await encryptedDownload.saveAs(encryptedPath);
+    await expect(page.getByText('ENCRYPT Success: recovery.txt')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Logout' }).click();
+    await page.getByRole('button', { name: 'Recovery key' }).click();
+    await page.locator('#recovery-key').fill(recoveryKey);
+    await page.getByRole('button', { name: 'Start Session' }).click();
+
+    await expect(page.getByText('Processing Queue')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Encrypt/ })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Change password' })).toBeDisabled();
+
+    await page.locator('input[type=file]').first().setInputFiles(encryptedPath);
+    const decryptedPath = testInfo.outputPath('recovery.txt');
+    const [decryptedDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByText('Decrypt', { exact: true }).click(),
+    ]);
+    expect(decryptedDownload.suggestedFilename()).toBe('recovery.txt');
+    await decryptedDownload.saveAs(decryptedPath);
+    await expect(page.getByText('DECRYPT Success: recovery.txt.aegis')).toBeVisible();
+    expect((await readFile(decryptedPath)).toString('utf8')).toBe(original);
+  });
 });

@@ -33,4 +33,10 @@ export interface AuthSession {
   passwordBytes: Uint8Array;
   keyFile: File | null;
   keyFileBuffer: ArrayBuffer | null;
+  /**
+   * Recovery key for the session. In a recovery-only session `passwordBytes`
+   * is empty and the workspace is decrypt-only. In a password session it is
+   * set only after the user generates one, so new files get a recovery slot.
+   */
+  recoveryKey: Uint8Array | null;
 }

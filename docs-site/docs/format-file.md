@@ -90,11 +90,37 @@ terdapat satu blok metadata:
   `\` ditolak saat enkripsi maupun dekripsi.
 - File v3 tanpa bit2 tetap sah; nama unduhan diturunkan dari nama kontainer.
 
-## Slot recovery (dicadangkan)
+## Slot recovery (flag bit1)
 
-Bila flag bit1 aktif, slot 60 byte (`nonce 12 + DEK 32 + tag 16`) berada tepat
-setelah header tetap. Versi ini belum menulis slot tersebut; pembaca sudah
-menghitung offset record dengan benar agar kompatibel dengan fase berikutnya.
+Bila bit1 aktif, slot 60 byte berada tepat setelah header tetap:
+
+| Bagian | Ukuran | Keterangan |
+|--------|--------|------------|
+| Nonce | 12 byte | Acak per slot |
+| DEK terbungkus | 32 byte | Dek berkas dienkripsi AES-256-GCM |
+| Tag | 16 byte | Tag autentikasi GCM |
+
+Slot dibuka dengan kunci pembungkus (KEK) yang diturunkan dari kunci recovery
+256-bit milik pengguna, bukan dari kata sandi:
+
+```
+KEK = HKDF-SHA256(ikm = RecoveryKey, salt = kosong,
+                  info = "AEGISRCV" || FileID, panjang = 32 byte)
+AAD = magic(5) || versi(1) || "AEGISRCV"(8) || FileID(16)   // 30 byte
+```
+
+Karena AAD dan info tidak memuat salt, iterasi, nonce wrap, maupun keyfile,
+slot tetap sah setelah rewrap: **Change password** menyalin slot apa adanya dan
+kunci recovery yang sama tetap dapat membuka berkas. DEK tetap satu-satunya
+kunci payload, sehingga kunci recovery tidak dapat dipakai untuk menulis berkas
+baru atau mengganti kata sandi.
+
+Kunci recovery dibuat acak oleh aplikasi dan tidak pernah disimpan di
+kontainer, browser, atau server. Pengguna wajib menyimpannya sendiri (aplikasi
+menyediakan salin dan unduh `.txt`). Dekripsi dengan kunci recovery pada berkas
+tanpa slot ditolak dengan pesan slot recovery tidak ada; kunci yang salah atau
+slot yang rusak ditolak oleh tag GCM. Berkas v3 tanpa bit1 tetap sah dan hanya
+dapat dibuka dengan kata sandi/keyfile.
 
 ## Kompatibilitas v2 (hanya baca)
 

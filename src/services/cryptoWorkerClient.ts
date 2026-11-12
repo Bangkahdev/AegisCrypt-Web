@@ -3,6 +3,7 @@ import CryptoWorker from "../workers/cryptoWorker?worker";
 import type {
   CryptoJobMessage,
   CryptoJobRequest,
+  DecryptJobOptions,
   EncryptJobOptions,
   RewrapJobOptions,
 } from "./cryptoWorkerProtocol";
@@ -140,7 +141,7 @@ const runLocally = async (body: JobBody, callbacks: TaskCallbacks): Promise<Blob
         body.keyFile,
         controller.signal,
         (bytes) => callbacks.onProgress?.(bytes),
-        { onFilename: callbacks.onFilename },
+        { onFilename: callbacks.onFilename, recoveryKey: body.options.recoveryKey },
       );
     }
 
@@ -183,6 +184,7 @@ export const decryptFileTask = (
   signal: AbortSignal | undefined,
   onProgress: (bytes: number) => void,
   onFilename?: (filename: string) => void,
+  options: DecryptJobOptions = {},
 ): Promise<Blob> =>
   runJob(
     {
@@ -190,6 +192,7 @@ export const decryptFileTask = (
       source,
       password: encodePassword(password),
       keyFile,
+      options,
     },
     { signal, onProgress, onFilename },
   );

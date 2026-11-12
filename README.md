@@ -19,6 +19,7 @@ AegisCrypt Web adalah alat enkripsi berbasis browser dengan standar militer. Dir
 * **Streaming Engine (v3)**: Enkripsi envelope per file dengan header 128 byte, record terautentikasi, dan pemrosesan per chunk — cocok untuk file berukuran gigabyte tanpa membuat browser *crash*.
 * **Nama file terenkripsi**: Nama asli disimpan sebagai metadata terenkripsi di container (flag bit2) dan dipulihkan saat dekripsi.
 * **Ganti kata sandi (rewrap)**: Bungkus ulang kunci file dengan kata sandi/keyfile baru tanpa mengenkripsi ulang payload.
+* **Kunci recovery opsional**: Slot recovery 60 byte memungkinkan dekripsi tanpa kata sandi; sesi recovery bersifat hanya-dekripsi.
 * **Auto-lock & zeroisasi**: Sesi terkunci setelah 10 menit idle; byte kata sandi dan buffer keyfile dihapus dari memori saat lock/logout.
 * **Neo-Brutalism UI**: Antarmuka modern, tegas, dan sepenuhnya responsif dengan kontras tinggi.
 * **Telemetri Waktu Nyata**: Memantau kecepatan enkripsi (MB/s) dan estimasi waktu selesai (ETA).
@@ -67,7 +68,7 @@ Buka aplikasi langsung dan ikuti panduan di dokumentasi:
 
 [Buka Aplikasi](https://aegiscrypt.bangkah.tech) ・ [Buka Dokumentasi](https://docs.aegiscrypt.bangkah.tech)
 
---- 
+---
 
 ## Struktur Project
 
@@ -169,7 +170,7 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 
 **T: Saya kehilangan kata sandi/keyfile saya. Apakah data saya bisa dipulihkan?**
 
-> **Tidak.** AegisCrypt menggunakan prinsip *zero-knowledge* dan tidak memiliki pintu belakang (*backdoor*). Jika kredensial hilang, data secara matematis tidak dapat dipulihkan.
+> **Tanpa kunci recovery, tidak.** AegisCrypt menggunakan prinsip *zero-knowledge* dan tidak memiliki pintu belakang (*backdoor*). Jika kredensial hilang dan berkas tidak memiliki slot recovery, data secara matematis tidak dapat dipulihkan. Aktifkan **Recovery key** sebelum enkripsi dan simpan kuncinya offline untuk mendapatkan jalur pemulihan.
 
 **T: Mengapa browser meminta izin untuk mengunduh banyak file sekaligus?**
 
@@ -192,6 +193,3 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 ## Lisensi
 
 [Apache-2.0](LICENSE)
-
-
-
