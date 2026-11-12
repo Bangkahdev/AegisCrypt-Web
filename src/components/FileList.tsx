@@ -3,6 +3,7 @@ import { Box, FileArchive, FileText, Film, Image, Lock, Music, X } from "lucide-
 import { EXTENSION_ENCRYPTED } from "../constants";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { useI18n } from "@/i18n/I18nProvider";
 
 interface FileListProps {
   files: File[];
@@ -49,6 +50,7 @@ function getFileIcon(filename: string) {
 }
 
 export const FileList: React.FC<FileListProps> = ({ files, onRemove, disabled }) => {
+  const { t } = useI18n();
   return (
     <div className="scrollbar-thin flex-1 space-y-2 overflow-y-auto pr-1">
       {files.map((file, idx) => {
@@ -75,7 +77,7 @@ export const FileList: React.FC<FileListProps> = ({ files, onRemove, disabled })
                 </span>
                 {isEncrypted && (
                   <Badge variant="success" className="px-1.5 py-0 text-[9px]">
-                    ENCRYPTED
+                    {t("files.encrypted")}
                   </Badge>
                 )}
               </div>
@@ -89,7 +91,7 @@ export const FileList: React.FC<FileListProps> = ({ files, onRemove, disabled })
                 onRemove(idx);
               }}
               disabled={disabled}
-              aria-label={`Remove ${file.name}`}
+              aria-label={t("files.remove", { name: file.name })}
               className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />
@@ -100,3 +102,4 @@ export const FileList: React.FC<FileListProps> = ({ files, onRemove, disabled })
     </div>
   );
 };
+

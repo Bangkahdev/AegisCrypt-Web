@@ -25,6 +25,7 @@ AegisCrypt Web adalah alat enkripsi berbasis browser dengan standar militer. Dir
 * **Pemrosesan Batch**: Seret dan lepaskan (*drag & drop*) seluruh folder ke dalam antrean pemrosesan.
 * **Kripto di Web Worker**: PBKDF2 dan enkripsi/dekripsi berjalan di luar thread UI agar aplikasi tetap responsif.
 * **PWA & offline**: Dapat dipasang sebagai aplikasi dan dibuka tanpa jaringan; cache hanya berisi app shell.
+* **Antarmuka dua bahasa**: Inggris dan Indonesia, dapat diganti dari header dan diingat antar kunjungan.
 
 ---
 
@@ -182,4 +183,5 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 ## Lisensi
 
 [Apache-2.0](LICENSE)
+
 

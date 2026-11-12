@@ -1,7 +1,8 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { Input } from "./ui/input";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/I18nProvider";
 
 interface PasswordInputProps {
   value: string;
@@ -15,9 +16,10 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
   value,
   onChange,
   disabled,
-  label = "Master password",
+  label,
   id = "master-password",
 }) => {
+  const { t } = useI18n();
   const [show, setShow] = useState(false);
   const [strength, setStrength] = useState(0);
 
@@ -34,11 +36,11 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
     setStrength(score);
   }, [value]);
 
-  const strengthLabel = () => {
-    if (strength <= 1) return "Weak";
-    if (strength === 2) return "Fair";
-    if (strength === 3) return "Good";
-    return "Excellent";
+  const strengthKey = () => {
+    if (strength <= 1) return "password.weak" as const;
+    if (strength === 2) return "password.fair" as const;
+    if (strength === 3) return "password.good" as const;
+    return "password.excellent" as const;
   };
 
   const strengthColor = () => {
@@ -59,10 +61,10 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
         <label htmlFor={id} className="text-sm font-semibold">
-          {label}
+          {label ?? t("password.label")}
         </label>
         <span className="font-mono text-[11px] text-muted-foreground">
-          {value.length} chars
+          {t("password.chars", { count: value.length })}
         </span>
       </div>
 
@@ -74,7 +76,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          placeholder="Enter encryption password"
+          placeholder={t("password.placeholder")}
           autoComplete="new-password"
           className="h-11 pl-9 pr-11"
         />
@@ -82,7 +84,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
           type="button"
           onClick={() => setShow(!show)}
           disabled={disabled}
-          aria-label={show ? "Hide password" : "Show password"}
+          aria-label={show ? t("password.hide") : t("password.show")}
           className="absolute right-2 top-1/2 -translate-y-1/2 border-2 border-transparent p-1.5 text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50"
         >
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -97,10 +99,11 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
 
       <div className="flex items-center justify-between text-[11px]">
         <span className={cn("font-semibold", value ? strengthColor() : "text-muted-foreground")}>
-          {value ? strengthLabel() : "Password required"}
+          {value ? t(strengthKey()) : t("password.required")}
         </span>
-            <span className="text-muted-foreground">PBKDF2 / 600k iterations</span>
+        <span className="text-muted-foreground">{t("password.iterations")}</span>
       </div>
     </div>
   );
 };
+
