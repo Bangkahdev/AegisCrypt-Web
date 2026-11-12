@@ -72,8 +72,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Build application
         run: npm run build
@@ -108,3 +108,4 @@ jobs:
 
       - name: Build application
         run: npm run build
+
