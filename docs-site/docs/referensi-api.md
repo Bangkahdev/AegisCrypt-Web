@@ -50,7 +50,13 @@ UTF-8 (memungkinkan zeroisasi di UI).
 `AegisError` memetakan kegagalan ke pesan spesifik: format, versi, KDF,
 iterasi, ukuran chunk, flag, metadata nama rusak, berkas terpotong, record
 final hilang, data sisa, struktur record, autentikasi gagal, kredensial salah,
-v2 rusak, dan pembatalan.
+slot recovery hilang/rusak, v2 rusak, dan pembatalan.
+
+Lapisan kripto tetap melempar pesan Indonesia sebagai nilai stabil. UI
+memetakannya ke kunci `errors.*` melalui `localizeErrorMessage` di
+`src/lib/errors.ts`, sehingga log mengikuti bahasa aktif (Inggris/Indonesia).
+Kegagalan browser yang tidak dikenal (misalnya `DOMException`) diteruskan apa
+adanya.
 
 ## Contoh: membungkus DEK (konseptual)
 
