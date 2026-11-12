@@ -45,8 +45,15 @@ const sha256File = (filePath: string): Promise<string> =>
       .on('error', reject);
   });
 
+const gib = (bytes: number): string => (bytes / 1024 ** 3).toFixed(2);
+
 test('reports encrypt and decrypt throughput', async ({ page }, testInfo) => {
   test.setTimeout(600_000);
+
+  page.on('console', (message) => {
+    if (message.type() === 'error') console.log('[page]', message.text());
+  });
+  page.on('pageerror', (error) => console.log('[pageerror]', error.message));
 
   const inputPath = testInfo.outputPath('benchmark-input.bin');
   const inputHash = await writePayload(inputPath);
@@ -54,6 +61,17 @@ test('reports encrypt and decrypt throughput', async ({ page }, testInfo) => {
   await page.goto('/');
   await page.getByPlaceholder('Enter encryption password').fill('BenchmarkPassword123!');
   await page.getByRole('button', { name: 'Start Session' }).click();
+
+  const estimate = await page.evaluate(async () => {
+    if (!navigator.storage?.estimate) return null;
+    const { quota = 0, usage = 0 } = await navigator.storage.estimate();
+    return { quota, usage };
+  });
+  if (estimate) {
+    console.log(
+      `[benchmark] storage quota ${gib(estimate.quota)} GiB, usage ${gib(estimate.usage)} GiB`,
+    );
+  }
 
   const fileInput = page.locator('input[type=file]').first();
   await fileInput.setInputFiles(inputPath);
@@ -72,12 +90,28 @@ test('reports encrypt and decrypt throughput', async ({ page }, testInfo) => {
 
   await fileInput.setInputFiles(encryptedPath);
 
+  const quotaNotice = page.getByText(/not have enough storage|Penyimpanan browser tidak cukup/i);
   const decryptedPath = testInfo.outputPath('benchmark-decrypted.bin');
   const decryptStart = performance.now();
-  const [decryptDownload] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByText('Decrypt', { exact: true }).click(),
-  ]);
+  let decryptDownload;
+
+  try {
+    [decryptDownload] = await Promise.all([
+      page.waitForEvent('download', { timeout: 120_000 }),
+      page.getByText('Decrypt', { exact: true }).click(),
+    ]);
+  } catch (error) {
+    if ((await quotaNotice.count()) > 0) {
+      throw new Error(
+        `Browser storage quota reached while decrypting ${SIZE_MB} MiB. Peak usage is roughly twice the ` +
+          'file size because the previous OPFS temp file is still inside its cleanup window. ' +
+          'Lower BENCH_SIZE_MB or free disk space.',
+        { cause: error },
+      );
+    }
+    throw error;
+  }
+
   await decryptDownload.saveAs(decryptedPath);
   const decryptSeconds = (performance.now() - decryptStart) / 1000;
 

@@ -90,9 +90,12 @@ $env:BENCH_SIZE_MB=256; npm run test:bench
 
 Contoh keluaran pada mesin pengembangan: sekitar 20-23 MB/s untuk enkripsi dan dekripsi 16 MiB. Hasil bergantung pada CPU, browser, dan media penyimpanan; gunakan sebagai pembanding antar perubahan, bukan patokan absolut. Unduhan besar juga menambah overhead protokol Playwright, sehingga angka pada 256 MiB atau lebih akan lebih rendah.
 
+Dekripsi memakai OPFS untuk menampung hasil sementara. Puncak pemakaian ruang kira-kira **dua kali ukuran berkas** (berkas sementara + unduhan) selama jendela pembersihan 60 detik, sehingga berkas 1 GiB membutuhkan kuota/ruang kosong sekitar 2 GiB. Bila kuota browser habis, aplikasi menampilkan pesan penyimpanan tidak cukup (bukan galat mentah browser). Uji pengembangan: 768 MiB lolos; 1 GiB kena kuota pada profil browser sementara Playwright. Untuk berkas sangat besar, pastikan ruang disk mencukupi atau proses satu berkas per sesi.
+
 ## Sumber kode
 
 Kode sumber aplikasi tersedia di GitHub: https://github.com/Bangkahdev/AegisCrypt-Web
+
 
 
 
