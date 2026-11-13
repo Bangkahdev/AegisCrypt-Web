@@ -1,0 +1,180 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:AegisCrypt.App.ViewModels"
+        x:Class="AegisCrypt.App.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        x:CompileBindings="True"
+        Title="AegisCrypt"
+        Width="820"
+        Height="780"
+        MinWidth="640"
+        MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F1E8">
+  <Window.Styles>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, monospace" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="BorderBrush" Value="#111111" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="Background" Value="#FFFDF5" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="#111111" />
+      <Setter Property="Background" Value="#FFD84D" />
+      <Setter Property="Foreground" Value="#111111" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Padding" Value="14,8" />
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FFE47A" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="#111111" />
+      <Setter Property="Background" Value="#FFFFFF" />
+      <Setter Property="Padding" Value="8,6" />
+    </Style>
+    <Style Selector="TextBlock.status">
+      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, monospace" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Border Grid.Row="0" Background="#111111" Padding="24,16">
+      <StackPanel Spacing="2">
+        <TextBlock Text="AEGISCRYPT"
+                   Foreground="#FFD84D"
+                   FontSize="26"
+                   FontWeight="Black"
+                   FontFamily="Cascadia Mono, Consolas, monospace" />
+        <TextBlock Text="Enkripsi lokal, format .aegis v3"
+                   Foreground="#EDEDED"
+                   FontSize="12" />
+      </StackPanel>
+    </Border>
+
+    <ScrollViewer Grid.Row="1" Margin="24,20">
+      <StackPanel Spacing="16">
+        <Border Classes="card">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="20">
+              <RadioButton GroupName="mode"
+                           Content="Enkripsi"
+                           IsChecked="{Binding IsEncryptMode}"
+                           Click="EncryptMode_Click" />
+              <RadioButton GroupName="mode"
+                           Content="Dekripsi"
+                           IsChecked="{Binding IsDecryptMode}"
+                           Click="DecryptMode_Click" />
+            </StackPanel>
+
+            <TextBlock Classes="section" Text="BERKAS MASUKAN" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox Grid.Column="0"
+                       Text="{Binding InputPath, Mode=TwoWay}"
+                       Watermark="Pilih berkas yang akan diproses" />
+              <Button Grid.Column="1"
+                      Margin="8,0,0,0"
+                      Content="Pilih"
+                      Click="BrowseInput_Click" />
+            </Grid>
+
+            <TextBlock Classes="section" Text="BERKAS KELUARAN (OPSIONAL)" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox Grid.Column="0"
+                       Text="{Binding OutputPath, Mode=TwoWay}"
+                       Watermark="Kosongkan untuk nama otomatis" />
+              <Button Grid.Column="1"
+                      Margin="8,0,0,0"
+                      Content="Simpan ke"
+                      Click="BrowseOutput_Click" />
+            </Grid>
+
+            <TextBlock Classes="section" Text="KATA SANDI" />
+            <TextBox Text="{Binding Password, Mode=TwoWay}"
+                     PasswordChar="●"
+                     Watermark="Kata sandi" />
+            <TextBox Text="{Binding ConfirmPassword, Mode=TwoWay}"
+                     PasswordChar="●"
+                     Watermark="Ulangi kata sandi"
+                     IsVisible="{Binding IsEncryptMode}" />
+
+            <TextBlock Classes="section" Text="KEYFILE (OPSIONAL)" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox Grid.Column="0"
+                       Text="{Binding KeyFilePath, Mode=TwoWay}"
+                       Watermark="Berkas kunci sebagai faktor kedua" />
+              <Button Grid.Column="1"
+                      Margin="8,0,0,0"
+                      Content="Pilih"
+                      Click="BrowseKeyFile_Click" />
+            </Grid>
+
+            <TextBlock Classes="section" Text="KUNCI RECOVERY (OPSIONAL)" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox Grid.Column="0"
+                       Text="{Binding RecoveryKey, Mode=TwoWay}"
+                       Watermark="64 digit hex, mis. 0123ABCD-..." />
+              <Button Grid.Column="1"
+                      Margin="8,0,0,0"
+                      Content="Buat"
+                      Click="GenerateRecoveryKey_Click"
+                      IsVisible="{Binding IsEncryptMode}" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding IsEncryptMode}">
+              <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Classes="section" Text="ITERASI PBKDF2" />
+                <TextBox Text="{Binding IterationsText, Mode=TwoWay}" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Classes="section" Text="UKURAN CHUNK (BYTE)" />
+                <TextBox Text="{Binding ChunkSizeText, Mode=TwoWay}" />
+              </StackPanel>
+            </Grid>
+
+            <CheckBox Content="Simpan nama berkas di dalam kontainer"
+                      IsChecked="{Binding SaveFilename, Mode=TwoWay}"
+                      IsVisible="{Binding IsEncryptMode}" />
+            <CheckBox Content="Timpa berkas keluaran yang sudah ada"
+                      IsChecked="{Binding OverwriteExisting, Mode=TwoWay}" />
+
+            <Button Content="{Binding RunLabel}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    FontSize="15"
+                    Padding="0,12"
+                    Command="{Binding RunCommand}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="2"
+            Background="#FFFDF5"
+            BorderBrush="#111111"
+            BorderThickness="0,2,0,0"
+            Padding="24,12">
+      <StackPanel Spacing="8">
+        <TextBlock Classes="status"
+                   Text="{Binding StatusMessage}"
+                   MinHeight="18" />
+        <ProgressBar Minimum="0"
+                     Maximum="100"
+                     Value="{Binding ProgressPercent}"
+                     Height="8"
+                     IsVisible="{Binding IsBusy}" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

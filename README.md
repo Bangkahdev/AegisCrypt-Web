@@ -145,10 +145,11 @@ npm run test:bench                   # Benchmark throughput 16 MiB
 
 ## Versi Desktop (.NET 8)
 
-Mesin format yang sama tersedia sebagai pustaka .NET dan CLI di [`desktop/`](desktop/README.md). Kontainer `.aegis` v3 yang dihasilkannya identik dengan versi web dan dapat dibaca oleh keduanya.
+Mesin format yang sama tersedia sebagai pustaka .NET, CLI, dan aplikasi Avalonia di [`desktop/`](desktop/README.md). Kontainer `.aegis` v3 yang dihasilkannya identik dengan versi web dan dapat dibaca oleh keduanya.
 
 ```bash
 dotnet test desktop/AegisCrypt.sln
+dotnet run --project desktop/src/AegisCrypt.App   # aplikasi grafis
 dotnet run --project desktop/src/AegisCrypt.Cli -- --help
 ```
 

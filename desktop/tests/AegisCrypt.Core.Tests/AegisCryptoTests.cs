@@ -218,6 +218,31 @@ public class AegisCryptoTests
     }
 
     [Fact]
+    public void EncryptReportsMonotonicProgress()
+    {
+        var plaintext = PatternBytes(AegisConstants.ChunkSizeMin + 500, 4);
+        var reported = new List<long>();
+
+        Encrypt(
+            plaintext,
+            "sandi",
+            null,
+            new EncryptOptions
+            {
+                Iterations = AegisConstants.IterationsMin,
+                ChunkSize = AegisConstants.ChunkSizeMin,
+                Progress = reported.Add,
+            });
+
+        Assert.NotEmpty(reported);
+        Assert.Equal(plaintext.Length, reported[^1]);
+        for (var i = 1; i < reported.Count; i++)
+        {
+            Assert.True(reported[i] > reported[i - 1]);
+        }
+    }
+
+    [Fact]
     public void DecryptsLegacyV2Container()
     {
         var plaintext = PatternBytes(10_000, 17);
