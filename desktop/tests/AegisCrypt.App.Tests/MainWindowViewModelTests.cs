@@ -204,6 +204,33 @@ public sealed class MainWindowViewModelTests : IDisposable
         Assert.Contains("heksadesimal", viewModel.StatusMessage, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task CancellationProducesDibatalkanStatus()
+    {
+        var source = WriteFile("big.bin", PatternBytes(5_000_000));
+        var container = Workspace("big.bin.aegis");
+        var viewModel = EncryptViewModel(source, container);
+
+        var runTask = viewModel.RunAsync();
+        viewModel.CancelCommand.Execute(null);
+
+        await runTask;
+
+        Assert.False(viewModel.HasError);
+        Assert.Contains("Dibatalkan", viewModel.StatusMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.False(File.Exists(container));
+    }
+
+    [Fact]
+    public async Task CancelCommandIsNotExecutableWhenIdle()
+    {
+        var viewModel = EncryptViewModel(WriteFile("x.bin", PatternBytes(10)), Workspace("x.bin.aegis"));
+
+        Assert.False(viewModel.CancelCommand.CanExecute(null));
+        await viewModel.RunAsync();
+        Assert.False(viewModel.CancelCommand.CanExecute(null));
+    }
+
     public void Dispose()
     {
         try

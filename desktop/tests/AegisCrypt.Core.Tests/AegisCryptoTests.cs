@@ -218,6 +218,49 @@ public class AegisCryptoTests
     }
 
     [Fact]
+    public void EncryptHonorsCancellation()
+    {
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            Encrypt(
+                PatternBytes(100, 1),
+                "sandi",
+                null,
+                FastOptions(),
+                cancellationToken: cts.Token));
+
+        Assert.Equal(AegisErrors.Cancelled, error.Message);
+    }
+
+    [Fact]
+    public void DecryptHonorsCancellation()
+    {
+        var plaintext = PatternBytes(AegisConstants.ChunkSizeMin * 3, 2);
+        var container = Encrypt(plaintext, "sandi", null, FastOptions());
+        var cts = new CancellationTokenSource();
+
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            Decrypt(container, "sandi", progress: _ => cts.Cancel(), cancellationToken: cts.Token));
+
+        Assert.Equal(AegisErrors.Cancelled, error.Message);
+    }
+
+    [Fact]
+    public void RewrapHonorsCancellation()
+    {
+        var container = Encrypt(PatternBytes(1_000, 5), "lama", null, FastOptions());
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            Rewrap(container, "lama", "baru", cancellationToken: cts.Token));
+
+        Assert.Equal(AegisErrors.Cancelled, error.Message);
+    }
+
+    [Fact]
     public void EncryptReportsMonotonicProgress()
     {
         var plaintext = PatternBytes(AegisConstants.ChunkSizeMin + 500, 4);
@@ -400,11 +443,12 @@ public class AegisCryptoTests
         byte[] plaintext,
         string password,
         byte[]? keyFile,
-        EncryptOptions? options = null)
+        EncryptOptions? options = null,
+        CancellationToken cancellationToken = default)
     {
         using var input = new MemoryStream(plaintext, writable: false);
         using var output = new MemoryStream();
-        AegisCrypto.Encrypt(input, output, password, keyFile, options);
+        AegisCrypto.Encrypt(input, output, password, keyFile, options, cancellationToken);
         return output.ToArray();
     }
 
@@ -412,11 +456,13 @@ public class AegisCryptoTests
         byte[] container,
         string password,
         byte[]? keyFile = null,
-        byte[]? recoveryKey = null)
+        byte[]? recoveryKey = null,
+        Action<long>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         using var input = new MemoryStream(container, writable: false);
         using var output = new MemoryStream();
-        var result = AegisCrypto.Decrypt(input, output, password, keyFile, recoveryKey);
+        var result = AegisCrypto.Decrypt(input, output, password, keyFile, recoveryKey, progress, cancellationToken);
         return (output.ToArray(), result);
     }
 
@@ -426,11 +472,12 @@ public class AegisCryptoTests
         string newPassword,
         byte[]? oldKeyFile = null,
         byte[]? newKeyFile = null,
-        int? iterations = null)
+        int? iterations = null,
+        CancellationToken cancellationToken = default)
     {
         using var input = new MemoryStream(container, writable: false);
         using var output = new MemoryStream();
-        AegisCrypto.Rewrap(input, output, oldPassword, oldKeyFile, newPassword, newKeyFile, iterations);
+        AegisCrypto.Rewrap(input, output, oldPassword, oldKeyFile, newPassword, newKeyFile, iterations, cancellationToken: cancellationToken);
         return output.ToArray();
     }
 

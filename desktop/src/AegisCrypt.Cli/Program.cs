@@ -85,14 +85,34 @@ internal static class Program
                 return 0;
             }
 
-            return command switch
+            using var cancellation = new CancellationTokenSource();
+            ConsoleCancelEventHandler onCancel = (_, eventArgs) =>
             {
-                "encrypt" => RunEncrypt(parsed),
-                "decrypt" => RunDecrypt(parsed),
-                "rewrap" => RunRewrap(parsed),
-                "keygen" => RunKeygen(),
-                _ => throw new UsageException($"Perintah tidak dikenal: {command}"),
+                eventArgs.Cancel = true;
+                cancellation.Cancel();
             };
+            Console.CancelKeyPress += onCancel;
+
+            try
+            {
+                return command switch
+                {
+                    "encrypt" => RunEncrypt(parsed, cancellation.Token),
+                    "decrypt" => RunDecrypt(parsed, cancellation.Token),
+                    "rewrap" => RunRewrap(parsed, cancellation.Token),
+                    "keygen" => RunKeygen(),
+                    _ => throw new UsageException($"Perintah tidak dikenal: {command}"),
+                };
+            }
+            finally
+            {
+                Console.CancelKeyPress -= onCancel;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.Error.WriteLine("Dibatalkan.");
+            return 130;
         }
         catch (UsageException error)
         {
@@ -117,7 +137,7 @@ internal static class Program
         }
     }
 
-    private static int RunEncrypt(ParsedArgs parsed)
+    private static int RunEncrypt(ParsedArgs parsed, CancellationToken cancellationToken)
     {
         var inputPath = RequireSingleInput(parsed);
         var outputPath = parsed.Value("--output") ?? parsed.Value("-o") ?? inputPath + ".aegis";
@@ -140,15 +160,32 @@ internal static class Program
             RecoveryKey = recoveryKey,
         };
 
-        using var input = OpenRead(inputPath);
-        using var output = File.Create(Path.GetFullPath(outputPath));
-        AegisCrypto.Encrypt(input, output, password, keyFile, options);
+        var fullOutput = Path.GetFullPath(outputPath);
+        var directory = Path.GetDirectoryName(fullOutput) ?? Directory.GetCurrentDirectory();
+        var tempPath = Path.Combine(directory, $".aegiscrypt-{Guid.NewGuid():N}.tmp");
 
-        Console.WriteLine($"Terenkripsi: {Path.GetFullPath(outputPath)}");
-        return 0;
+        try
+        {
+            using (var input = OpenRead(inputPath))
+            using (var output = File.Create(tempPath))
+            {
+                AegisCrypto.Encrypt(input, output, password, keyFile, options, cancellationToken);
+            }
+
+            File.Move(tempPath, fullOutput, true);
+            Console.WriteLine($"Terenkripsi: {fullOutput}");
+            return 0;
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
     }
 
-    private static int RunDecrypt(ParsedArgs parsed)
+    private static int RunDecrypt(ParsedArgs parsed, CancellationToken cancellationToken)
     {
         var inputPath = RequireSingleInput(parsed);
         var requestedOutput = parsed.Value("--output") ?? parsed.Value("-o");
@@ -173,7 +210,7 @@ internal static class Program
             using (var input = OpenRead(inputPath))
             using (var output = File.Create(tempPath))
             {
-                result = AegisCrypto.Decrypt(input, output, password, keyFile, recoveryKey);
+                result = AegisCrypto.Decrypt(input, output, password, keyFile, recoveryKey, null, cancellationToken);
             }
 
             var finalPath = requestedOutput is null
@@ -199,7 +236,7 @@ internal static class Program
         }
     }
 
-    private static int RunRewrap(ParsedArgs parsed)
+    private static int RunRewrap(ParsedArgs parsed, CancellationToken cancellationToken)
     {
         var inputPath = RequireSingleInput(parsed);
         var outputPath = parsed.Value("--output") ?? parsed.Value("-o")
@@ -230,7 +267,8 @@ internal static class Program
                     oldKeyFile,
                     newPassword,
                     newKeyFile,
-                    iterations);
+                    iterations,
+                    cancellationToken: cancellationToken);
             }
 
             var finalPath = Path.GetFullPath(outputPath);

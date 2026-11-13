@@ -101,6 +101,9 @@ kata sandi secara tersembunyi.
 - Header, metadata nama berkas, dan setiap record diautentikasi (AAD). Manipulasi
   atau pemotongan berkas ditolak dengan pesan `AegisFormatException` yang sama
   dengan pesan web.
+- Enkripsi dan dekripsi dapat dibatalkan (Ctrl+C pada CLI, tombol Batalkan pada
+  GUI). Output ditulis ke berkas sementara dan dibersihkan otomatis bila operasi
+  dibatalkan atau gagal, sehingga tidak tersisa keluaran parsial.
 - Dekripsi menulis ke berkas sementara dan menghapusnya bila verifikasi gagal.
   Pustaka tetap menyerahkan tanggung jawab pembuangan keluaran parsial kepada
   pemanggil.

@@ -33,7 +33,8 @@ public static class AegisCrypto
         Stream output,
         string password,
         byte[]? keyFile = null,
-        EncryptOptions? options = null)
+        EncryptOptions? options = null,
+        CancellationToken cancellationToken = default)
     {
         var opts = options ?? new EncryptOptions();
         AegisValidation.AssertIterations(opts.Iterations);
@@ -100,6 +101,8 @@ public static class AegisCrypto
 
         while (true)
         {
+            ThrowIfCancelled(cancellationToken);
+
             if (filled < opts.ChunkSize)
             {
                 WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, index, buffer.AsSpan(0, filled), true);
@@ -129,7 +132,8 @@ public static class AegisCrypto
         string password,
         byte[]? keyFile = null,
         byte[]? recoveryKey = null,
-        Action<long>? progress = null)
+        Action<long>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         if (!input.CanSeek)
         {
@@ -158,7 +162,7 @@ public static class AegisCrypto
                 throw new AegisFormatException(AegisErrors.RecoveryMissing);
             }
 
-            DecryptLegacyV2(input, output, password, keyFile, progress);
+            DecryptLegacyV2(input, output, password, keyFile, progress, cancellationToken);
             return new DecryptResult(null, true);
         }
 
@@ -185,10 +189,12 @@ public static class AegisCrypto
                 throw new AegisFormatException(AegisErrors.RecoveryMissing);
             }
 
+            ThrowIfCancelled(cancellationToken);
             dek = UnwrapRecoveryDek(input, header, recoveryKey);
         }
         else
         {
+            ThrowIfCancelled(cancellationToken);
             var keyMaterial = PrepareKeyMaterial(password, keyFile);
             dek = UnwrapDek(header, headerBytes, keyMaterial);
         }
@@ -201,6 +207,8 @@ public static class AegisCrypto
 
         while (true)
         {
+            ThrowIfCancelled(cancellationToken);
+
             var position = input.Position;
             if (position >= input.Length)
             {
@@ -280,7 +288,8 @@ public static class AegisCrypto
         string newPassword,
         byte[]? newKeyFile,
         int? iterations = null,
-        Func<int, byte[]>? randomBytes = null)
+        Func<int, byte[]>? randomBytes = null,
+        CancellationToken cancellationToken = default)
     {
         if (!input.CanSeek)
         {
@@ -317,8 +326,10 @@ public static class AegisCrypto
         }
 
         var oldMaterial = PrepareKeyMaterial(oldPassword, oldKeyFile);
+        ThrowIfCancelled(cancellationToken);
         var dek = UnwrapDek(header, headerBytes, oldMaterial);
         ResolveFilename(input, header, dek);
+        ThrowIfCancelled(cancellationToken);
 
         var newIterations = iterations ?? header.Iterations;
         AegisValidation.AssertIterations(newIterations);
@@ -353,7 +364,13 @@ public static class AegisCrypto
         output.Write(newHeader);
 
         input.Position = AegisConstants.HeaderLength;
-        input.CopyTo(output);
+        var copyBuffer = new byte[81_920];
+        int copied;
+        while ((copied = input.Read(copyBuffer, 0, copyBuffer.Length)) > 0)
+        {
+            ThrowIfCancelled(cancellationToken);
+            output.Write(copyBuffer, 0, copied);
+        }
     }
 
     private static void DecryptLegacyV2(
@@ -361,7 +378,8 @@ public static class AegisCrypto
         Stream output,
         string password,
         byte[]? keyFile,
-        Action<long>? progress)
+        Action<long>? progress,
+        CancellationToken cancellationToken)
     {
         input.Position = 0;
         var header = new byte[AegisConstants.LegacyHeaderLength];
@@ -379,6 +397,8 @@ public static class AegisCrypto
 
         while (offset < input.Length)
         {
+            ThrowIfCancelled(cancellationToken);
+
             if (input.Length - offset < 4)
             {
                 throw new AegisFormatException(AegisErrors.LegacyCorrupt);
@@ -730,6 +750,14 @@ public static class AegisCrypto
 
         output.Write(recordHeader);
         output.Write(sealedData);
+    }
+
+    private static void ThrowIfCancelled(CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException(AegisErrors.Cancelled, cancellationToken);
+        }
     }
 
     private static int ReadUpTo(Stream input, Span<byte> buffer)
