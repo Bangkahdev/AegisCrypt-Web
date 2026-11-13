@@ -11,6 +11,8 @@ public sealed class EncryptOptions
     public string? Filename { get; init; }
     public byte[]? RecoveryKey { get; init; }
     public Func<int, byte[]>? RandomBytes { get; init; }
+    /// <summary>Reports the number of plaintext bytes consumed so far.</summary>
+    public Action<long>? Progress { get; init; }
 }
 
 public sealed record DecryptResult(string? Filename, bool LegacyV2);
@@ -101,6 +103,7 @@ public static class AegisCrypto
             if (filled < opts.ChunkSize)
             {
                 WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, index, buffer.AsSpan(0, filled), true);
+                opts.Progress?.Invoke(input.Position);
                 break;
             }
 
@@ -108,10 +111,12 @@ public static class AegisCrypto
             if (extra < 0)
             {
                 WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, index, buffer.AsSpan(0, filled), true);
+                opts.Progress?.Invoke(input.Position);
                 break;
             }
 
             WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, index, buffer.AsSpan(0, filled), false);
+            opts.Progress?.Invoke(input.Position);
             index++;
             buffer[0] = (byte)extra;
             filled = 1 + ReadUpTo(input, buffer.AsSpan(1));

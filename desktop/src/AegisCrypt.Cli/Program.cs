@@ -438,36 +438,3 @@ internal sealed class ParsedArgs
     public string? Value(string name) => _options.TryGetValue(name, out var value) ? value : null;
 }
 
-internal static class RecoveryKeyCodec
-{
-    public static string Encode(byte[] key)
-    {
-        var hex = Convert.ToHexString(key);
-        var groups = new string[hex.Length / 8];
-        for (var i = 0; i < groups.Length; i++)
-        {
-            groups[i] = hex.Substring(i * 8, 8);
-        }
-
-        return string.Join('-', groups);
-    }
-
-    public static byte[]? Parse(string value)
-    {
-        var clean = new string(value.Where(c => !char.IsWhiteSpace(c) && c != '-').ToArray());
-        if (clean.Length != AegisConstants.RecoveryKeyLength * 2)
-        {
-            return null;
-        }
-
-        foreach (var c in clean)
-        {
-            if (!Uri.IsHexDigit(c))
-            {
-                return null;
-            }
-        }
-
-        return Convert.FromHexString(clean);
-    }
-}

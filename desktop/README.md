@@ -1,8 +1,8 @@
 # AegisCrypt Desktop (.NET 8)
 
-Implementasi desktop dari mesin format AegisCrypt. Fase ini berisi **pustaka inti
-dan CLI** yang menghasilkan serta membaca kontainer `.aegis` yang identik dengan
-versi web. Antarmuka grafis (Avalonia) direncanakan pada fase berikutnya.
+Implementasi desktop dari mesin format AegisCrypt: **pustaka inti, CLI, dan
+aplikasi grafis Avalonia** yang menghasilkan serta membaca kontainer `.aegis`
+yang identik dengan versi web.
 
 ## Isi Solusi
 
@@ -10,7 +10,9 @@ versi web. Antarmuka grafis (Avalonia) direncanakan pada fase berikutnya.
 |---|---|
 | `src/AegisCrypt.Core` | Mesin format v3: enkripsi, dekripsi, rewrap, dan pembacaan v2 lama |
 | `src/AegisCrypt.Cli` | CLI `aegiscrypt` (perintah `encrypt`, `decrypt`, `rewrap`, `keygen`) |
-| `tests/AegisCrypt.Core.Tests` | 29 tes xUnit, termasuk vektor beku v3 dan round-trip batas chunk |
+| `src/AegisCrypt.App` | Aplikasi desktop Avalonia (MVVM) dengan mode enkripsi dan dekripsi |
+| `tests/AegisCrypt.Core.Tests` | 35 tes xUnit, termasuk vektor beku v3 dan round-trip batas chunk |
+| `tests/AegisCrypt.App.Tests` | 9 tes ViewModel dan smoke test UI Avalonia headless |
 
 ## Kompatibilitas Format
 
@@ -45,6 +47,26 @@ Untuk menjalankan CLI dari sumber:
 ```bash
 dotnet run --project desktop/src/AegisCrypt.Cli -- --help
 ```
+
+Menjalankan aplikasi grafis:
+
+```bash
+dotnet run --project desktop/src/AegisCrypt.App
+```
+
+## Aplikasi Grafis
+
+Antarmuka Avalonia memakai pola MVVM: ViewModel menangani validasi dan operasi
+kripto, sedangkan jendela hanya mengatur pemilihan berkas lewat `StorageProvider`.
+
+- Dua mode: **Enkripsi** dan **Dekripsi**.
+- Pemilihan berkas masukan/keluaran, keyfile opsional, dan kunci recovery dengan
+  tombol pembuat kunci.
+- Parameter lanjutan (iterasi PBKDF2 dan ukuran chunk) khusus mode enkripsi.
+- Progres operasi dan pesan kesalahan ditampilkan di bilah status.
+
+Smoke test UI berjalan headless (`Avalonia.Headless.XUnit`), sehingga XAML tetap
+terverifikasi di CI tanpa layar.
 
 ## Pemakaian CLI
 
@@ -85,11 +107,11 @@ kata sandi secara tersembunyi.
 
 ## Batasan dan Rencana
 
-- GUI Avalonia belum diimplementasikan; fase ini sengaja dibatasi pada komponen
-  yang dapat diuji tanpa layar.
 - Belum ada keluaran streaming ke stdout, secure delete, atau integrasi
   explorer/shell.
 - Format v2 bersifat baca-saja (tanpa pembuatan kontainer v2 baru).
+- Operasi belum dapat dibatalkan di tengah jalan; tutup aplikasi untuk berhenti.
+- Paket instalasi (MSIX/installer) dan penandatanganan kode belum disiapkan.
 
 ## Lisensi
 
