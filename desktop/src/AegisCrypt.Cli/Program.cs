@@ -13,6 +13,7 @@ internal static class Program
           aegiscrypt encrypt <berkas> [opsi]
           aegiscrypt decrypt <berkas> [opsi]
           aegiscrypt rewrap  <berkas> -o <keluaran> [opsi]
+          aegiscrypt shred   <berkas> [--passes <n>]
           aegiscrypt keygen
 
         OPSI UMUM
@@ -38,6 +39,9 @@ internal static class Program
           --new-keyfile <berkas>    Keyfile baru (kosong berarti tanpa keyfile)
           --iterations <n>          Iterasi PBKDF2 baru (default: pertahankan)
 
+        OPSI SHRED
+          --passes <n>              Jumlah overwrite acak sebelum dihapus (default 1)
+
         CONTOH
           aegiscrypt encrypt laporan.pdf --password rahasia -o laporan.pdf.aegis
           aegiscrypt decrypt laporan.pdf.aegis
@@ -56,6 +60,7 @@ internal static class Program
         "--iterations",
         "--chunk-size",
         "--old-password",
+        "--passes",
         "--new-password",
         "--old-keyfile",
         "--new-keyfile",
@@ -100,6 +105,7 @@ internal static class Program
                     "encrypt" => RunEncrypt(parsed, cancellation.Token),
                     "decrypt" => RunDecrypt(parsed, cancellation.Token),
                     "rewrap" => RunRewrap(parsed, cancellation.Token),
+                    "shred" => RunShred(parsed),
                     "keygen" => RunKeygen(),
                     _ => throw new UsageException($"Perintah tidak dikenal: {command}"),
                 };
@@ -283,6 +289,15 @@ internal static class Program
                 File.Delete(tempPath);
             }
         }
+    }
+
+    private static int RunShred(ParsedArgs parsed)
+    {
+        var path = RequireSingleInput(parsed);
+        var passes = ParseInt(parsed.Value("--passes"), 1, "passes");
+        SecureDeleteService.SecureDelete(path, passes);
+        Console.WriteLine($"Dihapus aman: {path}");
+        return 0;
     }
 
     private static int RunKeygen()
