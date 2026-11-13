@@ -1,4 +1,5 @@
 import { webcrypto } from "node:crypto";
+import { TextEncoder as NodeTextEncoder, TextDecoder as NodeTextDecoder } from "node:util";
 
 // Node >= 20 exposes a WebCrypto implementation compatible with the browser
 // API. Reuse it so tests exercise the same subtle-encrypt code path.
@@ -17,8 +18,8 @@ if (typeof globalThis.window === "undefined") {
 }
 
 if (typeof globalThis.TextEncoder === "undefined") {
-  globalThis.TextEncoder = require("node:util").TextEncoder;
+  globalThis.TextEncoder = NodeTextEncoder;
 }
 if (typeof globalThis.TextDecoder === "undefined") {
-  globalThis.TextDecoder = require("node:util").TextDecoder;
+  globalThis.TextDecoder = NodeTextDecoder;
 }

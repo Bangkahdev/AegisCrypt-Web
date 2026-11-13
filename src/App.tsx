@@ -286,12 +286,12 @@ export default function App() {
             LogLevel.SUCCESS,
           );
           successCount++;
-        } catch (err: any) {
+        } catch (err: unknown) {
           if (signal.aborted) break;
           addLog(t("logs.failed", { name: file.name, error: describeError(err) }), LogLevel.ERROR);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!signal.aborted) addLog(t("logs.systemError", { error: describeError(err) }), LogLevel.ERROR);
     } finally {
       setIsProcessing(false);
@@ -346,7 +346,7 @@ export default function App() {
           );
           downloadBlob(result, file.name);
           addLog(t("logs.rewrapped", { name: file.name }), LogLevel.SUCCESS);
-        } catch (err: any) {
+        } catch (err: unknown) {
           addLog(t("logs.failed", { name: file.name, error: describeError(err) }), LogLevel.ERROR);
         }
       }
