@@ -21,6 +21,35 @@ test.describe('progressive web app and accessibility', () => {
     expect(active).toBe(true);
   });
 
+  test('serves a strict content security policy without violations', async ({ page, request }) => {
+    const response = await request.get('/');
+    const headers = response.headers();
+    const csp = headers['content-security-policy'] ?? '';
+
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(headers['x-content-type-options']).toBe('nosniff');
+    expect(headers['referrer-policy']).toBe('no-referrer');
+
+    const violations: string[] = [];
+    await page.exposeFunction('recordCspViolation', (value: string) => {
+      violations.push(value);
+    });
+    await page.addInitScript(() => {
+      document.addEventListener('securitypolicyviolation', (event) => {
+        const report = (window as Window & { recordCspViolation?: (value: string) => void })
+          .recordCspViolation;
+        report?.(`${event.violatedDirective} ${event.blockedURI}`);
+      });
+    });
+
+    await page.goto('/');
+    await expect(page.getByPlaceholder('Enter encryption password')).toBeVisible();
+    expect(violations).toEqual([]);
+  });
+
   test('supports keyboard skip link and dialog focus management', async ({ page }) => {
     await page.goto('/');
 
