@@ -8,11 +8,11 @@ yang identik dengan versi web.
 
 | Proyek | Keterangan |
 |---|---|
-| `src/AegisCrypt.Core` | Mesin format v3: enkripsi, dekripsi, rewrap, dan pembacaan v2 lama |
-| `src/AegisCrypt.Cli` | CLI `aegiscrypt` (perintah `encrypt`, `decrypt`, `rewrap`, `keygen`) |
+| `src/AegisCrypt.Core` | Mesin format v3: enkripsi, dekripsi, rewrap, pembacaan v2 lama, codec kunci recovery, dan secure delete |
+| `src/AegisCrypt.Cli` | CLI `aegiscrypt` (perintah `encrypt`, `decrypt`, `rewrap`, `keygen`, `shred`) |
 | `src/AegisCrypt.App` | Aplikasi desktop Avalonia (MVVM) dengan mode enkripsi dan dekripsi |
-| `tests/AegisCrypt.Core.Tests` | 35 tes xUnit, termasuk vektor beku v3 dan round-trip batas chunk |
-| `tests/AegisCrypt.App.Tests` | 9 tes ViewModel dan smoke test UI Avalonia headless |
+| `tests/AegisCrypt.Core.Tests` | 43 tes xUnit, termasuk vektor beku v3, round-trip batas chunk, pembatalan, dan secure delete |
+| `tests/AegisCrypt.App.Tests` | 11 tes ViewModel dan smoke test UI Avalonia headless |
 
 ## Kompatibilitas Format
 
@@ -86,6 +86,9 @@ aegiscrypt decrypt arsip.zip.aegis --recovery-key "0123ABCD-..."
 # Ganti kata sandi tanpa menulis ulang payload
 aegiscrypt rewrap arsip.zip.aegis -o arsip-baru.aegis \
   --old-password "lama" --new-password "baru" --iterations 800000
+
+# Hapus berkas secara aman (overwrite acak lalu hapus)
+aegiscrypt shred rahasia.txt --passes 2
 ```
 
 Opsi lengkap: `aegiscrypt help`. Jika `--password` tidak diberikan, CLI meminta
@@ -104,16 +107,19 @@ kata sandi secara tersembunyi.
 - Enkripsi dan dekripsi dapat dibatalkan (Ctrl+C pada CLI, tombol Batalkan pada
   GUI). Output ditulis ke berkas sementara dan dibersihkan otomatis bila operasi
   dibatalkan atau gagal, sehingga tidak tersisa keluaran parsial.
+- Perintah `shred` menimpa isi berkas dengan byte acak sebelum menghapusnya.
+  Pada SSD/flash dengan *wear leveling*, overwrite di tempat tidak menjamin
+  pemadaman fisik; enkripsi penuh berkas tetap menjadi perlindungan utama.
 - Dekripsi menulis ke berkas sementara dan menghapusnya bila verifikasi gagal.
   Pustaka tetap menyerahkan tanggung jawab pembuangan keluaran parsial kepada
   pemanggil.
 
 ## Batasan dan Rencana
 
-- Belum ada keluaran streaming ke stdout, secure delete, atau integrasi
-  explorer/shell.
+- Secure delete tersedia di CLI (`shred`); integrasi GUI dan menu
+  explorer/shell menyusul.
+- Belum ada keluaran streaming ke stdout.
 - Format v2 bersifat baca-saja (tanpa pembuatan kontainer v2 baru).
-- Operasi belum dapat dibatalkan di tengah jalan; tutup aplikasi untuk berhenti.
 - Paket instalasi (MSIX/installer) dan penandatanganan kode belum disiapkan.
 
 ## Lisensi
