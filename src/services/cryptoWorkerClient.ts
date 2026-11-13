@@ -38,7 +38,7 @@ const supportsWorker = (): boolean =>
  */
 const scheduleTempCleanup = (name: string): void => {
   if (typeof window === "undefined") return;
-  const storage = (navigator as any)?.storage;
+  const storage = navigator.storage;
   if (!storage || typeof storage.getDirectory !== "function") return;
 
   let done = false;
@@ -47,7 +47,7 @@ const scheduleTempCleanup = (name: string): void => {
     done = true;
     storage
       .getDirectory()
-      .then((root: any) => root.removeEntry(name))
+      .then((root) => root.removeEntry(name))
       .catch(() => {
         /* best effort */
       });
@@ -70,7 +70,7 @@ const runJob = (body: JobBody, callbacks: TaskCallbacks): Promise<Blob> => {
       callbacks.signal?.removeEventListener("abort", onAbort);
     };
 
-    const finish = (settle: (value: any) => void, value: any) => {
+    const finish = <T>(settle: (value: T) => void, value: T) => {
       if (settled) return;
       settled = true;
       cleanup();

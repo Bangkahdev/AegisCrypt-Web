@@ -20,11 +20,17 @@
     "@types/node": "^26.5.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.72.2",
+    "@typescript-eslint/parser": "^8.72.2",
     "@vitejs/plugin-react": "^6.1.1",
     "cf": "^1.0.0-beta.28",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^9.1.2",
     "jsdom": "^30.0.1",
+    "prettier": "^3.10.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.0"
   },
@@ -37,7 +43,8 @@
     "test:e2e": "playwright test",
     "test:bench": "playwright test --config playwright.bench.config.ts",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests --ext .ts,.tsx",
+    "lint:fix": "eslint src tests --ext .ts,.tsx --fix",
     "deploy": "cf deploy"
   }
 }
-

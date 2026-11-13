@@ -414,7 +414,7 @@ const resolveRecordsOffset = async (
   header: ParsedHeader,
   dek: CryptoKey,
 ): Promise<{ recordsOffset: number; filename: string | null }> => {
-  let offset = header.metadataOffset;
+  const offset = header.metadataOffset;
   if (reader.size < offset) throw new Error(AegisError.truncated);
 
   if (!(header.flags & FLAG_FILENAME_METADATA)) {
@@ -680,7 +680,7 @@ export const createBlobSink = (): DecryptSink => {
  * Falls back to the in-memory sink when OPFS is unavailable.
  */
 const createOpfsSink = async (): Promise<DecryptSink | null> => {
-  const storage = (globalThis.navigator as any)?.storage;
+  const storage = globalThis.navigator.storage;
   if (!storage || typeof storage.getDirectory !== "function") return null;
 
   try {
