@@ -1,0 +1,11 @@
+﻿{
+  "id": "v3-basic",
+  "description": "Frozen AegisCrypt v3 container (keyfile, no recovery, no filename). Deterministic RNG makeRng(seed) = (counter*31+7)&0xff starting at seed.",
+  "plaintext": "AegisCrypt format v3 test vector\n",
+  "password": "vector-password",
+  "keyfile": "vector-keyfile",
+  "iterations": 600000,
+  "chunkSize": 65536,
+  "rngSeed": 1,
+  "containerHex": "4145474953030101000927c00001000026456483a2c1e0ff1e3d5c7b9ab9d8f71635547392b1d0ef0e2d4c6b8aa9c8e7e60524436281a0bfdefd1c3b5a7998b7d6f51433527190afceed0c2b4a6988a79c085315a2b0af9c73010c67d3e65f067e119814e245d6e582b99aa7bfa4181377df6bc1446c6e12eb046fb687e6390f0100000031e842ccca36215b23858710c6f904b3de7f967ac32233fe44902f02a1142bd0a8882d96682218a396265f8f7f1127315563"
+}
