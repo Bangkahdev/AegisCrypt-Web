@@ -74,6 +74,21 @@ jobs:
       - name: Audit dependencies
         run: npm audit --audit-level=high
 
+  desktop:
+    name: Desktop (.NET)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test desktop solution
+        run: dotnet test desktop/AegisCrypt.sln --configuration Release --nologo
+
   blackbox:
     name: Black-box browser tests
     runs-on: ubuntu-latest
