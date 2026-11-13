@@ -50,6 +50,44 @@ test.describe('progressive web app and accessibility', () => {
     expect(violations).toEqual([]);
   });
 
+  test('boots a cold start from cache while offline', async ({ page, context }) => {
+    await page.goto('/');
+    await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+
+    const readCachedPaths = () =>
+      page.evaluate(async () => {
+        const paths: string[] = [];
+        for (const key of await caches.keys()) {
+          const cache = await caches.open(key);
+          for (const request of await cache.keys()) paths.push(new URL(request.url).pathname);
+        }
+        return paths;
+      });
+
+    await expect
+      .poll(
+        async () => {
+          const paths = await readCachedPaths();
+          return (
+            paths.some((path) => /^\/assets\/index-.*\.js$/.test(path)) &&
+            paths.some((path) => /^\/assets\/.*\.css$/.test(path)) &&
+            paths.some((path) => /^\/assets\/cryptoWorker-.*\.js$/.test(path))
+          );
+        },
+        { timeout: 20000 },
+      )
+      .toBe(true);
+
+    await context.setOffline(true);
+    try {
+      await page.reload();
+      await expect(page.getByPlaceholder('Enter encryption password')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Start Session' })).toBeVisible();
+    } finally {
+      await context.setOffline(false);
+    }
+  });
+
   test('supports keyboard skip link and dialog focus management', async ({ page }) => {
     await page.goto('/');
 
