@@ -34,11 +34,16 @@ public sealed class MainWindowViewModel : ObservableObject
     {
         RunCommand = new AsyncRelayCommand(RunAsync);
         GenerateRecoveryKeyCommand = new RelayCommand(GenerateRecoveryKey);
+        CancelCommand = new RelayCommand(Cancel, () => IsBusy);
     }
 
     public AsyncRelayCommand RunCommand { get; }
 
     public RelayCommand GenerateRecoveryKeyCommand { get; }
+
+    public RelayCommand CancelCommand { get; }
+
+    private CancellationTokenSource? _cts;
 
     public OperationMode Mode
     {
@@ -138,7 +143,13 @@ public sealed class MainWindowViewModel : ObservableObject
     public bool IsBusy
     {
         get => _isBusy;
-        private set => SetProperty(ref _isBusy, value);
+        private set
+        {
+            if (SetProperty(ref _isBusy, value))
+            {
+                CancelCommand.RaiseCanExecuteChanged();
+            }
+        }
     }
 
     public double ProgressPercent
@@ -158,6 +169,9 @@ public sealed class MainWindowViewModel : ObservableObject
         IsBusy = true;
         ProgressPercent = 0;
 
+        using var cts = new CancellationTokenSource();
+        _cts = cts;
+
         try
         {
             var input = ValidateInput();
@@ -166,12 +180,16 @@ public sealed class MainWindowViewModel : ObservableObject
 
             if (IsEncryptMode)
             {
-                await EncryptAsync(input, keyFile, recoveryKey);
+                await EncryptAsync(input, keyFile, recoveryKey, cts.Token);
             }
             else
             {
-                await DecryptAsync(input, keyFile, recoveryKey);
+                await DecryptAsync(input, keyFile, recoveryKey, cts.Token);
             }
+        }
+        catch (OperationCanceledException)
+        {
+            SetStatus("Dibatalkan.", false);
         }
         catch (Exception error)
         {
@@ -180,10 +198,17 @@ public sealed class MainWindowViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            ProgressPercent = 0;
+            _cts = null;
         }
     }
 
-    private async Task EncryptAsync(string input, byte[]? keyFile, byte[]? recoveryKey)
+    private void Cancel()
+    {
+        _cts?.Cancel();
+    }
+
+    private async Task EncryptAsync(string input, byte[]? keyFile, byte[]? recoveryKey, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(Password))
         {
@@ -197,18 +222,18 @@ public sealed class MainWindowViewModel : ObservableObject
 
         var iterations = ParseInt(IterationsText, "Iterations");
         var chunkSize = ParseInt(ChunkSizeText, "Chunk size");
-        var output = string.IsNullOrWhiteSpace(OutputPath)
+        var fullOutput = string.IsNullOrWhiteSpace(OutputPath)
             ? input + ".aegis"
             : Path.GetFullPath(OutputPath);
 
-        if (IsSamePath(input, output))
+        if (IsSamePath(input, fullOutput))
         {
             throw new InvalidOperationException("Berkas masukan dan keluaran tidak boleh sama.");
         }
 
-        EnsureOutputAvailable(output);
+        EnsureOutputAvailable(fullOutput);
 
-        var directory = Path.GetDirectoryName(output);
+        var directory = Path.GetDirectoryName(fullOutput) ?? Directory.GetCurrentDirectory();
         if (!string.IsNullOrEmpty(directory))
         {
             Directory.CreateDirectory(directory);
@@ -226,18 +251,32 @@ public sealed class MainWindowViewModel : ObservableObject
             Progress = bytes => progress.Report(bytes),
         };
 
-        await Task.Run(() =>
+        var tempPath = Path.Combine(directory, $".aegiscrypt-{Guid.NewGuid():N}.tmp");
+        try
         {
-            using var source = OpenRead(input);
-            using var destination = File.Create(output);
-            AegisCrypto.Encrypt(source, destination, password, keyFile, options);
-        });
+            await Task.Run(
+                () =>
+                {
+                    using var source = OpenRead(input);
+                    using var destination = File.Create(tempPath);
+                    AegisCrypto.Encrypt(source, destination, password, keyFile, options, cancellationToken);
+                },
+                cancellationToken);
 
-        ProgressPercent = 100;
-        SetStatus($"Terenkripsi: {output}", false);
+            File.Move(tempPath, fullOutput, true);
+            ProgressPercent = 100;
+            SetStatus($"Terenkripsi: {fullOutput}", false);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
     }
 
-    private async Task DecryptAsync(string input, byte[]? keyFile, byte[]? recoveryKey)
+    private async Task DecryptAsync(string input, byte[]? keyFile, byte[]? recoveryKey, CancellationToken cancellationToken)
     {
         if (recoveryKey is null && string.IsNullOrEmpty(Password))
         {
@@ -266,8 +305,9 @@ public sealed class MainWindowViewModel : ObservableObject
                     password,
                     keyFile,
                     recoveryKey,
-                    bytes => progress.Report(bytes));
-            });
+                    bytes => progress.Report(bytes),
+                    cancellationToken);
+            }, cancellationToken);
 
             var finalPath = requested ?? Path.Combine(
                 directory,

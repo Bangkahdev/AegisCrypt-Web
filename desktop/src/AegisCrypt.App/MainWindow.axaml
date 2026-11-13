@@ -149,12 +149,20 @@
             <CheckBox Content="Timpa berkas keluaran yang sudah ada"
                       IsChecked="{Binding OverwriteExisting, Mode=TwoWay}" />
 
-            <Button Content="{Binding RunLabel}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    FontSize="15"
-                    Padding="0,12"
-                    Command="{Binding RunCommand}" />
+            <Grid ColumnDefinitions="Auto,*">
+              <Button Grid.Column="0"
+                      Content="{Binding RunLabel}"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      FontSize="15"
+                      Padding="0,12"
+                      Command="{Binding RunCommand}" />
+              <Button Grid.Column="1"
+                      Margin="8,0,0,0"
+                      Content="Batalkan"
+                      IsVisible="{Binding IsBusy}"
+                      Command="{Binding CancelCommand}" />
+            </Grid>
           </StackPanel>
         </Border>
       </StackPanel>
