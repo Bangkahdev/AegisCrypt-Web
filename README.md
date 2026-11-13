@@ -176,6 +176,12 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 
 ---
 
+## Keamanan dan Pelaporan Kerentanan
+
+- Kebijakan keamanan dan pelaporan: [`SECURITY.md`](SECURITY.md)
+- Kontak pelaporan: **atha@bangkah.tech** (harap jangan membuka issue publik untuk kerentanan)
+- `/.well-known/security.txt` disertakan pada build web untuk penemuan otomatis
+
 ## FAQ & Pemecahan Masalah
 
 **T: Saya kehilangan kata sandi/keyfile saya. Apakah data saya bisa dipulihkan?**
