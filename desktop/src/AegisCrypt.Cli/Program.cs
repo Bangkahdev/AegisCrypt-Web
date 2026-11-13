@@ -296,7 +296,8 @@ internal static class Program
         var path = RequireSingleInput(parsed);
         var passes = ParseInt(parsed.Value("--passes"), 1, "passes");
         SecureDeleteService.SecureDelete(path, passes);
-        Console.WriteLine($"Dihapus aman: {path}");
+        Console.Error.WriteLine("Catatan: pada SSD/flash, overwrite di tempat tidak menjamin pemadaman fisik.");
+        Console.WriteLine($"Berkas ditimpa lalu dihapus: {path}");
         return 0;
     }
 
