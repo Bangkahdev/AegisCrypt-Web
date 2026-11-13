@@ -1,6 +1,8 @@
 using System.Buffers.Binary;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using AegisCrypt.Core;
 using Xunit;
 
@@ -8,12 +10,24 @@ namespace AegisCrypt.Core.Tests;
 
 public class AegisCryptoTests
 {
-    private const string VectorHex =
-        "4145474953030101000927c00001000026456483a2c1e0ff1e3d5c7b9ab9d8f71635547392b1d0ef0e2d4c6b8aa9c8e7e60524436281a0bfdefd1c3b5a7998b7d6f51433527190afceed0c2b4a6988a79c085315a2b0af9c73010c67d3e65f067e119814e245d6e582b99aa7bfa4181377df6bc1446c6e12eb046fb687e6390f0100000031e842ccca36215b23858710c6f904b3de7f967ac32233fe44902f02a1142bd0a8882d96682218a396265f8f7f1127315563";
+    private sealed record SharedVector(
+        string Id,
+        string Plaintext,
+        string Password,
+        string Keyfile,
+        int Iterations,
+        int ChunkSize,
+        int RngSeed,
+        string ContainerHex);
 
-    private const string VectorPlaintext = "AegisCrypt format v3 test vector\n";
-    private const string VectorPassword = "vector-password";
-    private static readonly byte[] VectorKeyFile = Encoding.UTF8.GetBytes("vector-keyfile");
+    private static readonly SharedVector Vector = JsonSerializer.Deserialize<SharedVector>(
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "v3-vector.json")),
+        new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+    private static string VectorHex => Vector.ContainerHex;
+    private static string VectorPlaintext => Vector.Plaintext;
+    private static string VectorPassword => Vector.Password;
+    private static byte[] VectorKeyFile => Encoding.UTF8.GetBytes(Vector.Keyfile);
 
     [Fact]
     public void ReproducesFrozenV3VectorByteForByte()
@@ -24,9 +38,9 @@ public class AegisCryptoTests
             VectorKeyFile,
             new EncryptOptions
             {
-                Iterations = AegisConstants.IterationsMin,
-                ChunkSize = AegisConstants.ChunkSizeMin,
-                RandomBytes = MakeRng(1),
+                Iterations = Vector.Iterations,
+                ChunkSize = Vector.ChunkSize,
+                RandomBytes = MakeRng(Vector.RngSeed),
             });
 
         Assert.Equal(VectorHex, Convert.ToHexString(container).ToLowerInvariant());
@@ -54,8 +68,8 @@ public class AegisCryptoTests
         Assert.Equal(AegisConstants.FileVersion, bytes[5]);
         Assert.Equal(AegisConstants.KdfPbkdf2Sha256, bytes[6]);
         Assert.Equal(AegisConstants.FlagKeyFile, bytes[7]);
-        Assert.Equal((uint)AegisConstants.IterationsMin, BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(8)));
-        Assert.Equal((uint)AegisConstants.ChunkSizeMin, BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(12)));
+        Assert.Equal((uint)Vector.Iterations, BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(8)));
+        Assert.Equal((uint)Vector.ChunkSize, BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(12)));
     }
 
     [Theory]

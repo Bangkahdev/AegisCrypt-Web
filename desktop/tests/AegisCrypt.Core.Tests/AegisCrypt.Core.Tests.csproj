@@ -12,4 +12,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\AegisCrypt.Core\AegisCrypt.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\..\tests\fixtures\v3-vector.json" Link="fixtures\v3-vector.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>
