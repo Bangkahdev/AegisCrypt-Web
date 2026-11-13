@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>aegiscrypt</AssemblyName>
+    <RootNamespace>AegisCrypt.Cli</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AegisCrypt.Core\AegisCrypt.Core.csproj" />
+  </ItemGroup>
+</Project>
