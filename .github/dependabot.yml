@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: npm
-    directory: "/"
+    directory: "/apps/web"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -10,13 +10,13 @@ updates:
         dependency-type: development
 
   - package-ecosystem: npm
-    directory: "/docs-site"
+    directory: "/docs/site"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
   - package-ecosystem: nuget
-    directory: "/desktop"
+    directory: "/apps/desktop"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

@@ -74,33 +74,35 @@ Buka aplikasi langsung dan ikuti panduan di dokumentasi:
 
 ```
 aegiscrypt-web/
-├── public/
-│   └── favicon.svg            # Aset statis disajikan apa adanya
-├── src/
-│   ├── components/
-│   │   ├── ui/                # tombol, kartu, input, badge, progres
-│   │   ├── FileList.tsx       # UI Antrean File
-│   │   ├── LogBox.tsx         # Log Operasi
-│   │   ├── LoginScreen.tsx    # Entri Autentikasi
-│   │   └── PasswordInput.tsx  # Indikator Kekuatan Sandi
-│   ├── services/
-│   │   └── cryptoService.ts   # Mesin Inti Kriptografi (AES-GCM)
-│   ├── App.tsx                # Kontroler Utama
-│   ├── main.tsx               # Titik Masuk React
-│   ├── constants.ts           # Konfigurasi & Magic Bytes
-│   ├── index.css              # Tema Token Tailwind v4
-│   └── types.ts               # Antarmuka TypeScript
-├── tests/
-│   ├── cryptoService.test.ts  # Suite Ujian Vitest
-│   └── setup.ts               # Polyfills
+├── apps/
+│   ├── web/                     # Aplikasi web (Vite + React 19)
+│   │   ├── src/
+│   │   │   ├── components/      # UI Neo-Brutalism (ui/, FileList, LogBox, LoginScreen, PasswordInput)
+│   │   │   ├── services/        # cryptoService.ts (mesin inti AES-GCM) + worker
+│   │   │   ├── lib/             # errors, files, recovery, utils
+│   │   │   ├── i18n/            # kamus en/id
+│   │   │   ├── constants.ts     # Konfigurasi & magic bytes
+│   │   │   └── App.tsx, main.tsx, index.css, types.ts
+│   │   ├── tests/
+│   │   │   ├── unit/            # Suite Vitest
+│   │   │   ├── e2e/             # Playwright (3 browser)
+│   │   │   ├── perf/            # Benchmark throughput
+│   │   │   └── fixtures/        # Vektor beku v2/v3 + katalog error
+│   │   ├── public/              # _headers, sw.js, manifest, security.txt
+│   │   ├── scripts/             # precache manifest
+│   │   ├── index.html
+│   │   └── cloudflare.config.ts # Worker aegiscrypt-web
+│   └── desktop/                 # Solusi .NET 8 (Core, CLI, App Avalonia)
+│       ├── src/
+│       ├── tests/
+│       └── AegisCrypt.sln
 ├── docs/
-│   └── screenshots/           # Tangkapan layar (sumber dokumentasi)
-├── docs-site/                 # Situs dokumentasi (Docusaurus, statis)
-├── cloudflare.config.ts       # Konfigurasi Deployment Cloudflare Worker
-├── playwright.config.ts
-├── vite.config.ts             # Konfigurasi Build
-├── package.json
-└── index.html                 # HTML & Gaya Entri
+│   ├── specs/                   # Spesifikasi v3, threat model, arsitektur, rencana kesiapan
+│   ├── guides/                  # Panduan use case (Inggris/Indonesia)
+│   ├── assets/screenshots/      # Tangkapan layar (dipakai docs/site)
+│   └── site/                    # Docusaurus (worker aegiscrypt-docs)
+├── .github/                     # CI dan Dependabot
+└── global.json                  # Pin SDK .NET 8
 ```
 
 ---
@@ -116,27 +118,29 @@ Kedua situs (aplikasi dan dokumentasi) di-deploy sebagai Cloudflare Workers deng
 
 ```bash
 # Deploy aplikasi
+cd apps/web
 npm run build
 npm run deploy            # atau: cf deploy --message "rilis"
 
 # Deploy dokumentasi
-cd docs-site
+cd docs/site
 npm install
 npm run build
 npm run deploy            # wrangler deploy
 
 # Validasi tanpa mengunggah
-cf deploy --dry-run
-cd docs-site; npx wrangler deploy --dry-run
+cd apps/web; cf deploy --dry-run
+cd docs/site; npx wrangler deploy --dry-run
 ```
 
-Domain kustom dideklarasikan dalam `cloudflare.config.ts` (aplikasi) dan `docs-site/wrangler.jsonc` (dokumentasi). Cloudflare membuat catatan DNS dan sertifikat pada saat deploy.
+Domain kustom dideklarasikan dalam `apps/web/cloudflare.config.ts` (aplikasi) dan `docs/site/wrangler.jsonc` (dokumentasi). Cloudflare membuat catatan DNS dan sertifikat pada saat deploy.
 
 ---
 
 ## Pengujian
 
 ```bash
+cd apps/web
 npm run typecheck
 npm run test:unit                    # Vitest (unit + integrasi)
 npm run build && npm run test:e2e    # Playwright: Chromium, Firefox, WebKit
@@ -145,12 +149,12 @@ npm run test:bench                   # Benchmark throughput 16 MiB
 
 ## Versi Desktop (.NET 8)
 
-Mesin format yang sama tersedia sebagai pustaka .NET, CLI, dan aplikasi Avalonia di [`desktop/`](desktop/README.md). Kontainer `.aegis` v3 yang dihasilkannya identik dengan versi web dan dapat dibaca oleh keduanya.
+Mesin format yang sama tersedia sebagai pustaka .NET, CLI, dan aplikasi Avalonia di [`apps/desktop/`](apps/desktop/README.md). Kontainer `.aegis` v3 yang dihasilkannya identik dengan versi web dan dapat dibaca oleh keduanya.
 
 ```bash
-dotnet test desktop/AegisCrypt.sln
-dotnet run --project desktop/src/AegisCrypt.App   # aplikasi grafis
-dotnet run --project desktop/src/AegisCrypt.Cli -- --help
+dotnet test apps/desktop/AegisCrypt.sln
+dotnet run --project apps/desktop/src/AegisCrypt.App   # aplikasi grafis
+dotnet run --project apps/desktop/src/AegisCrypt.Cli -- --help
 ```
 
 ## Spesifikasi Format File (.aegis v3)
@@ -184,11 +188,11 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 
 ## Dokumentasi Teknis
 
-- Spesifikasi format `.aegis` v3 (beku, FROZEN-CANDIDATE): [`docs/spec-aegis-v3.md`](docs/spec-aegis-v3.md)
-- Model ancaman dan risiko residual: [`docs/threat-model-v1.md`](docs/threat-model-v1.md)
-- Arsitektur dan alur data: [`docs/architecture-v1.md`](docs/architecture-v1.md)
-- Rencana kesiapan produksi (Gate 0-5): [`docs/production-readiness-plan-v1.0.md`](docs/production-readiness-plan-v1.0.md)
-- Implementasi desktop (.NET 8): [`desktop/README.md`](desktop/README.md)
+- Spesifikasi format `.aegis` v3 (beku, FROZEN-CANDIDATE): [`docs/specs/spec-aegis-v3.md`](docs/specs/spec-aegis-v3.md)
+- Model ancaman dan risiko residual: [`docs/specs/threat-model-v1.md`](docs/specs/threat-model-v1.md)
+- Arsitektur dan alur data: [`docs/specs/architecture-v1.md`](docs/specs/architecture-v1.md)
+- Rencana kesiapan produksi (Gate 0-5): [`docs/specs/production-readiness-plan-v1.0.md`](docs/specs/production-readiness-plan-v1.0.md)
+- Implementasi desktop (.NET 8): [`apps/desktop/`](apps/desktop/README.md)
 
 ## FAQ & Pemecahan Masalah
 
@@ -202,7 +206,7 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 
 **T: Berapa batas ukuran file maksimum?**
 
-> Telah diuji hingga **10GB** pada Chrome 120+. Batasannya bergantung pada implementasi Blob browser. Untuk file berukuran 100GB+, versi AegisCrypt Desktop (C#) sudah direncanakan tapi belum diimplementasikan — lihat `desktop/README.md`.
+> Telah diuji hingga **10GB** pada Chrome 120+. Batasannya bergantung pada implementasi Blob browser. Untuk file berukuran 100GB+, versi AegisCrypt Desktop (C#) sudah direncanakan tapi belum diimplementasikan — lihat `apps/desktop/README.md`.
 
 **T: Apakah nama file dienkripsi?**
 

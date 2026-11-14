@@ -70,23 +70,21 @@ Buka aplikasi langsung dan ikuti panduan di dokumentasi:
 
 ```
 aegiscrypt-web/
-├── src/
-│   ├── components/
-│   │   ├── FileList.tsx       # UI Antrean File
-│   │   ├── LogBox.tsx         # Log Operasi
-│   │   ├── LoginScreen.tsx    # Entri Autentikasi
-│   │   └── PasswordInput.tsx  # Indikator Kekuatan Sandi
-│   ├── services/
-│   │   └── cryptoService.ts   # Mesin Inti Kriptografi (AES-GCM)
-│   ├── App.tsx                # Kontroler Utama
-│   ├── constants.ts           # Konfigurasi & Magic Bytes
-│   └── types.ts               # Antarmuka TypeScript
-├── tests/
-│   ├── cryptoService.test.ts  # Suite Pengujian Vitest
-│   └── setup.ts               # Polyfills
-├── index.html                 # HTML & Gaya Entri
-└── vite.config.ts             # Konfigurasi Build
-
+├── apps/
+│   ├── web/                     # Aplikasi web (Vite + React 19)
+│   │   ├── src/                 # components, services, lib, i18n, constants
+│   │   ├── tests/               # unit, e2e, perf, fixtures
+│   │   ├── public/              # _headers, sw.js, manifest, security.txt
+│   │   ├── scripts/             # precache manifest
+│   │   └── cloudflare.config.ts # Worker aegiscrypt-web
+│   └── desktop/                 # Solusi .NET 8 (Core, CLI, App Avalonia)
+├── docs/
+│   ├── specs/                   # Spesifikasi v3, threat model, arsitektur, rencana
+│   ├── guides/                  # Panduan use case (Inggris/Indonesia)
+│   ├── assets/screenshots/      # Tangkapan layar (dipakai docs/site)
+│   └── site/                    # Docusaurus (worker aegiscrypt-docs)
+├── .github/                     # CI dan Dependabot
+└── global.json                  # Pin SDK .NET 8
 ```
 
 ---
@@ -94,6 +92,7 @@ aegiscrypt-web/
 ## Pengujian
 
 ```bash
+cd apps/web
 npm run typecheck
 npm run test:unit                    # Vitest (unit + integrasi)
 npm run build && npm run test:e2e    # Playwright: Chromium, Firefox, WebKit
@@ -131,11 +130,11 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 
 ## Dokumentasi Teknis
 
-- Spesifikasi format `.aegis` v3 (beku, FROZEN-CANDIDATE): [`docs/spec-aegis-v3.md`](docs/spec-aegis-v3.md)
-- Model ancaman dan risiko residual: [`docs/threat-model-v1.md`](docs/threat-model-v1.md)
-- Arsitektur dan alur data: [`docs/architecture-v1.md`](docs/architecture-v1.md)
-- Rencana kesiapan produksi (Gate 0-5): [`docs/production-readiness-plan-v1.0.md`](docs/production-readiness-plan-v1.0.md)
-- Implementasi desktop (.NET 8): [`desktop/README.md`](desktop/README.md)
+- Spesifikasi format `.aegis` v3 (beku, FROZEN-CANDIDATE): [`docs/specs/spec-aegis-v3.md`](docs/specs/spec-aegis-v3.md)
+- Model ancaman dan risiko residual: [`docs/specs/threat-model-v1.md`](docs/specs/threat-model-v1.md)
+- Arsitektur dan alur data: [`docs/specs/architecture-v1.md`](docs/specs/architecture-v1.md)
+- Rencana kesiapan produksi (Gate 0-5): [`docs/specs/production-readiness-plan-v1.0.md`](docs/specs/production-readiness-plan-v1.0.md)
+- Implementasi desktop (.NET 8): [`apps/desktop/`](apps/desktop/README.md)
 
 ## FAQ & Pemecahan Masalah
 
@@ -149,7 +148,7 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 
 **T: Berapa batas ukuran file maksimum?**
 
-> Telah diuji hingga **10GB** pada Chrome 120+. Batasannya bergantung pada implementasi Blob browser. Untuk file berukuran 100GB+, versi AegisCrypt Desktop (C#) sudah direncanakan tapi belum diimplementasikan — lihat `desktop/README.md`.
+> Telah diuji hingga **10GB** pada Chrome 120+. Batasannya bergantung pada implementasi Blob browser. Untuk file berukuran 100GB+, versi AegisCrypt Desktop (C#) sudah direncanakan tapi belum diimplementasikan — lihat `apps/desktop/README.md`.
 
 ---
 
