@@ -11,13 +11,14 @@ test.describe('Gate 1 landing page', () => {
     await expect(
       page.getByRole('heading', { name: 'Tiga langkah, tanpa unggahan' })
     ).toBeVisible();
+    await expect(page.getByText('AegisCrypt belum diaudit pihak independen')).toBeVisible();
   });
 
   test('menyediakan tautan form masukan dan tautan masuk ke aplikasi', async ({ page }) => {
     await page.goto('/awal/');
 
-    const form = page.getByRole('link', { name: 'Ikut beri masukan' });
-    await expect(form).toHaveAttribute('href', 'https://tally.so/r/aegiscrypt-masukan');
+    const form = page.getByRole('link', { name: 'Isi form masukan' }).first();
+    await expect(form).toHaveAttribute('href', '/awal/masukan/');
 
     await expect(page.getByRole('link', { name: 'Coba versi sekarang' })).toHaveAttribute(
       'href',

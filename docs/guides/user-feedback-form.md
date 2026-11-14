@@ -1,6 +1,6 @@
 # Form Masukan Pengguna — AegisCrypt (Gate 1)
 
-Dokumen ini berisi rencana pertanyaan form (Tally atau Google Forms, waktu pengisian sekitar 3 menit). Salin ke form pilihan, publikasikan, dan pasang tautannya di [`/awal/`](../../web/public/awal/index.html).
+Dokumen ini berisi isi form masukan (waktu pengisian sekitar 3 menit). Form di-host sendiri di domain AegisCrypt: [`apps/web/public/awal/masukan/index.html`](../../apps/web/public/awal/masukan/index.html) (tautan `/awal/masukan/`).
 
 Tujuan: menetapkan OD-02 (isi paket Pro), OD-05 (masa berlaku, grace period, batas instalasi), dan OD-09 (harga dan batas paket) berdasarkan data dan masukan, bukan tebakan.
 
@@ -12,7 +12,7 @@ Bantu kami menyempurnakan AegisCrypt
 
 ## Pengantar
 
-Jawaban hanya dipakai untuk menyempurnakan AegisCrypt. Form ini dikelola layanan pihak ketiga. Isi kontak bersifat opsional dan bisa dihapus kapan saja dengan menghubungi atha@bangkah.tech.
+Jawaban hanya dipakai untuk menyempurnakan AegisCrypt. Form ini di-host di domain AegisCrypt. Isi kontak bersifat opsional dan bisa dihapus kapan saja dengan menghubungi atha@bangkah.tech.
 
 ## Bagian A — Tentang kamu
 
@@ -86,4 +86,4 @@ Saya mengerti data ini dipakai untuk menyempurnakan AegisCrypt dan dapat dihapus
 
 ## Catatan kejujuran (tambahkan di dekat tautan form di /awal/)
 
-Form masukan ini dikelola oleh layanan pihak ketiga (Tally atau Google Forms). Aplikasi enkripsi AegisCrypt itu sendiri tetap tanpa akun, tanpa unggahan, dan tanpa pelacakan.
+Form masukan di-host di domain AegisCrypt. Aplikasi enkripsi AegisCrypt itu sendiri tetap tanpa akun, tanpa unggahan, dan tanpa pelacakan. AegisCrypt belum diaudit pihak independen.

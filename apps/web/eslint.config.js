@@ -2,6 +2,7 @@ import tseslint from "typescript-eslint";
 import eslintConfigPrettier from "eslint-config-prettier";
 
 export default tseslint.config(
+  { ignores: [".cloudflare/**", "dist/**", "dist-ssr/**", "playwright-report/**", "test-results/**"] },
   ...tseslint.configs.recommended,
   eslintConfigPrettier,
   {
