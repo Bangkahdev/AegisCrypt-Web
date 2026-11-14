@@ -23,8 +23,8 @@ AegisCrypt dianggap matang untuk diluncurkan sebagai layanan berbayar bila: (a) 
 |---|---|---|
 | Inti kriptografi (web) | Selesai | Format v3 envelope, streaming, AAD, test vector beku, fuzzing |
 | Klien desktop | Ada | Core, aplikasi, CLI; mereproduksi test vector v3 |
-| PWA offline dan CSP | Ada | Perlu verifikasi di domain produksi |
-| CI | Lint, typecheck, audit, unit, E2E | Belum ada pemindaian rahasia, SBOM, atau build tertanda |
+| PWA offline dan CSP | Ada | Terverifikasi di produksi (header + `security.txt`) |
+| CI | Lint, typecheck, audit, unit, E2E, secret scan, SBOM, desktop | Belum ada build tertanda |
 | Lisensi repositori | Apache-2.0 | Perlu dikonfirmasi sebagai keputusan final (OD-03) |
 | Backend akun, aktivasi, lisensi | Belum ada | Inti Gate 2 |
 | Pembayaran | Belum ada | Gate 3 |
@@ -60,6 +60,22 @@ AegisCrypt dianggap matang untuk diluncurkan sebagai layanan berbayar bila: (a) 
 | 0.9 | Perbarui materi presentasi agar mencerminkan format v3 | Dokumentasi tidak menyesatkan |
 
 Gate 0 lulus bila semua butir di atas selesai dan CI hijau, termasuk test vector bersama.
+
+### 4.1 Status Gate 0 (2026-11-14)
+
+| # | Status | Bukti |
+|---|---|---|
+| 0.1 | Terbuka | SRS v1.3 belum masuk repositori (konten eksternal) |
+| 0.2 | Selesai | `tests/fixtures/v3-vector.json`, `tests/fixtures/v2-vector.json` dibaca Web + Desktop |
+| 0.3 | Selesai | CSP, HSTS, nosniff, frame DENY, no-referrer, Permissions-Policy, COOP/CORP terverifikasi di `https://aegiscrypt.bangkah.tech`; `/.well-known/security.txt` disajikan `text/plain` |
+| 0.4 | Selesai | `SECURITY.md` + `public/.well-known/security.txt` (atha@bangkah.tech) |
+| 0.5 | Selesai (draft) | `docs/threat-model-v1.md`; tinjauan di Issue #34 |
+| 0.6 | Sebagian | Secret scan + SBOM di CI selesai; proteksi branch dan 2FA adalah setelan repositori |
+| 0.7 | Terbuka | Keputusan nama/merek (konten pengguna) |
+| 0.8 | Terbuka | Konfirmasi lisensi publik (OD-03) |
+| 0.9 | Terbuka | Materi presentasi |
+
+Spesifikasi format v3 berstatus **FROZEN-CANDIDATE v1.0** (`docs/spec-aegis-v3.md`), dengan D1 provisional menunggu tinjauan kriptografis independen (Issue #31). Fase 1 dilacak di Issue #31–#36.
 
 ## 5. Gate 1 — Validasi Pasar dan Keputusan Produk
 
