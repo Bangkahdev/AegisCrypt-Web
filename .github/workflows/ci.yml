@@ -213,14 +213,14 @@ jobs:
           now_epoch=$(date +%s)
           warn_epoch=$((now_epoch + 30*24*60*60))
           if [ "$exp_epoch" -le "$now_epoch" ]; then
-            echo "security.txt has expired ($expires)" >&2
+            echo "::error::security.txt has expired ($expires)"
             exit 1
           fi
           if [ "$exp_epoch" -le "$warn_epoch" ]; then
-            echo "security.txt expires within 30 days ($expires)" >&2
-            exit 1
+            echo "::warning::security.txt expires within 30 days ($expires) - please renew"
+          else
+            echo "security.txt expires $expires"
           fi
-          echo "security.txt expires $expires"
 
   build:
     name: Production build

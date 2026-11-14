@@ -166,10 +166,10 @@
 
             <Border BorderBrush="#D7D0C2" BorderThickness="1" Padding="10" Background="#FFFBF0">
               <StackPanel Spacing="6">
-                <TextBlock Classes="status" Text="Catatan: AegisCrypt belum diaudit pihak independen. Jangan jadikan satu-satunya salinan data penting." />
+                <TextBlock Classes="status" Text="Note: AegisCrypt has not been independently audited. Do not rely on it as the only copy of important data." />
                 <TextBlock Classes="status" TextWrapping="Wrap"
-                           Text="Penghapusan aman: overwrite berkas tidak menjamin penghapusan permanen pada SSD/flash (wear leveling). Gunakan enkripsi disk penuh bila perlu." />
-                <Button Content="Beri masukan / Give feedback" Click="OpenFeedback_Click" HorizontalAlignment="Left" />
+                           Text="Secure delete warning: overwriting a file does not guarantee permanent erasure on SSD/flash storage (wear leveling). Use full-disk encryption if needed." />
+                <Button Content="Give feedback" Click="OpenFeedback_Click" HorizontalAlignment="Left" />
               </StackPanel>
             </Border>
           </StackPanel>
