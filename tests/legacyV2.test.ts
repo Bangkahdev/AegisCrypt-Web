@@ -87,6 +87,25 @@ describe("legacy v2 reader", () => {
     await expect(decrypt(bytes)).rejects.toThrow(AegisError.legacyCorrupt);
   });
 
+  it("rejects an unknown magic even when the version byte is 2", async () => {
+    const bytes = await buildLegacyV2(patternBytes(10), "legacy-pw", makeRng(2)(32), ivsFor(1));
+    bytes[0] = 0x42;
+    await expect(decrypt(bytes)).rejects.toThrow(AegisError.format);
+  });
+
+  it("rejects a v2 container carrying an unsupported version", async () => {
+    const bytes = await buildLegacyV2(patternBytes(10), "legacy-pw", makeRng(2)(32), ivsFor(1));
+    bytes[5] = 1;
+    await expect(decrypt(bytes)).rejects.toThrow(AegisError.version(1));
+  });
+
+  it("rejects trailing bytes after the last record", async () => {
+    const bytes = await buildLegacyV2(patternBytes(100), "legacy-pw", makeRng(2)(32), ivsFor(1));
+    const withTrailing = new Uint8Array(bytes.byteLength + 1);
+    withTrailing.set(bytes);
+    await expect(decrypt(withTrailing)).rejects.toThrow(AegisError.legacyCorrupt);
+  });
+
   it("rejects a corrupt v2 payload without emitting output", async () => {
     const bytes = await buildLegacyV2(patternBytes(100), "legacy-pw", makeRng(2)(32), ivsFor(1));
     bytes[LEGACY_HEADER_LENGTH + 4 + CRYPTO_CONSTANTS.IV_LENGTH + 3] ^= 0xff;
