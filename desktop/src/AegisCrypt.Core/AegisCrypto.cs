@@ -97,15 +97,19 @@ public static class AegisCrypto
 
         var buffer = new byte[opts.ChunkSize];
         var filled = ReadUpTo(input, buffer);
-        var index = 0;
+        long index = 0;
 
         while (true)
         {
             ThrowIfCancelled(cancellationToken);
+            if ((ulong)index >= AegisConstants.MaxRecords)
+            {
+                throw new AegisFormatException(AegisErrors.Record);
+            }
 
             if (filled < opts.ChunkSize)
             {
-                WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, index, buffer.AsSpan(0, filled), true);
+                WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), true);
                 opts.Progress?.Invoke(input.Position);
                 break;
             }
@@ -113,12 +117,12 @@ public static class AegisCrypto
             var extra = input.ReadByte();
             if (extra < 0)
             {
-                WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, index, buffer.AsSpan(0, filled), true);
+                WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), true);
                 opts.Progress?.Invoke(input.Position);
                 break;
             }
 
-            WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, index, buffer.AsSpan(0, filled), false);
+            WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), false);
             opts.Progress?.Invoke(input.Position);
             index++;
             buffer[0] = (byte)extra;
@@ -202,12 +206,16 @@ public static class AegisCrypto
         var (filename, recordsOffset) = ResolveFilename(input, header, dek);
 
         input.Position = recordsOffset;
-        var index = 0;
+        long index = 0;
         var sawFinal = false;
 
         while (true)
         {
             ThrowIfCancelled(cancellationToken);
+            if ((ulong)index >= AegisConstants.MaxRecords)
+            {
+                throw new AegisFormatException(AegisErrors.Record);
+            }
 
             var position = input.Position;
             if (position >= input.Length)
@@ -734,7 +742,7 @@ public static class AegisCrypto
         byte[] noncePrefix,
         int chunkSize,
         byte[] fileId,
-        int index,
+        ulong index,
         ReadOnlySpan<byte> plaintext,
         bool isFinal)
     {
@@ -744,8 +752,8 @@ public static class AegisCrypto
             recordHeader.AsSpan(1),
             (uint)(plaintext.Length + AegisConstants.TagLength));
 
-        var nonce = MakeNonce(noncePrefix, (ulong)index);
-        var aad = MakeRecordAad(chunkSize, fileId, noncePrefix, recordHeader, (ulong)index);
+        var nonce = MakeNonce(noncePrefix, index);
+        var aad = MakeRecordAad(chunkSize, fileId, noncePrefix, recordHeader, index);
         var sealedData = EncryptGcm(dek, nonce, plaintext, aad);
 
         output.Write(recordHeader);

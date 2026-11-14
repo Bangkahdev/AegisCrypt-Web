@@ -121,5 +121,13 @@ export const RECORD_FLAG_FINAL = 0x01;
 export const RECORD_KNOWN_FLAGS = RECORD_FLAG_FINAL;
 export const RECORD_AAD_LENGTH = 43;
 
+/**
+ * Maximum number of payload records per file/DEK (D1 provisional).
+ * Derived from the NIST SP 800-38D §8.3 invocation limit for 96-bit IVs with
+ * deterministic construction (2^32), minus 2 for margin and the reserved
+ * filename-metadata index. See docs/spec-aegis-v3.md §7.
+ */
+export const MAX_RECORDS = 4_294_967_294;
+
 /** Legacy v2 header: magic(5) + version(1) + salt(32). */
 export const LEGACY_HEADER_LENGTH = 38;

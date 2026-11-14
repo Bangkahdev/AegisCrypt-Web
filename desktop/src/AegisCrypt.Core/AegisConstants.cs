@@ -51,6 +51,14 @@ public static class AegisConstants
     public const byte RecordFlagFinal = 0x01;
     public const int RecordAadLength = 43;
 
+    /// <summary>
+    /// Maximum payload records per file/DEK (D1 provisional). Derived from the
+    /// NIST SP 800-38D invocation limit for 96-bit deterministic IVs (2^32),
+    /// minus 2 for margin and the reserved filename-metadata index.
+    /// See docs/spec-aegis-v3.md section 7.
+    /// </summary>
+    public const ulong MaxRecords = 4_294_967_294UL;
+
     public const int LegacyHeaderLength = 38;
 
     public const byte FileVersion = 3;

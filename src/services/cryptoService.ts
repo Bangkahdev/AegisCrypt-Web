@@ -31,6 +31,7 @@ import {
   RECORD_FLAG_FINAL,
   RECORD_KNOWN_FLAGS,
   RECORD_AAD_LENGTH,
+  MAX_RECORDS,
   LEGACY_HEADER_LENGTH,
   FILENAME_METADATA_MAX_LENGTH,
   FILENAME_METADATA_LENGTH_BYTES,
@@ -864,6 +865,7 @@ export const processFileEncrypt = async (
   let index = 0;
   while (offset < totalSize) {
     if (signal.aborted) throw new Error(AegisError.cancelled);
+    if (index >= MAX_RECORDS) throw new Error(AegisError.record);
 
     const end = Math.min(offset + chunkSize, totalSize);
     const plaintext = new Uint8Array(await file.slice(offset, end).arrayBuffer());
@@ -1016,6 +1018,7 @@ export const processFileDecrypt = async (
   try {
     while (offset < reader.size) {
       if (signal.aborted) throw new Error(AegisError.cancelled);
+      if (index >= MAX_RECORDS) throw new Error(AegisError.record);
 
       if (reader.size - offset < RECORD_HEADER_LENGTH) {
         throw new Error(AegisError.truncated);

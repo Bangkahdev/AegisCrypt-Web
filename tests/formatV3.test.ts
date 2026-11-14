@@ -6,6 +6,7 @@ import {
   FILE_VERSION,
   HEADER_LENGTH,
   KDF_ID_PBKDF2_SHA256,
+  MAX_RECORDS,
   NONCE_PREFIX_OFFSET,
   RECORD_HEADER_LENGTH,
   SALT_OFFSET,
@@ -21,6 +22,14 @@ import {
 import { concat, listV3Records, makeRng, patternBytes, toBytes, type Bytes } from "./helpers";
 
 const CHUNK = CRYPTO_CONSTANTS.CHUNK_SIZE_MIN;
+
+describe("record limit (D1 provisional)", () => {
+  it("caps records at 2^32 - 2 as decided in the frozen spec", () => {
+    expect(MAX_RECORDS).toBe(4_294_967_294);
+    expect(MAX_RECORDS).toBeLessThan(Number.MAX_SAFE_INTEGER);
+    expect(MAX_RECORDS).toBe(2 ** 32 - 2);
+  });
+});
 const FAST = { iterations: CRYPTO_CONSTANTS.PBKDF2_ITERATIONS_MIN, chunkSize: CHUNK };
 
 const encrypt = async (data: Bytes, password = "pw", keyFile: ArrayBuffer | null = null) =>

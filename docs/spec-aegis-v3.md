@@ -1,7 +1,7 @@
-﻿# Spesifikasi Format `.aegis` v3 (Draft Pembekuan)
+# Spesifikasi Format `.aegis` v3 (Draft Pembekuan)
 
-**Status:** DRAFT — untuk ditinjau sebelum dibekukan (Freeze Candidate)  
-**Versi dokumen:** 0.1  
+**Status:** FROZEN-CANDIDATE v1.0 — D2/D3/D4 ditetapkan; D1 provisional menunggu tinjauan kriptografis eksternal
+**Versi dokumen:** 1.0  
 **Tanggal:** 2026-11-13  
 **Sumber kebenaran implementasi saat ini:** `src/constants.ts`, `src/services/cryptoService.ts`, `src/lib/recovery.ts`, `desktop/src/AegisCrypt.Core/*`, `tests/fixtures/v3-vector.json`
 
@@ -49,8 +49,8 @@ KeyFilePart = SHA256(KeyFileBytes)   jika keyfile diberikan
 PasswordBytes = UTF8(password)
 ```
 
-- **Password:** saat ini diambil sebagai byte UTF-8 dari string/password yang diberikan (`TextEncoder`/`Encoding.UTF8`). **Keputusan terbuka (perlu dibekukan):** apakah dilakukan normalisasi Unicode (mis. NFC) sebelum pengodean; saat ini implementasi **tidak** menormalisasi secara eksplisit — interoperabilitas bergantung pada byte UTF-8 yang sama.
-- **Keyfile:** hash SHA-256 dihitung atas **seluruh konten byte mentah** keyfile (bukan path/nama). Tidak ada pemisah eksplisit antara `PasswordBytes` dan `KeyFilePart` selain panjang hash yang tetap (32 byte) ketika hadir.
+- **Password (D2 — DITETAPKAN):** byte yang dipakai adalah **UTF-8 persis** dari string yang dimasukkan pengguna (`TextEncoder`/`Encoding.UTF8`), **tanpa normalisasi Unicode** (tidak ada NFC/NFD/NFKC/NFKD). Dua password yang tampak sama tetapi berbeda urutan codepoint menghasilkan KEK berbeda; ini disengaja agar deterministik lintas platform. Mengubah kebijakan normalisasi di masa depan **wajib** menaikkan versi format.
+- **Keyfile (D2 — DITETAPKAN):** `SHA256` dihitung atas **seluruh byte mentah** berkas (bukan nama/path/metadata), lalu ditempelkan **setelah** `PasswordBytes` tanpa pemisah (panjang hash tetap 32 byte). Urutan ini tidak boleh diubah; membalik urutan mengubah semua kunci.
 - **Flag header bit0 (`FLAG_KEYFILE`)** menandai bahwa keyfile digunakan; parser memvalidasi flag yang dikenal, namun kebenaran kredensial tetap ditentukan oleh keberhasilan unwrap/autentikasi.
 
 ### 4.2 KEK dan pembungkusan DEK
@@ -131,12 +131,12 @@ Nonce (tidak disimpan): nonce_prefix(4) || index(8, u64 BE), index mulai 0 berta
   - Header/ukuran/panjang yang tidak konsisten atau terpotong → `record`/`truncated` ditolak.
   - Kegagalan verifikasi GCM → `tampered` (atau kredensial salah pada unwrap).
 
-## 6. Parameter yang Diizinkan (kandidat beku)
+## 6. Parameter yang Diizinkan (D3 ditetapkan)
 
 | Parameter | Rentang/Aturan saat ini | Status |
 |---|---|---|
-| `iterations` (PBKDF2) | integer, **600.000 – 5.000.000** (inklusif) | Kandidat beku — perlu konfirmasi final |
-| `chunk_size` (plaintext/record non-final) | integer, **65.536 B (64 KiB) – 16.777.216 B (16 MiB)** (inklusif) | Kandidat beku — implikasi memori/DoS perlu dicatat |
+| `iterations` (PBKDF2) | integer, **600.000 - 5.000.000** (inklusif) | **D3 — DITETAPKAN (beku)** |
+| `chunk_size` (plaintext/record non-final) | integer, **65.536 B (64 KiB) - 16.777.216 B (16 MiB)** (inklusif) | **D3 — DITETAPKAN (beku)**; parser menolak record melebihi `chunk_size + 16` |
 | `salt` | 32 byte (CSPRNG) | Beku (sesuai implementasi) |
 | `file_id` | 16 byte (CSPRNG) | Beku |
 | `nonce_prefix` | 4 byte (CSPRNG) | Beku |
@@ -144,16 +144,23 @@ Nonce (tidak disimpan): nonce_prefix(4) || index(8, u64 BE), index mulai 0 berta
 | KDF | `0x01` PBKDF2-HMAC-SHA256 | Beku untuk v3; ekstensi via id baru |
 | Tag GCM | 128-bit | Beku |
 
-## 7. Batas Pemakaian DEK / Record (KEPUTUSAN TERBUKA — VALIDASI KRIPTOGRAFIS)
+## 7. Batas Pemakaian DEK / Record (D1 PROVISIONAL — VALIDASI KRIPTOGRAFIS)
 
-**Belum dibekukan.** Implementasi saat ini **tidak** memberlakukan batas jumlah record maksimum eksplisit selain kapasitas tipe/ukuran; indeks nonce adalah u64 dan indeks `2^64-1` dicadangkan untuk metadata nama berkas.
+**Keputusan provisional:** satu berkas/DEK maksimum **`MAX_RECORDS = 2^32 - 2 = 4.294.967.294` record** (indeks `0 .. 2^32-3`), dan indeks `2^64-1` tetap dicadangkan untuk metadata nama berkas. Penulis **tidak boleh** membuat record melebihi batas; parser **harus menolak** (`record` error) bila menemukan indeks di luar batas.
 
-Yang harus ditetapkan dan divalidasi sebelum beku:
+**Dasar:** NIST SP 800-38D §8.3 membatasi jumlah invokasi fungsi authenticated encryption per kunci untuk IV 96-bit dengan konstruksi deterministik hingga `2^32`. Karena setiap record adalah satu invokasi dengan IV deterministik unik (`nonce_prefix || index`), jumlah record dibatasi `2^32` dengan margin 2 (metadata + cadangan). Batas ini **bukan** diturunkan dari kapasitas indeks 64-bit.
 
-1. **Batas jumlah record per DEK (dan ukuran total efektif).** Nonce per record unik per berkas karena `nonce_prefix` acak + indeks counter, sehingga risiko tumbukan nonce acak tidak sama dengan skema nonce acak murni; namun batas aman AES-GCM ditentukan oleh batas data/invokasi dan probabilitas keberhasilan pemalsuan tag (mis. ketentuan NIST SP 800-38D untuk ukuran data per kunci/invokasi dan panjang tag). Batas **tidak boleh** diturunkan hanya dari rentang indeks 64-bit.
-2. **Batas ukuran plaintext per invokasi GCM.** Dibatasi secara praktis oleh `chunk_size` (≤ 16 MiB) — perlu dinyatakan eksplisit selaras dengan batas primitif.
-3. **Perilaku normatif saat terlampaui:** parser/penulis **harus menolak** pembuatan/enkapsulasi yang melewati batas (error terdefinisi) — jenis error dan ambang final ditentukan setelah validasi.
-4. **Rekomendasi awal (bukan keputusan):** evaluasi pembatasan konservatif (mis. membatasi total record/byte per berkas/DEK) agar margin keamanan autentikasi terjaga; angka final ditunda hingga tinjauan kriptografis.
+**Ukuran per invokasi:** `chunk_size ≤ 16 MiB`. Nilai ini jauh di bawah batas panjang plaintext per invokasi GCM (SP 800-38D §5.2.1.1: ≤ `2^39 - 256` bit ≈ 68,7 GB untuk IV 96-bit). Dengan demikian total plaintext per berkas dibatasi `MAX_RECORDS × chunk_size` (maksimum teoretis ≈ 64 PiB), tetapi secara praktis dibatasi ukuran berkas/penyimpanan platform.
+
+**Perilaku normatif saat terlampaui:**
+- Penulis: menolak mengenkripsi record ke-`2^32-1` dan seterusnya (error terkontrol; tidak ada keluaran parsial).
+- Parser: menolak kontainer yang memuat record dengan indeks ≥ `MAX_RECORDS` (`AegisError.record` di Web; `AegisErrors.Record` di Desktop).
+
+**Status:** provisional. Angka ini **wajib ditinjau kriptografer independen** (batas invokasi/tag, margin forgery, kebijakan rotasi DEK) sebelum status dokumen menjadi FROZEN v2.0. Jika tinjauan menurunkan batas, perubahan bersifat *parsing lebih ketat* dan tidak merusak berkas yang sudah valid di bawah batas baru.
+
+## 7.1 Batas ukuran praktis (non-normatif)
+- Ukuran berkas yang dapat diproses dibatasi memori/platform (Web: Blob/OPFS; Desktop: stream seekable), bukan oleh format.
+- Rekomendasi implementasi: tampilkan peringatan bila berkas mendekati batas praktis platform, tanpa mengubah byte format.
 
 ## 8. Kompatibilitas dan Versi Lama
 
@@ -170,7 +177,7 @@ Untuk interoperabilitas baca mundur, parser dapat mendekripsi v2:
 - **Key material:** konstruksi sama (`UTF8(password) || SHA256(keyfile)` bila ada) — *perlu diperlakukan konsisten dengan keputusan encoding v3*.
 - **Record:** berulang sampai EOF: `chunkLen(4, int32 **little-endian**) || iv(12) || ciphertext+tag(chunkLen - 12)`, AES-256-GCM tanpa AAD.
 - **Tanpa:** envelope DEK/KEK terpisah, fileId, nonce terikat indeks, AAD, metadata nama berkas terenkripsi, slot recovery, rewrap v3.
-- **Status test vector v2:** **belum ada fixture beku lintas-implementasi** (aksi lanjut Gate/Fase 1).
+- **Status test vector v2 (D4 - SELESAI):** `tests/fixtures/v2-vector.json` (2 record, password+keyfile, encoder independen) dibaca oleh tes Web (`tests/vectors.test.ts`) dan Desktop (`AegisCryptoTests.DecryptsFrozenLegacyV2Vector`).
 
 ### 8.3 Penolakan
 - Magic tidak cocok / versi tidak didukung / KDF tidak didukung / flag tak dikenal / parameter di luar rentang / struktur rusak-terpotong-trailing-tamper → ditolak dengan error terkontrol (katalog pesan distabilkan di implementasi).
@@ -184,20 +191,21 @@ Untuk interoperabilitas baca mundur, parser dapat mendekripsi v2:
 ## 10. Interoperabilitas dan Test Vector
 
 - **v3 beku (kanonis):** `tests/fixtures/v3-vector.json` (plaintext, password, keyfile, iterasi 600000, chunk 65536, rngSeed 1) — **dikonsumsi oleh tes Web (`tests/vectors.test.ts`) dan Desktop (`AegisCryptoTests.cs`)**; hasil enkripsi harus identik byte-per-byte dan dapat didekripsi silang.
-- **Kebutuhan:** menambah fixture beku v2 bersama (aksi terencana) dan vektor kasus batas/negatif sesuai pembekuan parameter.
+- **v2 beku (kanonis):** `tests/fixtures/v2-vector.json` — dikonsumsi Web dan Desktop; perubahan pada pembacaan v2 memecahkannya.
+- **Kebutuhan lanjutan:** vektor kasus batas/negatif tambahan sesuai pembekuan parameter (lihat Issue Fase 1).
 - RNG deterministik untuk vektor: byte `(counter*31 + 7) & 0xFF` dari seed (lihat helper tes).
 
 ## 11. Daftar Keputusan Pembekuan (Checklist)
 
-- [ ] **D1 — Batas DEK/record:** tetapkan jumlah record &/atau total byte per DEK, batas invokasi aman AES-GCM-256/tag-128, dan error normatif; **validasi kriptografis**.
-- [ ] **D2 — KeyMaterial/encoding:** tetapkan normalisasi Unicode password (atau nyatakan byte-exact UTF-8 tanpa normalisasi), konfirmasi definisi hash keyfile & non-pemisah; dampak ke vektor/interop.
-- [ ] **D3 — Parameter header final:** konfirmasi rentang `iterations` dan `chunk_size` sebagai batas beku (dan kebijakan kompatibilitas ke depan).
-- [ ] **D4 — Kompatibilitas v2:** terbitkan test vector v2 beku lintas Web/Desktop.
+- [x] **D1 — Batas DEK/record:** **provisional** — maksimum `2^32-2` record per berkas/DEK (lihat §7); menunggu validasi kriptografis independen.
+- [x] **D2 — KeyMaterial/encoding:** ditetapkan — UTF-8 byte-exact tanpa normalisasi; keyfile = SHA-256(byte mentah) ditempel setelah password tanpa pemisah.
+- [x] **D3 — Parameter header final:** ditetapkan — iterasi 600.000–5.000.000; chunk 65.536–16.777.216 byte.
+- [x] **D4 — Kompatibilitas v2:** selesai — fixture v2 beku bersama, dibaca Web + Desktop.
 - [ ] **D5 — Katalog error normatif:** petakan kondisi → kelas error secara stabil lintas implementasi.
-- [ ] **Tinjauan kriptografis eksternal** atas D1–D4 sebelum status “FROZEN”.
+- [ ] **Tinjauan kriptografis eksternal** atas D1 sebelum status “FROZEN”.
 
 ## 12. Riwayat Dokumen
 
 | Versi | Tanggal | Perubahan |
 |---|---|---|
-| 0.1 | 2026-11-13 | Draft awal dari implementasi & test vector v3 saat ini; keputusan batas DEK/record dan normalisasi password ditandai terbuka. |
+| 1.0 | 2026-11-13 | D2 (UTF-8 byte-exact, keyfile SHA-256 suffix), D3 (rentang iterasi/chunk final), D4 (fixture v2 beku bersama) ditetapkan. D1 provisional (`2^32-2` record/DEK) menunggu tinjauan kriptografis. |
