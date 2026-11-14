@@ -13,11 +13,11 @@ test.describe('Gate 1 landing page', () => {
     ).toBeVisible();
   });
 
-  test('offers a waitlist mailto and a link into the app', async ({ page }) => {
+  test('menyediakan tautan form masukan dan tautan masuk ke aplikasi', async ({ page }) => {
     await page.goto('/awal/');
 
-    const waitlist = page.getByRole('link', { name: 'Ikut daftar tunggu' });
-    await expect(waitlist).toHaveAttribute('href', /^mailto:atha@bangkah\.tech\?subject=Gate%201/);
+    const form = page.getByRole('link', { name: 'Ikut beri masukan' });
+    await expect(form).toHaveAttribute('href', 'https://tally.so/r/aegiscrypt-masukan');
 
     await expect(page.getByRole('link', { name: 'Coba versi sekarang' })).toHaveAttribute(
       'href',
