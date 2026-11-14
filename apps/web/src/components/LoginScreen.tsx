@@ -99,8 +99,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
         {t("common.skipToContent")}
       </a>
 
-      <header className="sticky top-0 z-20 border-b border-border/80 bg-card/90 backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-8">
+      <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Shield className="h-5 w-5" />
@@ -125,7 +125,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
       </header>
 
       <main id="main-content" tabIndex={-1} className="flex-1">
-        <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-10 sm:px-8 lg:grid-cols-[1.05fr_420px] lg:items-center lg:py-16">
+        <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1.1fr_440px] lg:items-center lg:px-8 lg:py-16">
           <section className="order-2 lg:order-1">
             <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -307,8 +307,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
         </div>
       </main>
 
-      <footer className="border-t border-border bg-card/60">
-        <div className="mx-auto flex w-full max-w-6xl flex-col justify-between gap-2 px-4 py-4 text-[11px] text-muted-foreground sm:flex-row sm:px-8">
+      <footer className="border-t border-border bg-card">
+        <div className="mx-auto flex w-full max-w-6xl flex-col justify-between gap-2 px-4 py-4 text-[11px] text-muted-foreground sm:flex-row sm:px-6 lg:px-8">
           <p>{t("login.footer")}</p>
           <a
             href="https://docs.aegiscrypt.bangkah.tech"
