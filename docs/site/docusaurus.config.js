@@ -48,6 +48,11 @@ const config = {
           showLastUpdateTime: false,
         },
         blog: false,
+        sitemap: {
+          changefreq: "weekly",
+          priority: 0.5,
+          filename: "sitemap.xml",
+        },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
         },
@@ -111,7 +116,7 @@ const config = {
             title: "Feedback",
             items: [
               { label: "Feedback Form", href: "https://tally.so/r/Ar2XOk" },
-              { label: "Feedback Page", href: "https://aegiscrypt.bangkah.tech/awal/masukan/" },
+              { label: "Feedback Page", href: "https://aegiscrypt.bangkah.tech/awal/feedback/" },
               { label: "Early Program Info", href: "https://aegiscrypt.bangkah.tech/awal/" },
             ],
           },
