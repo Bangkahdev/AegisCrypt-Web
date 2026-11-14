@@ -1,0 +1,13 @@
+{
+  "id": "v3-unicode-password",
+  "description": "Frozen AegisCrypt v3 container whose password is 'kata-sandi-caf\u00e9' in NFC. The NFD spelling encodes different UTF-8 bytes and must derive a different key (no Unicode normalization). Deterministic RNG makeRng(seed) = (counter*31+7)&0xff starting at seed; no keyfile, no filename, no recovery.",
+  "plaintext": "AegisCrypt unicode password vector\n",
+  "passwordNfc": "kata-sandi-caf\u00e9",
+  "passwordNfd": "kata-sandi-cafe\u0301",
+  "passwordNfcUtf8Hex": "6b6174612d73616e64692d636166c3a9",
+  "passwordNfdUtf8Hex": "6b6174612d73616e64692d63616665cc81",
+  "iterations": 600000,
+  "chunkSize": 65536,
+  "rngSeed": 2,
+  "containerHex": "4145474953030100000927c000010000456483a2c1e0ff1e3d5c7b9ab9d8f71635547392b1d0ef0e2d4c6b8aa9c8e7060524436281a0bfdefd1c3b5a7998b7d6f51433527190afceed0c2b4a6988a7c6ef21ac70bf800866916af0d415986a2dfe76c92dbb494c547464645bf779f046790b3e0be1eae1c1ff5a0fcf26070e0f010000003340a29598ec31176a7a8d5c14965604caf7f42bc05fdb99c587723ff984cac5fd126307f9e3811c6ac324e37e3f13b0fc11450c"
+}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CRYPTO_CONSTANTS, HEADER_LENGTH, LEGACY_HEADER_LENGTH } from "../src/constants";
-import { processFileDecrypt, processFileEncrypt } from "../src/services/cryptoService";
+import { AegisError, processFileDecrypt, processFileEncrypt } from "../src/services/cryptoService";
+import unicodeVector from "./fixtures/v3-unicode-vector.json";
 import v2 from "./fixtures/v2-vector.json";
 import vector from "./fixtures/v3-vector.json";
 import { fromHex, hex, makeRng, toBytes } from "./helpers";
@@ -10,6 +11,8 @@ import { fromHex, hex, makeRng, toBytes } from "./helpers";
  * on-disk format, authenticated AAD, or key derivation breaks them.
  */
 const V3_VECTOR_HEX = vector.containerHex;
+const UNICODE_VECTOR_HEX = unicodeVector.containerHex;
+const UNICODE_PLAINTEXT = unicodeVector.plaintext;
 const VECTOR_PLAINTEXT = vector.plaintext;
 const VECTOR_PASSWORD = vector.password;
 const VECTOR_KEYFILE = new TextEncoder().encode(vector.keyfile).buffer;
@@ -31,6 +34,61 @@ const encrypted = () =>
       randomBytes: makeRng(vector.rngSeed),
     },
   );
+
+describe("unicode password vectors", () => {
+  const encryptWith = (password: string) =>
+    processFileEncrypt(
+      new Blob([new TextEncoder().encode(UNICODE_PLAINTEXT)]),
+      password,
+      null,
+      new AbortController().signal,
+      () => {},
+      {
+        iterations: unicodeVector.iterations,
+        chunkSize: unicodeVector.chunkSize,
+        randomBytes: makeRng(unicodeVector.rngSeed),
+      },
+    );
+
+  it("reproduces the frozen NFC container byte for byte", async () => {
+    expect(hex(await toBytes(await encryptWith(unicodeVector.passwordNfc)))).toBe(
+      UNICODE_VECTOR_HEX,
+    );
+  });
+
+  it("decrypts the frozen NFC container", async () => {
+    const out = await processFileDecrypt(
+      new Blob([fromHex(UNICODE_VECTOR_HEX)]),
+      unicodeVector.passwordNfc,
+      null,
+      new AbortController().signal,
+      () => {},
+    );
+    expect(await out.text()).toBe(UNICODE_PLAINTEXT);
+  });
+
+  it("treats an NFD spelling as different credentials", async () => {
+    await expect(
+      processFileDecrypt(
+        new Blob([fromHex(UNICODE_VECTOR_HEX)]),
+        unicodeVector.passwordNfd,
+        null,
+        new AbortController().signal,
+        () => {},
+      ),
+    ).rejects.toThrow(AegisError.credentials);
+  });
+
+  it("encodes NFC and NFD spellings differently without normalization", () => {
+    expect(hex(new TextEncoder().encode(unicodeVector.passwordNfc))).toBe(
+      unicodeVector.passwordNfcUtf8Hex,
+    );
+    expect(hex(new TextEncoder().encode(unicodeVector.passwordNfd))).toBe(
+      unicodeVector.passwordNfdUtf8Hex,
+    );
+    expect(unicodeVector.passwordNfcUtf8Hex).not.toBe(unicodeVector.passwordNfdUtf8Hex);
+  });
+});
 
 describe("format vectors", () => {
   it("reproduces the frozen v3 vector byte for byte", async () => {

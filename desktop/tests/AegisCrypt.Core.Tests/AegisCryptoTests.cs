@@ -21,6 +21,17 @@ public class AegisCryptoTests
         int RngSeed,
         string ContainerHex);
 
+    private sealed record UnicodeVector(
+        string Plaintext,
+        string PasswordNfc,
+        string PasswordNfd,
+        string PasswordNfcUtf8Hex,
+        string PasswordNfdUtf8Hex,
+        int Iterations,
+        int ChunkSize,
+        int RngSeed,
+        string ContainerHex);
+
     private sealed record LegacyVector(
         string PlaintextUtf8,
         string Password,
@@ -29,6 +40,10 @@ public class AegisCryptoTests
 
     private static readonly SharedVector Vector = JsonSerializer.Deserialize<SharedVector>(
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "v3-vector.json")),
+        new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+    private static readonly UnicodeVector Unicode = JsonSerializer.Deserialize<UnicodeVector>(
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "v3-unicode-vector.json")),
         new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
     private static string VectorHex => Vector.ContainerHex;
@@ -61,6 +76,50 @@ public class AegisCryptoTests
         Assert.Equal(VectorPlaintext, Encoding.UTF8.GetString(plaintext));
         Assert.Null(result.Filename);
         Assert.False(result.LegacyV2);
+    }
+
+    [Fact]
+    public void ReproducesFrozenUnicodeNfcVectorByteForByte()
+    {
+        var container = Encrypt(
+            Encoding.UTF8.GetBytes(Unicode.Plaintext),
+            Unicode.PasswordNfc,
+            null,
+            new EncryptOptions
+            {
+                Iterations = Unicode.Iterations,
+                ChunkSize = Unicode.ChunkSize,
+                RandomBytes = MakeRng(Unicode.RngSeed),
+            });
+
+        Assert.Equal(Unicode.ContainerHex, Convert.ToHexString(container).ToLowerInvariant());
+    }
+
+    [Fact]
+    public void DecryptsFrozenUnicodeNfcVector()
+    {
+        var (plaintext, result) = Decrypt(FromHex(Unicode.ContainerHex), Unicode.PasswordNfc);
+
+        Assert.Equal(Unicode.Plaintext, Encoding.UTF8.GetString(plaintext));
+        Assert.Null(result.Filename);
+        Assert.False(result.LegacyV2);
+    }
+
+    [Fact]
+    public void NfdSpellingOfUnicodePasswordIsDifferentCredentials()
+    {
+        var error = Assert.Throws<AegisFormatException>(
+            () => Decrypt(FromHex(Unicode.ContainerHex), Unicode.PasswordNfd));
+
+        Assert.Equal(AegisErrors.Credentials, error.Message);
+    }
+
+    [Fact]
+    public void UnicodeFormsEncodeDifferentUtf8Bytes()
+    {
+        Assert.Equal(Unicode.PasswordNfcUtf8Hex, Convert.ToHexString(Encoding.UTF8.GetBytes(Unicode.PasswordNfc)).ToLowerInvariant());
+        Assert.Equal(Unicode.PasswordNfdUtf8Hex, Convert.ToHexString(Encoding.UTF8.GetBytes(Unicode.PasswordNfd)).ToLowerInvariant());
+        Assert.NotEqual(Unicode.PasswordNfcUtf8Hex, Unicode.PasswordNfdUtf8Hex);
     }
 
     [Fact]
