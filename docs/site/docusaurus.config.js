@@ -103,6 +103,14 @@ const config = {
             ],
           },
           {
+            title: "Masukan",
+            items: [
+              { label: "Isi Form Masukan", href: "https://tally.so/r/Ar2XOk" },
+              { label: "Halaman Masukan", href: "https://aegiscrypt.bangkah.tech/awal/masukan/" },
+              { label: "Info Program Awal", href: "https://aegiscrypt.bangkah.tech/awal/" },
+            ],
+          },
+          {
             title: "Proyek",
             items: [
               { label: "Aplikasi Web", href: "https://aegiscrypt.bangkah.tech" },
@@ -111,7 +119,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Hak cipta © ${new Date().getFullYear()} AegisCrypt. Dibangun dengan Docusaurus.`,
+        copyright: `Hak cipta (c) ${new Date().getFullYear()} AegisCrypt. Seluruh hak cipta dilindungi.`,
       },
       prism: {
         theme: lightCodeTheme,
