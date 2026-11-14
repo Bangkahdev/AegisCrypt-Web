@@ -763,6 +763,8 @@ export const processFileEncrypt = async (
   onProgress: (bytes: number) => void,
   options: EncryptOptions = {},
 ): Promise<Blob> => {
+  if (signal.aborted) throw new Error(AegisError.cancelled);
+
   const iterations = options.iterations ?? CRYPTO_CONSTANTS.PBKDF2_ITERATIONS;
   const chunkSize = options.chunkSize ?? CRYPTO_CONSTANTS.CHUNK_SIZE;
   const randomBytes = options.randomBytes ?? defaultRandomBytes;
@@ -778,6 +780,7 @@ export const processFileEncrypt = async (
 
   const keyMaterial = await prepareKeyMaterial(password, keyFileBuffer);
   const kek = await deriveKey(keyMaterial, salt, ["encrypt"], iterations);
+  if (signal.aborted) throw new Error(AegisError.cancelled);
   const dek = await importDek(dekRaw, ["encrypt"]);
 
   const flags =
@@ -862,7 +865,11 @@ export const processFileEncrypt = async (
 
   if (totalSize === 0) {
     // Empty file => exactly one final record containing only the GCM tag.
+    // Cancellation must still be observed: an abort requested before this
+    // point must not produce a "successful" container.
+    if (signal.aborted) throw new Error(AegisError.cancelled);
     parts.push(await encryptRecord(0, new Uint8Array(0), true));
+    if (signal.aborted) throw new Error(AegisError.cancelled);
     onProgress(0);
     return new Blob(parts, { type: "application/octet-stream" });
   }
@@ -878,6 +885,7 @@ export const processFileEncrypt = async (
     const isFinal = end === totalSize;
 
     parts.push(await encryptRecord(index, plaintext, isFinal));
+    if (signal.aborted) throw new Error(AegisError.cancelled);
 
     offset = end;
     index += 1;
@@ -984,6 +992,8 @@ export const processFileDecrypt = async (
   onProgress: (bytes: number) => void,
   options: DecryptOptions = {},
 ): Promise<Blob> => {
+  if (signal.aborted) throw new Error(AegisError.cancelled);
+
   const reader = makeReader(source);
 
   const prefixBytes = await reader.read(0, 6);
@@ -993,35 +1003,36 @@ export const processFileDecrypt = async (
   const version = prefixBytes[5];
   const sink = options.sink ?? (await createDefaultSink());
 
-  if (version === LEGACY_FILE_VERSION) {
-    if (options.recoveryKey) throw new Error(AegisError.recoveryMissing);
-    return decryptLegacyV2(reader, password, keyFileBuffer, signal, onProgress, sink);
-  }
-  if (version !== FILE_VERSION) throw new Error(AegisError.version(version));
-
-  const headerBytes = await reader.read(0, HEADER_LENGTH);
-  const header = parseHeader(headerBytes);
-
-  if (reader.size < header.metadataOffset) throw new Error(AegisError.truncated);
-
-  let dekRaw: ArrayBuffer;
-  if (options.recoveryKey) {
-    if (!(header.flags & FLAG_RECOVERY)) throw new Error(AegisError.recoveryMissing);
-    dekRaw = await unwrapRecoveryDekRaw(reader, header.fileId, options.recoveryKey);
-  } else {
-    const keyMaterial = await prepareKeyMaterial(password, keyFileBuffer);
-    dekRaw = await unwrapDekRaw(header, keyMaterial);
-  }
-  const dek = await importDek(dekRaw, ["decrypt"]);
-
-  const { recordsOffset, filename } = await resolveRecordsOffset(reader, header, dek);
-  if (filename) options.onFilename?.(filename);
-
-  let offset = recordsOffset;
-  let index = 0;
-  let sawFinal = false;
-
   try {
+    if (version === LEGACY_FILE_VERSION) {
+      if (options.recoveryKey) throw new Error(AegisError.recoveryMissing);
+      return await decryptLegacyV2(reader, password, keyFileBuffer, signal, onProgress, sink);
+    }
+    if (version !== FILE_VERSION) throw new Error(AegisError.version(version));
+
+    const headerBytes = await reader.read(0, HEADER_LENGTH);
+    const header = parseHeader(headerBytes);
+
+    if (reader.size < header.metadataOffset) throw new Error(AegisError.truncated);
+
+    let dekRaw: ArrayBuffer;
+    if (options.recoveryKey) {
+      if (!(header.flags & FLAG_RECOVERY)) throw new Error(AegisError.recoveryMissing);
+      dekRaw = await unwrapRecoveryDekRaw(reader, header.fileId, options.recoveryKey);
+    } else {
+      const keyMaterial = await prepareKeyMaterial(password, keyFileBuffer);
+      dekRaw = await unwrapDekRaw(header, keyMaterial);
+    }
+    if (signal.aborted) throw new Error(AegisError.cancelled);
+    const dek = await importDek(dekRaw, ["decrypt"]);
+
+    const { recordsOffset, filename } = await resolveRecordsOffset(reader, header, dek);
+    if (filename) options.onFilename?.(filename);
+
+    let offset = recordsOffset;
+    let index = 0;
+    let sawFinal = false;
+
     while (offset < reader.size) {
       if (signal.aborted) throw new Error(AegisError.cancelled);
       if (index >= MAX_RECORDS) throw new Error(AegisError.record);

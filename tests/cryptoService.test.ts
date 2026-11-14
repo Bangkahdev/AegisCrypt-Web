@@ -219,4 +219,117 @@ describe("v3 roundtrip", () => {
       ),
     ).rejects.toThrow(AegisError.cancelled);
   });
+
+  it("rejects an already-aborted empty-file encryption", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      processFileEncrypt(
+        new Blob([]),
+        "pw",
+        null,
+        controller.signal,
+        () => {},
+      ),
+    ).rejects.toThrow(AegisError.cancelled);
+  });
+
+  it("rejects an already-aborted non-empty encryption", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      processFileEncrypt(
+        new Blob([patternBytes(CHUNK)]),
+        "pw",
+        null,
+        controller.signal,
+        () => {},
+      ),
+    ).rejects.toThrow(AegisError.cancelled);
+  });
+
+  it("encrypts an empty file as a single final record", async () => {
+    const container = await processFileEncrypt(
+      new Blob([]),
+      "pw",
+      null,
+      new AbortController().signal,
+      () => {},
+      { iterations: CRYPTO_CONSTANTS.PBKDF2_ITERATIONS_MIN },
+    );
+    const bytes = await toBytes(container);
+    expect(bytes.byteLength).toBe(HEADER_LENGTH + 5 + CRYPTO_CONSTANTS.TAG_LENGTH_BYTES);
+    const out = await processFileDecrypt(
+      container,
+      "pw",
+      null,
+      new AbortController().signal,
+      () => {},
+    );
+    expect(await out.arrayBuffer()).toHaveProperty("byteLength", 0);
+  });
+});
+
+describe("decryption cancellation and cleanup", () => {
+  it("rejects an already-aborted decryption before reading the container", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      processFileDecrypt(
+        new Blob([patternBytes(64)]),
+        "pw",
+        null,
+        controller.signal,
+        () => {},
+      ),
+    ).rejects.toThrow(AegisError.cancelled);
+  });
+
+  it("aborts the output sink when the password is wrong", async () => {
+    const container = await encrypt(patternBytes(300), "right");
+    const aborts: number[] = [];
+    const sink = {
+      write: () => {},
+      finalize: () => new Blob([]),
+      abort: () => {
+        aborts.push(1);
+      },
+    };
+    await expect(
+      processFileDecrypt(
+        container,
+        "wrong",
+        null,
+        new AbortController().signal,
+        () => {},
+        { sink },
+      ),
+    ).rejects.toThrow(AegisError.credentials);
+    expect(aborts).toHaveLength(1);
+  });
+
+  it("aborts the output sink when a record fails authentication", async () => {
+    const container = await encrypt(patternBytes(300), "pw");
+    const bytes = await toBytes(container);
+    bytes[bytes.byteLength - 1] ^= 0xff;
+    const aborts: number[] = [];
+    const sink = {
+      write: () => {},
+      finalize: () => new Blob([]),
+      abort: () => {
+        aborts.push(1);
+      },
+    };
+    await expect(
+      processFileDecrypt(
+        new Blob([bytes]),
+        "pw",
+        null,
+        new AbortController().signal,
+        () => {},
+        { sink },
+      ),
+    ).rejects.toThrow(AegisError.tampered);
+    expect(aborts).toHaveLength(1);
+  });
 });
