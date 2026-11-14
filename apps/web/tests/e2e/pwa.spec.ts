@@ -108,4 +108,18 @@ test.describe('progressive web app and accessibility', () => {
     await page.keyboard.press('Escape');
     await expect(changePassword).toBeFocused();
   });
+
+  test('serves a JSON precache manifest for the app shell', async ({ request }) => {
+    const manifestResponse = await request.get('/precache-manifest.json');
+    expect(manifestResponse.status()).toBe(200);
+    expect(manifestResponse.headers()['content-type']).toContain('application/json');
+    const manifest = await manifestResponse.json();
+    expect(Array.isArray(manifest.assets)).toBe(true);
+    expect(manifest.assets).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^\/assets\/index-.*\.js$/)])
+    );
+    expect(manifest.assets).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^\/assets\/cryptoWorker-.*\.js$/)])
+    );
+  });
 });
