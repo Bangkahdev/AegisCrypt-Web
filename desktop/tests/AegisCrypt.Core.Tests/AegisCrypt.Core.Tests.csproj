@@ -16,6 +16,9 @@
     <Content Include="..\..\..\tests\fixtures\v3-vector.json" Link="fixtures\v3-vector.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\..\..\tests\fixtures\error-catalog.json" Link="fixtures\error-catalog.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\..\..\tests\fixtures\v2-vector.json" Link="fixtures\v2-vector.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

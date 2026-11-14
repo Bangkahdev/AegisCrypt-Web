@@ -1,8 +1,8 @@
 # Spesifikasi Format `.aegis` v3 (Draft Pembekuan)
 
-**Status:** FROZEN-CANDIDATE v1.0 — D2/D3/D4 ditetapkan; D1 provisional menunggu tinjauan kriptografis eksternal
-**Versi dokumen:** 1.0  
-**Tanggal:** 2026-11-13  
+**Status:** FROZEN-CANDIDATE v1.1 — D2/D3/D4/D5 ditetapkan; D1 provisional menunggu tinjauan kriptografis eksternal
+**Versi dokumen:** 1.1  
+**Tanggal:** 2026-11-14  
 **Sumber kebenaran implementasi saat ini:** `src/constants.ts`, `src/services/cryptoService.ts`, `src/lib/recovery.ts`, `desktop/src/AegisCrypt.Core/*`, `tests/fixtures/v3-vector.json`
 
 Dokumen ini mendefinisikan format kontainer `.aegis` v3 sebagai kontrak interoperabilitas antara implementasi Web dan Desktop (.NET 8). Perubahan yang memengaruhi byte di kabel/berkas atau derivasi kunci **tidak boleh** dilakukan tanpa memperbarui dokumen ini, test vector, dan kedua implementasi.
@@ -205,6 +205,31 @@ Matriks ini ditegakkan oleh `tests/legacyV2.test.ts` dan `desktop/tests/AegisCry
 - Setiap kegagalan verifikasi GCM (unwrap, metadata, record) **membatalkan** dekripsi; sink/output parsial harus dibuang (abort) dan keluaran akhir tidak dipublikasikan.
 - Parser harus menolak: kontainer terpotong, kelebihan byte setelah record final, record non-final dengan ukuran tidak sesuai `chunk_size`, `ct_len` di luar batas, flag/bit tak dikenal, metadata di luar kebijakan.
 
+### 9.1 Katalog error kanonis (D5)
+
+Sumber tunggal: `tests/fixtures/error-catalog.json`. Setiap pesan statis di `AegisError` (Web) dan `AegisErrors` (Desktop) **harus** identik dengan katalog; pesan versi memakai templat `Versi file tidak didukung (v{v}). Perbarui aplikasi.` Penegakan: `tests/errorCatalog.test.ts` dan `AegisCryptoTests.ErrorCatalogMatchesDesktopMessages`.
+
+| ID katalog | Pesan kanonis |
+|---|---|
+| `format` | `Format file tidak valid (.aegis tidak dikenali).` |
+| `kdf` | `KDF tidak didukung oleh versi aplikasi ini.` |
+| `iterations` | `Parameter iterasi KDF di luar batas yang diizinkan.` |
+| `chunkSize` | `Ukuran chunk di luar batas yang diizinkan.` |
+| `flags` | `Header memuat flag yang tidak dikenal.` |
+| `filenameMetadata` | `Metadata nama berkas rusak atau tidak valid.` |
+| `truncated` | `Berkas terpotong atau tidak lengkap.` |
+| `missingFinal` | `Record final tidak ditemukan; berkas mungkin terpotong.` |
+| `trailing` | `Terdapat data setelah record final; berkas dimanipulasi.` |
+| `record` | `Struktur record tidak valid; berkas dimanipulasi atau rusak.` |
+| `tampered` | `Autentikasi berkas gagal; data dimanipulasi atau rusak.` |
+| `credentials` | `Kata sandi atau keyfile salah.` |
+| `recoveryMissing` | `Berkas ini tidak memiliki slot recovery.` |
+| `recoveryKey` | `Kunci recovery salah atau slot rusak.` |
+| `legacyCorrupt` | `Berkas corrupt: struktur v2 tidak valid.` |
+| `cancelled` | `Operation Cancelled` |
+
+Menambah error baru **wajib** memperbarui katalog, kedua implementasi, dan uji paritas.
+
 ## 10. Interoperabilitas dan Test Vector
 
 - **v3 beku (kanonis):** `tests/fixtures/v3-vector.json` (plaintext, password, keyfile, iterasi 600000, chunk 65536, rngSeed 1) — **dikonsumsi oleh tes Web (`tests/vectors.test.ts`) dan Desktop (`AegisCryptoTests.cs`)**; hasil enkripsi harus identik byte-per-byte dan dapat didekripsi silang.
@@ -218,7 +243,7 @@ Matriks ini ditegakkan oleh `tests/legacyV2.test.ts` dan `desktop/tests/AegisCry
 - [x] **D2 — KeyMaterial/encoding:** ditetapkan — UTF-8 byte-exact tanpa normalisasi; keyfile = SHA-256(byte mentah) ditempel setelah password tanpa pemisah.
 - [x] **D3 — Parameter header final:** ditetapkan — iterasi 600.000–5.000.000; chunk 65.536–16.777.216 byte.
 - [x] **D4 — Kompatibilitas v2:** selesai — fixture v2 beku bersama, dibaca Web + Desktop.
-- [ ] **D5 — Katalog error normatif:** petakan kondisi → kelas error secara stabil lintas implementasi.
+- [x] **D5 — Katalog error normatif:** selesai — `tests/fixtures/error-catalog.json` + uji paritas Web/Desktop.
 - [ ] **Tinjauan kriptografis eksternal** atas D1 sebelum status “FROZEN”.
 
 ## 12. Riwayat Dokumen
@@ -226,3 +251,4 @@ Matriks ini ditegakkan oleh `tests/legacyV2.test.ts` dan `desktop/tests/AegisCry
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | 2026-11-13 | D2 (UTF-8 byte-exact, keyfile SHA-256 suffix), D3 (rentang iterasi/chunk final), D4 (fixture v2 beku bersama) ditetapkan. D1 provisional (`2^32-2` record/DEK) menunggu tinjauan kriptografis. |
+| 1.1 | 2026-11-14 | D5 (katalog error kanonis) ditetapkan; matriks paritas v2 (§8.4) ditambahkan. |
