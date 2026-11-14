@@ -1,279 +1,994 @@
-# Rencana Kematangan Produksi AegisCrypt (SaaS)
+Software Requirements Specification (SRS) — AegisCrypt
+Offline-First File Encryption Platform dengan Aktivasi Online (SaaS)
+Versi 1.3 (Baseline) · 14 November 2026 · Penyusun: Muhammad Dhiyaul Atha
+1. Pendahuluan
+1.1 Tujuan Dokumen
+Dokumen ini menspesifikasikan kebutuhan AegisCrypt, platform enkripsi berkas yang memproses data secara lokal di perangkat pengguna. Layanan online hanya menangani akun, aktivasi perangkat, penerbitan lisensi, pembayaran, dan distribusi aplikasi. Berbagi berkas dilakukan langsung oleh pengguna melalui media pilihannya dan tidak melewati backend. Dokumen menjadi acuan implementasi, pengujian, dan evaluasi.
+1.2 Ruang Lingkup
+AegisCrypt terdiri dari: (a) Client yang mengenkripsi dan mendekripsi berkas di perangkat pengguna, mengelola password dan keyfile, serta memverifikasi lisensi secara lokal; (b) Layanan Online untuk akun, aktivasi perangkat, penerbitan lisensi, pembayaran, dan distribusi aplikasi; (c) modul opsional (Local Vault, Berbagi Terenkripsi, Recovery Key) dan (d) Fitur Organisasi pada tahap lanjut. Server tidak pernah menerima plaintext, password enkripsi, keyfile, maupun kunci turunan.
+Di luar lingkup: penyimpanan, sinkronisasi, atau backup berkas di server; enkripsi atau dekripsi di server; pemeriksaan lisensi wajib ke server setiap aplikasi dibuka.
+Prinsip produk: Activate Online. Encrypt Offline. Login dan aktivasi perangkat dilakukan online satu kali, perpanjangan langganan dilakukan online, dan penggunaan sehari-hari berjalan tanpa internet.
+1.3 Definisi dan Singkatan
+Istilah
+Arti
+Crypto Core
+Modul utama untuk derivasi kunci, enkripsi, dekripsi, dan validasi berkas
+AES-256-GCM
+Enkripsi simetris terautentikasi (AEAD) dengan kunci 256-bit
+PBKDF2
+Fungsi derivasi kunci berbasis password (HMAC-SHA-256)
+KEK
+Key Encryption Key: kunci hasil derivasi password dan keyfile yang membungkus DEK
+DEK
+Data Encryption Key: kunci acak 256-bit per berkas yang mengenkripsi seluruh chunk
+Envelope Encryption
+Isi berkas dienkripsi dengan DEK; DEK dibungkus oleh KEK (dan opsional Recovery Key)
+AAD
+Additional Authenticated Data, data yang diautentikasi bersama ciphertext
+Record
+Satu potongan berkas terenkripsi (header record + ciphertext + tag GCM)
+Keyfile
+Berkas opsional yang menjadi input kriptografis tambahan dalam derivasi kunci (bukan 2FA akun)
+Local Vault
+Penyimpanan lokal berkas terenkripsi di perangkat
+Recovery Key
+Kunci pemulihan terpisah yang dipegang pengguna dan membuka slot pembungkus DEK
+Entitlement
+Pernyataan bertanda tangan digital yang menyatakan hak penggunaan fitur AegisCrypt
+Device Activation
+Proses mendaftarkan sebuah instalasi melalui layanan online
+Installation ID
+Identitas acak unik sebuah instalasi aplikasi
+Offline License
+Entitlement yang diverifikasi secara lokal tanpa komunikasi dengan server
+License Issuer
+Layanan yang menerbitkan dan menandatangani entitlement
+Signing Key / Verification Key
+Kunci privat penanda tangan di server / kunci publik verifikasi di klien
+Key ID (kid)
+Identitas kunci yang dipakai memilih verification key
+Grace Period
+Masa tambahan setelah periode langganan berakhir saat hak Pro masih berlaku
+1.4 Referensi
+• NIST SP 800-38D (GCM), FIPS 197 (AES), RFC 8018 (PKCS #5 / PBKDF2), RFC 7515 (JSON Web Signature)
+• W3C Web Cryptography API
+• OWASP Password Storage Cheat Sheet dan ASVS
+• Repositori: https://github.com/Bangkahdev/AegisCrypt-Web · Aplikasi: https://aegis-crypt-web.vercel.app/
+1.5 Konvensi Penomoran
+Kebutuhan memakai ID FR-<modul>-<nomor> (fungsional) dan NFR-<kategori>-<nomor>. Prioritas: M (Must), S (Should), C (Could). Fase merujuk pada roadmap di Bagian 10.
+2. Deskripsi Umum
+2.1 Perspektif Produk
+AegisCrypt saat ini berupa aplikasi web satu halaman (React, TypeScript, Web Crypto API) tanpa backend. Versi SaaS menambahkan layanan online yang hanya mengurus identitas dan hak penggunaan. Hak tersebut berbentuk entitlement, yaitu pernyataan bertanda tangan digital dari server yang diverifikasi klien secara lokal dengan public key yang tertanam di aplikasi. Fitur inti enkripsi dan dekripsi tetap berfungsi tanpa koneksi ke server dan tanpa lisensi aktif.
+2.2 Kelas Pengguna
+Kelas
+Hak penggunaan
+Kebutuhan utama
+Guest
+Crypto Core tanpa akun maupun lisensi
+Enkripsi dan dekripsi cepat tanpa registrasi
+Terdaftar (Free)
+Hak Crypto Core yang sama, ditambah identitas akun dan pengelolaan akun online
+Mengelola akun dan perangkat; membeli layanan tambahan
+Pro
+Crypto Core ditambah fitur komersial (OD-02) yang berjalan offline selama lisensi berlaku
+Fitur lanjutan tanpa menghalangi akses ke berkas
+Penerima
+Pihak yang menerima berkas .aegis
+Membuka berkas tanpa akun maupun lisensi
+Admin Organisasi (fase lanjut)
+Pengelolaan lisensi dan kebijakan organisasi
+Distribusi lisensi, kebijakan, audit
+Administrator Sistem
+Operator layanan
+Penerbitan lisensi, penagihan, pemantauan, dukungan
+2.3 Lingkungan Operasi
+• Web modern dengan Web Crypto API dan HTTPS (Chrome, Edge, Firefox, Safari, dua versi mayor terakhir).
+• PWA pada tahap berikutnya; Android, iOS, dan desktop pada Fase 5.
+• Backend berupa layanan HTTPS dengan basis data relasional.
+2.4 Batasan Desain
+1.  Enkripsi dan dekripsi berjalan di sisi klien; backend tidak boleh berada pada jalur proses tersebut.
+2.  Format berkas .aegis harus identik dan kompatibel di semua platform, dan berevolusi lewat nomor versi tanpa merusak berkas lama.
+3.  Aplikasi tidak boleh mewajibkan koneksi internet atau pemeriksaan lisensi online setiap kali dibuka, termasuk sebagai proses latar belakang wajib.
+4.  Kedaluwarsa atau pencabutan lisensi tidak boleh menghalangi pengguna mendekripsi berkasnya sendiri.
+5.  Algoritma terbatas pada yang tersedia di Web Crypto API (atau pustaka teraudit di platform lain).
+6.  Repositori publik berlisensi memuat Crypto Core; modul lisensi, fitur Pro, dan backend tidak dipublikasikan (lihat 3.4).
+2.5 Asumsi dan Ketergantungan
+• Pengguna menjaga kerahasiaan password dan keyfile; kehilangan keduanya berarti data tidak dapat dipulihkan, kecuali modul Recovery Key dibangun dan dipakai.
+• Keamanan versi web bergantung pada integritas kode yang dikirim server (lihat NFR-SEC-06).
+• Pemeriksaan lisensi di klien tidak dapat sepenuhnya mencegah pembajakan, terutama di web karena kode dikirim ke browser; ia mencegah pelanggaran yang tidak disengaja. Perlindungan lebih kuat hanya berasal dari hak yang diterbitkan server dan build native.
+• Perangkat memperoleh koneksi internet saat aktivasi dan perpanjangan lisensi.
+• Penyedia pembayaran pihak ketiga dipakai; AegisCrypt tidak menyimpan data kartu.
+2.6 Prinsip Produk yang Tidak Boleh Diubah
+1.  Lisensi mengatur fitur aplikasi, bukan hak pengguna atas datanya: tidak ada kondisi lisensi, akun, atau langganan yang boleh menghalangi dekripsi berkas milik pengguna.
+2.  Crypto Core tidak bergantung pada akun, lisensi, maupun koneksi internet.
+3.  Password enkripsi, keyfile, dan kunci tidak pernah dikirim ke server.
+4.  Server tidak menyimpan, memproses, atau mendistribusikan berkas pengguna.
+2.7 Internet dan Autentikasi per Aktivitas
+Aktivitas
+Internet
+Autentikasi akun
+Membuka aplikasi setelah aktivasi
+Tidak
+Tidak
+Enkripsi dan dekripsi
+Tidak
+Tidak
+Memverifikasi entitlement
+Tidak
+Tidak
+Aktivasi perangkat (pertama atau perangkat baru)
+Ya
+Ya
+Membeli atau memperpanjang Pro
+Ya
+Ya
+Mengelola akun atau menonaktifkan perangkat
+Ya
+Ya, sesuai kebijakan sesi
+3. Arsitektur dan Model Ancaman
+3.1 Komponen
+Komponen
+Lokasi
+Tanggung jawab
+Kode
+Crypto Engine
+Klien
+Derivasi kunci, enkripsi/dekripsi streaming, validasi format
+Terbuka
+Key Manager
+Klien
+Penanganan password, keyfile, kunci sesi
+Terbuka
+License Manager
+Klien
+Verifikasi entitlement bertanda tangan, penyimpanan lisensi, masa tenggang offline
+Tertutup
+Local Vault / Sharing (opsional)
+Klien
+Penyimpanan lokal dan ekspor berkas terenkripsi
+Ditentukan kemudian
+Activation Service
+Server
+Login, pendaftaran perangkat, penerbitan entitlement
+Tertutup
+Subscription Service
+Server
+Paket, pembayaran, perpanjangan, daftar pencabutan
+Tertutup
+Distribusi Aplikasi
+Server/CDN
+Build web (PWA) dan build terpasang yang ditandatangani
+Tertutup
+3.2 Aset yang Dilindungi
+Plaintext berkas; password enkripsi, keyfile, dan kunci turunan; Recovery Key; kredensial akun dan sesi; metadata berkas (nama, ukuran).
+3.3 Model Ancaman
+ID
+Ancaman
+Mitigasi
+T-01
+Penyerang membaca berkas .aegis yang dicuri
+AES-256-GCM, KDF kuat, salt unik
+T-02
+Brute-force password offline
+PBKDF2 ≥ 600.000 iterasi, keyfile opsional, indikator kekuatan password
+T-03
+Manipulasi, penukaran urutan, atau pemotongan chunk
+AAD memuat indeks chunk, penanda chunk terakhir, dan header
+T-04
+Server atau staf layanan mengakses data pengguna
+Server tidak pernah menerima plaintext atau kunci; lisensi bukan kunci enkripsi
+T-05
+Kode web dimodifikasi (supply chain, XSS)
+CSP ketat, SRI, audit dependensi, build yang dapat diverifikasi
+T-06
+Pencurian akun
+2FA, rate limiting, deteksi login anomali
+T-07
+Kebocoran lewat memori, log, atau penyimpanan browser
+Penghapusan kunci dari memori, larangan logging data sensitif, kunci non-ekstraktabel
+T-08
+Pemalsuan lisensi
+Entitlement bertanda tangan asimetris; klaim memuat ID instalasi dan masa berlaku
+T-09
+Pemeriksaan lisensi dilewati dengan memodifikasi kode klien
+Risiko sisa yang diterima pada web; hak bernilai tinggi diterbitkan server; build native ditandatangani. Obfuscation bukan kontrol keamanan
+T-10
+Jam perangkat diputar mundur untuk memperpanjang lisensi
+Waktu terakhir terlihat disimpan, masa tenggang terbatas; batasan ini diterima
+T-11
+Pencabutan tidak berlaku pada perangkat offline
+Pencabutan efektif saat perangkat terhubung atau masa berlaku habis
+Di luar model ancaman: perangkat pengguna yang sudah dikompromikan malware dan keylogger.
+3.4 Pembagian Modul Terbuka dan Tertutup
+Repositori GitHub tetap publik dengan lisensi, tetapi tidak seluruh kode dipublikasikan. Crypto Core tetap terbuka karena klaim keamanan produk enkripsi harus dapat diperiksa pihak luar dan audit lebih mudah dilakukan. Yang tertutup adalah lapisan lisensi, fitur Pro, dan layanan backend.
+Bagian
+Status
+Alasan
+Crypto Core, format .aegis, test vector
+Publik
+Dapat diaudit; menjadi dasar kepercayaan
+UI dasar
+Publik
+Transparansi alur pengguna
+License Manager, fitur Pro
+Tertutup
+Melindungi model bisnis
+Backend (aktivasi, langganan)
+Tertutup
+Kode server tidak perlu dipublikasikan
+Pada versi web, JavaScript yang dikirim ke browser tetap dapat dibaca meski tidak ada di GitHub; menutup repositori tidak menjadikan pemeriksaan lisensi tahan pembajakan (lihat T-09). Lisensi publik untuk Crypto Core ditentukan pada OD-03.
+4. Persyaratan Fungsional
+4.1 Crypto Core (CRY)
+ID
+Kebutuhan
+Prioritas
+Fase
+FR-CRY-01
+Sistem mengenkripsi satu atau banyak berkas menjadi berkas .aegis di perangkat pengguna.
+M
+1
+FR-CRY-02
+Sistem mendekripsi berkas .aegis dan memulihkan berkas asli persis sama (byte-identical).
+M
+1
+FR-CRY-03
+KEK diturunkan dari KeyMaterial = Password ‖ SHA-256(Keyfile) (keyfile opsional) melalui KDF yang tertera di header.
+M
+1
+FR-CRY-04
+Enkripsi dan dekripsi berjalan streaming per chunk; penggunaan memori tidak bergantung pada ukuran berkas.
+M
+1
+FR-CRY-05
+Format v3 memakai envelope encryption: DEK acak 256-bit per berkas mengenkripsi seluruh chunk, dan DEK dibungkus oleh KEK (Bagian 5).
+M
+1
+FR-CRY-06
+Setiap record diautentikasi dengan nonce unik dan AAD yang memuat parameter berkas, flag record, panjang, dan indeks (Bagian 5).
+M
+1
+FR-CRY-07
+Sistem menolak berkas yang dimanipulasi, dipotong (termasuk sisa 1–3 byte di akhir), diurutkan ulang, atau memiliki data setelah record final, dengan pesan kesalahan jelas dan tanpa keluaran parsial yang tampak valid.
+M
+1
+FR-CRY-08
+Dekripsi menulis ke keluaran sementara dan memfinalisasinya hanya setelah record final terverifikasi; bila gagal, keluaran sementara dibuang.
+M
+1
+FR-CRY-09
+Parameter header (magic, versi, KDF ID, rentang iterasi, ukuran chunk, bit reserved) divalidasi sebelum KDF dijalankan.
+M
+1
+FR-CRY-10
+Pembaca v2 dipertahankan dengan aturan v2 (100.000 iterasi tetap, tanpa AAD) dan diuji dengan test vector dari berkas nyata; penulisan v2 dihentikan dan migrasi ke v3 disarankan.
+M
+1
+FR-CRY-11
+Mengganti password atau keyfile hanya menulis ulang header (membungkus ulang DEK), tanpa mengenkripsi ulang isi berkas.
+S
+1
+FR-CRY-12
+Sistem menampilkan progres, kecepatan, ETA, dan log operasi; pengguna dapat membatalkan proses.
+S
+1
+FR-CRY-13
+Sistem menyediakan pembuat keyfile acak.
+C
+1
+FR-CRY-14
+Nama berkas asli disimpan terenkripsi sebagai metadata (flag dicadangkan pada format v3).
+C
+4
+4.2 Local Vault (VLT)
+ID
+Kebutuhan
+Prioritas
+Fase
+FR-VLT-01
+Pengguna dapat menambah, melihat, menghapus, dan mengekspor berkas terenkripsi di Vault (modul opsional).
+S
+4
+FR-VLT-02
+Vault menyimpan data hanya di perangkat (IndexedDB/OPFS di web, penyimpanan aplikasi di platform lain).
+S
+4
+FR-VLT-03
+Daftar berkas mendukung pencarian, pengelompokan (folder/tag), dan pengurutan.
+C
+4
+FR-VLT-04
+Metadata Vault (nama, tag) dienkripsi dengan kunci Vault.
+C
+4
+FR-VLT-05
+Pengguna dapat mengunci Vault; membukanya memerlukan password atau autentikasi perangkat.
+S
+4
+FR-VLT-06
+Peringatan ditampilkan bila penyimpanan browser dapat dihapus oleh sistem.
+S
+4
+4.3 Akun dan Aktivasi Perangkat (ACC)
+Kebutuhan FR-ACC berlaku untuk layanan berbasis akun; registrasi bukan prasyarat untuk melindungi atau membuka berkas.
+ID
+Kebutuhan
+Prioritas
+Fase
+FR-ACC-01
+Registrasi dengan email dan password akun, disertai verifikasi email (online).
+M
+2
+FR-ACC-02
+Login online satu kali untuk mengaktifkan perangkat; tidak ada login ulang setiap aplikasi dibuka.
+M
+2
+FR-ACC-03
+Reset password akun melalui tautan sekali pakai berbatas waktu; tidak memengaruhi password enkripsi.
+M
+2
+FR-ACC-04
+2FA berbasis TOTP pada login online dan pengelolaan akun, dengan kode cadangan sekali pakai.
+M
+2
+FR-ACC-05
+Aktivasi perangkat: instalasi didaftarkan dengan ID instalasi acak (bukan sidik jari perangkat); jumlah perangkat aktif dibatasi sesuai paket.
+M
+2
+FR-ACC-06
+Pengguna melihat dan menonaktifkan perangkat aktif dari akun; perangkat baru memerlukan aktivasi online tersendiri.
+M
+2
+FR-ACC-07
+Penghapusan akun beserta seluruh data di server.
+M
+2
+FR-ACC-08
+Password akun dan password enkripsi terpisah; password enkripsi tidak pernah dikirim ke server.
+M
+2
+FR-ACC-09
+Passkey/WebAuthn sebagai metode login alternatif.
+C
+5
+4.3a Lisensi Offline (LIC)
+Lisensi berbentuk entitlement bertanda tangan digital yang diverifikasi di klien tanpa menghubungi server.
+ID
+Kebutuhan
+Prioritas
+Fase
+FR-LIC-01
+Entitlement berformat JWS (RFC 7515) dengan klaim iss, aud, jti, kid, iat, nbf, exp, installation_id, plan, features, dan schema_version.
+M
+2
+FR-LIC-02
+Klien memverifikasi tanda tangan dengan verification key (sesuai kid) tanpa menghubungi server, dan menolak algoritma, kid, atau schema_version yang tidak didukung.
+M
+2
+FR-LIC-03
+Pemeriksaan lisensi tidak memerlukan koneksi internet setiap aplikasi dibuka, termasuk sebagai proses latar belakang wajib.
+M
+2
+FR-LIC-04
+Crypto Core tidak memerlukan entitlement; Guest dan Free memakai fungsi dasar tanpa entitlement. Entitlement hanya diperlukan untuk fitur Pro.
+M
+2
+FR-LIC-05
+Lisensi Pro memuat akhir periode langganan dan batas offline (usulan: akhir periode + grace period 7 hari); sesudahnya klien kembali ke hak Free.
+M
+2
+FR-LIC-06
+Setelah lisensi kedaluwarsa atau dicabut, perangkat dinonaktifkan, atau akun dihapus, enkripsi dan dekripsi semua berkas tetap berfungsi.
+M
+2
+FR-LIC-07
+Klien mendeteksi perubahan jam secara best-effort dengan waktu terakhir terlihat. Ini kontrol mitigasi, bukan jaminan anti-tampering terhadap pengguna yang mengendalikan perangkat.
+S
+2
+FR-LIC-08
+Perpanjangan dilakukan online; klien menawarkan perpanjangan saat terkoneksi dan memberi peringatan sebelum kedaluwarsa.
+M
+3
+FR-LIC-09
+Pencabutan berlaku saat perangkat berikutnya terhubung (perpanjangan ditolak); perangkat offline tetap berlaku sampai batas offline.
+M
+3
+FR-LIC-10
+Verification key berakar pada root key yang tertanam saat build; daftar kunci penerbit ber-kid ditandatangani root key atau dikirim lewat pembaruan aplikasi tepercaya. Respons GET /keys/public tidak dipercaya tanpa tanda tangan.
+M
+2
+FR-LIC-11
+Instalasi membuat pasangan kunci di perangkat (private key non-ekstraktabel bila didukung) dan entitlement diikat pada public key instalasi. Batas perangkat adalah kebijakan lisensi, bukan DRM; penyimpanan web dapat disalin.
+S
+2
+FR-LIC-12
+Entitlement dapat dipulihkan lewat aktivasi ulang; pengguna diperingatkan bahwa browser dapat menghapus penyimpanan.
+M
+2
+FR-LIC-13
+Lisensi tidak pernah berisi atau menurunkan kunci enkripsi berkas.
+M
+2
+FR-LIC-14
+Aplikasi web dapat dimuat ulang dari kondisi tertutup saat offline (PWA): seluruh aset (skrip, stylesheet, font, ikon) tersedia lokal dan tanpa skrip inline sesuai CSP.
+M
+2
+4.4 Pemulihan (REC)
+ID
+Kebutuhan
+Prioritas
+Fase
+FR-REC-01
+Pengguna dapat membuat Recovery Key (dibuat di klien, ditampilkan sekali) yang menambah slot pembungkus DEK pada header (flag recovery).
+C
+4
+FR-REC-02
+Recovery Key membuka berkas melalui slot tersebut tanpa mengungkap password; dimungkinkan karena format v3 memakai envelope encryption (FR-CRY-05).
+C
+4
+FR-REC-03
+Server tidak pernah menyimpan Recovery Key atau materi yang cukup untuk menurunkannya.
+M
+4
+FR-REC-04
+Pengguna diperingatkan tegas bahwa kehilangan password, keyfile, dan Recovery Key berarti data tidak dapat dipulihkan (berlaku di Crypto Core).
+M
+1
+FR-REC-05
+Pemulihan terkelola organisasi (escrow kunci oleh admin) untuk paket bisnis, opt-in dan terdokumentasi.
+C
+6
+4.5 Berbagi Berkas (SHR)
+ID
+Kebutuhan
+Prioritas
+Fase
+FR-SHR-01
+Menyimpan atau mengekspor berkas .aegis adalah bagian dasar Crypto Core dan tidak menjadi fitur berbayar.
+M
+1
+FR-SHR-02
+Penerima dapat mendekripsi tanpa akun maupun lisensi, memakai password atau keyfile yang dibagikan terpisah oleh pengirim.
+M
+1
+FR-SHR-03
+Aplikasi menyarankan pengiriman password lewat kanal berbeda dari berkas.
+S
+1
+FR-SHR-04
+Kemudahan berbagi (Web Share API, pengiriman cepat).
+S
+4
+FR-SHR-05
+Berbagi berbasis kunci publik (enkripsi untuk penerima tertentu) tanpa berbagi password.
+C
+6
+4.6 Langganan dan Kuota (SUB)
+ID
+Kebutuhan
+Prioritas
+Fase
+FR-SUB-01
+Paket Guest, Free, Pro, dan Organization (fase lanjut) dengan hak fitur berbeda; seluruh angka bersifat konfigurasi dan belum final.
+M
+2
+FR-SUB-02
+Fungsi dasar perlindungan berkas (enkripsi dan dekripsi) tidak dibatasi kuota dan tidak memerlukan server.
+M
+2
+FR-SUB-03
+Hak berbayar ditegakkan lewat entitlement (FR-LIC), bukan kuota harian di klien atau server.
+M
+2
+FR-SUB-04
+Pembayaran, upgrade, downgrade, dan pembatalan melalui penyedia pembayaran pihak ketiga, beserta riwayat penagihan.
+M
+3
+FR-SUB-05
+Pembatalan langganan tidak mencabut hak atas periode yang sudah dibayar.
+S
+3
+FR-SUB-06
+Pengguna melihat paket, masa berlaku, dan perangkat aktif di akun.
+S
+2
+4.7 Fitur Tim (ORG)
+ID
+Kebutuhan
+Prioritas
+Fase
+FR-ORG-01
+Admin dapat membuat organisasi, mengundang dan mencabut anggota, serta menetapkan peran.
+S
+6
+FR-ORG-02
+Kebijakan organisasi: minimum kekuatan password, wajib 2FA, pembatasan format.
+S
+6
+FR-ORG-03
+Audit log aktivitas akun dan administrasi (tanpa isi berkas).
+S
+6
+FR-ORG-04
+Penagihan per kursi (per anggota).
+C
+6
+4.7a Antarmuka Pengguna (UI)
+ID
+Kebutuhan
+Prioritas
+FR-UI-01
+Antarmuka responsif untuk desktop dan mobile, mendukung tema gelap, dan memenuhi WCAG 2.1 AA.
+M
+FR-UI-02
+Indikator kekuatan password dan umpan balik langsung saat input.
+M
+FR-UI-03
+Pesan kesalahan membedakan password salah, keyfile salah, berkas rusak, dan versi tidak didukung.
+M
+FR-UI-04
+Dukungan bahasa Indonesia dan Inggris.
+S
+5. Spesifikasi Format Berkas .aegis (v3)
+Format v3 menutup celah pada v2 (chunk belum terikat urutan) dan harus dibekukan sebelum ada pengguna sungguhan, karena semua berkas yang telah dibuat harus tetap terbuka.
+5.1 Header
+Offset
+Ukuran
+Bidang
+Keterangan
+0
+5 B
+Magic
+AEGIS
+5
+1 B
+Versi
+0x03
+6
+1 B
+KDF ID
+0x01 = PBKDF2-HMAC-SHA256; nilai lain ditolak (dicadangkan, mis. Argon2id)
+7
+1 B
+Flags
+bit0 = keyfile dipakai; bit1 = slot Recovery ada; bit2 = dicadangkan (nama berkas terenkripsi); bit3–7 harus 0
+8
+4 B
+Iterasi KDF
+uint32; batas 600.000 s.d. 5.000.000
+12
+4 B
+Ukuran chunk
+uint32 dalam byte; batas 65.536 s.d. 16.777.216
+16
+32 B
+Salt
+Acak kriptografis
+48
+16 B
+File ID
+Acak per berkas; mengikat blok pembungkus dan record ke berkas ini
+64
+4 B
+Prefiks nonce
+Acak per berkas
+68
+12 B
+Nonce pembungkus
+Acak
+80
+32 B
+DEK terbungkus
+DEK dienkripsi AES-256-GCM dengan KEK
+112
+16 B
+Tag pembungkus
+Tag GCM
+Header berukuran tetap 128 byte; semua integer bertipe unsigned big-endian. Bila flag recovery aktif, satu slot Recovery (60 B: nonce 12 B, DEK terbungkus 32 B, tag 16 B; DEK yang sama dibungkus KEK dari Recovery Key) mengikuti header. AAD pembungkus = byte 0–67 header, sehingga perubahan pada KDF, salt, flag, atau File ID menggagalkan pembukaan DEK. Karena AAD record tidak memuat parameter KDF, salt, maupun blok pembungkus, mengganti password atau menambah slot Recovery hanya menulis ulang header tanpa menyentuh record.
+5.2 Record Chunk
+Isi berkas berupa deretan record. Setiap record ke-i (mulai 0) berstruktur:
+• Header record (5 B): Flags record 1 B (bit0 = record final; bit lain 0) ‖ Panjang ciphertext 4 B (uint32, termasuk tag, maksimum ukuran chunk + 16).
+• Nonce (12 B) = Prefiks nonce (4 B) ‖ i (8 B). Nonce tidak pernah berulang untuk satu DEK.
+• AAD = Magic ‖ Versi ‖ Ukuran chunk ‖ File ID ‖ Prefiks nonce (30 B dari header) ‖ Header record (5 B) ‖ i (8 B).
+• Isi = Ciphertext ‖ Tag GCM (16 B), dienkripsi dengan DEK.
+Flag final dan panjang di dalam AAD mencegah pemotongan, penambahan, dan manipulasi batas record; indeks mencegah penukaran urutan. Setiap record non-final berisi tepat satu ukuran chunk plaintext.
+5.3 Aturan
+1.  Pembaca memvalidasi seluruh parameter header (magic, versi, KDF ID, rentang iterasi dan ukuran chunk, bit reserved nol) sebelum menjalankan KDF; berkas dengan nilai di luar batas atau flag tak dikenal ditolak.
+2.  Dekripsi menolak berkas bila: record final tidak ada atau bukan yang terakhir, ada byte setelah record final, panjang record melebihi ukuran chunk + 16, atau tersisa byte yang tidak membentuk header record utuh (termasuk 1–3 byte).
+3.  Keluaran ditulis ke penyimpanan sementara dan difinalisasi hanya setelah record final terverifikasi; bila platform tidak mendukung keluaran sementara, batas ukuran fallback harus diumumkan ke pengguna.
+4.  Berkas kosong menghasilkan tepat satu record final (hanya tag).
+5.  Pembaca v3 wajib membaca v2 dengan aturan v2 (header lama tanpa nilai iterasi, 100.000 iterasi tetap, tanpa AAD); penulisan v2 dihentikan.
+6.  Pustaka di semua platform wajib lulus kumpulan test vector bersama (v2 dan v3).
+6. Persyaratan Non-Fungsional
+6.1 Keamanan (SEC)
+ID
+Kebutuhan
+NFR-SEC-01
+Plaintext, password enkripsi, keyfile, dan kunci turunan tidak pernah dikirim ke server atau ditulis ke log.
+NFR-SEC-02
+Kunci disimpan sebagai CryptoKey non-ekstraktabel selama memungkinkan dan dihapus dari memori setelah sesi berakhir; password dan keyfile mentah tidak disimpan lebih lama dari yang diperlukan untuk menurunkan kunci.
+NFR-SEC-03
+Semua nilai acak (salt, prefiks nonce, kode pemulihan) dibuat dengan CSPRNG (crypto.getRandomValues).
+NFR-SEC-04
+Password akun disimpan di server menggunakan hash lambat teruji (Argon2id atau bcrypt) dengan salt unik.
+NFR-SEC-05
+Seluruh komunikasi memakai TLS 1.2 atau lebih baru; HSTS aktif.
+NFR-SEC-06
+Aplikasi web menerapkan Content Security Policy ketat, Subresource Integrity, dan tanpa skrip inline; dependensi dipindai otomatis dan dikunci versinya.
+NFR-SEC-07
+Rate limiting dan penguncian bertahap pada endpoint login dan reset.
+NFR-SEC-08
+Audit keamanan independen atas desain dan implementasi dilakukan sebelum peluncuran komersial dan sebelum penjualan ke organisasi.
+NFR-SEC-09
+Klaim "zero-knowledge" dan sejenisnya hanya dipublikasikan bila didukung hasil audit dan dokumentasi arsitektur.
+6.2 Kinerja (PER)
+ID
+Kebutuhan
+NFR-PER-01
+Penggunaan memori enkripsi dan dekripsi tidak bergantung pada ukuran berkas (batas atas ≈ beberapa kali ukuran chunk).
+NFR-PER-02
+Berkas 1 GiB dapat diproses tanpa kegagalan pada perangkat dengan RAM 4 GB.
+NFR-PER-03
+Waktu derivasi kunci pada perangkat menengah berada pada 0,3–2 detik.
+NFR-PER-04
+Antarmuka tetap responsif selama proses berat (pemrosesan di Web Worker).
+NFR-PER-05
+Waktu respons API akun p95 di bawah 500 ms.
+6.3 Keandalan dan Ketersediaan (REL)
+ID
+Kebutuhan
+NFR-REL-01
+Fitur inti (enkripsi, dekripsi, Vault) berfungsi tanpa koneksi internet setelah aplikasi termuat (PWA/aplikasi native).
+NFR-REL-02
+Target ketersediaan layanan backend ≥ 99,5% per bulan.
+NFR-REL-03
+Gangguan backend tidak boleh mencegah dekripsi berkas yang sudah dimiliki pengguna.
+NFR-REL-04
+Proses yang dibatalkan atau gagal tidak meninggalkan keluaran parsial yang dapat dikira valid.
+6.4 Privasi dan Kepatuhan (PRV)
+ID
+Kebutuhan
+NFR-PRV-01
+Data yang dikumpulkan dibatasi pada akun, langganan, dan telemetri minimal; tidak ada isi atau nama berkas.
+NFR-PRV-02
+Kebijakan privasi dan syarat layanan tersedia; sistem sesuai UU Pelindungan Data Pribadi (UU PDP) dan siap memenuhi GDPR bila melayani pengguna Uni Eropa.
+NFR-PRV-03
+Pengguna dapat mengekspor dan menghapus datanya.
+6.5 Kompatibilitas dan Pemeliharaan (CMP)
+ID
+Kebutuhan
+NFR-CMP-01
+Berkas .aegis yang dibuat di satu platform dapat dibuka di semua platform.
+NFR-CMP-02
+Perubahan format hanya lewat penambahan versi; versi lama tetap dapat dibaca.
+NFR-CMP-03
+Basis kode TypeScript strict dengan lint, type check, dan cakupan pengujian unit ≥ 80% pada modul kriptografi.
+NFR-CMP-04
+Pipeline CI menjalankan lint, type check, unit, integrasi, E2E, build, dan pemindaian dependensi pada setiap perubahan.
+6.6 Kegunaan (USA)
+ID
+Kebutuhan
+NFR-USA-01
+Pengguna nonteknis dapat menyelesaikan enkripsi dan dekripsi pertama dalam kurang dari 2 menit tanpa panduan.
+NFR-USA-02
+Peringatan risiko (kehilangan password, pengiriman password) ditampilkan jelas dan tidak dapat terlewat.
+6.7 Lisensi dan Penggunaan Offline (LIC)
+ID
+Kebutuhan
+NFR-LIC-01
+Entitlement memakai tanda tangan asimetris (Ed25519 atau ECDSA P-256); kunci privat penerbit tidak pernah ada di klien dan disimpan di KMS/HSM.
+NFR-LIC-02
+Public key tertanam mendukung rotasi melalui daftar kunci ber-ID.
+NFR-LIC-03
+Aplikasi terbuka dan berfungsi penuh tanpa permintaan jaringan wajib setelah aktivasi.
+NFR-LIC-04
+Kedaluwarsa atau pencabutan lisensi tidak pernah memengaruhi kemampuan mendekripsi berkas.
+NFR-LIC-05
+ID instalasi acak dan tidak memuat data pribadi atau sidik jari perangkat.
+NFR-LIC-06
+Gangguan layanan lisensi tidak boleh mengganggu fitur Free maupun fungsi dasar enkripsi dan dekripsi.
+7. Antarmuka Eksternal
+7.1 Antarmuka Pengguna
+Halaman: Login/Sesi, Dashboard (antrean, status operasi, log), Vault, Berbagi, Akun dan Keamanan, Langganan, Pengaturan. Bahasa Indonesia dan Inggris.
+7.2 Antarmuka Perangkat Lunak
+• Web Crypto API untuk AES-GCM, PBKDF2, SHA-256, dan CSPRNG.
+• File System Access API / File API / OPFS untuk berkas dan penyimpanan Vault.
+• Penyedia pembayaran (mis. Stripe atau Midtrans) lewat webhook bertanda tangan.
+• Penyedia email untuk verifikasi dan reset.
+7.3 Antarmuka API Backend (ringkas)
+Endpoint
+Fungsi
+POST /auth/register, /auth/login
+Registrasi dan login online untuk aktivasi
+POST /auth/2fa/enable, /auth/2fa/verify
+2FA TOTP
+POST /devices/activate
+Mendaftarkan instalasi dan menerbitkan entitlement bertanda tangan
+GET /devices, DELETE /devices/{id}
+Daftar dan penonaktifan perangkat
+POST /licenses/renew
+Perpanjangan entitlement setelah pembayaran valid
+GET /keys/public
+Public key penerbit (mendukung rotasi)
+GET /subscription, POST /subscription/checkout
+Paket dan pembayaran
+POST /webhooks/payments
+Notifikasi pembayaran bertanda tangan
+Tidak ada endpoint yang menerima berkas atau kunci pengguna.
+8. Use Case Utama
+ID
+Use Case
+Aktor
+Alur utama
+Alur alternatif
+UC-01
+Enkripsi berkas
+Guest/Pengguna
+Memilih berkas → memasukkan password (+ keyfile) → menjalankan → mengunduh .aegis
+Password lemah: peringatan; dibatalkan: tidak ada keluaran
+UC-02
+Dekripsi berkas
+Guest/Pengguna/Penerima
+Memilih .aegis → memasukkan password (+ keyfile) → berkas asli dipulihkan
+Password/keyfile salah atau berkas dimanipulasi: ditolak dengan pesan spesifik
+UC-03
+Aktivasi perangkat
+Pengguna
+Online → login (+ 2FA) → perangkat didaftarkan → entitlement disimpan lokal → aplikasi dipakai offline
+Batas perangkat tercapai: pilih perangkat untuk dinonaktifkan
+UC-04
+Aktivasi langganan Pro
+Pengguna
+Memilih paket → membayar → server menerbitkan entitlement → fitur Pro aktif offline
+Pembayaran gagal: paket tidak berubah
+UC-05
+Perpanjangan lisensi
+Pengguna
+Terkoneksi → klien meminta entitlement baru → masa berlaku diperbarui
+Langganan berakhir: kembali ke Free, dekripsi tetap bisa
+UC-06
+Berbagi berkas
+Pengguna, Penerima
+Mengenkripsi → membagikan .aegis → penerima membuka dengan password dari kanal terpisah
+Password hilang: tidak dapat dipulihkan
+UC-07
+Aktivasi ulang
+Pengguna
+Penyimpanan terhapus atau perangkat baru → login online → entitlement diterbitkan ulang
+Tanpa internet: fitur Free dasar tetap tersedia
+9. Pengujian dan Kriteria Penerimaan
+9.1 Strategi
+Jenis
+Cakupan
+Unit
+Fungsi kriptografi, derivasi kunci, parser format, penanganan kesalahan
+Properti/Fuzz
+Enkripsi lalu dekripsi selalu menghasilkan data asal; fuzzing pada header dan chunk
+Integrasi
+Alur akun, sesi, langganan, webhook pembayaran
+E2E (Playwright)
+Alur enkripsi, dekripsi, Vault, login lintas browser
+Keamanan
+Manipulasi ciphertext/metadata/urutan chunk, pemotongan, password dan keyfile salah, pemeriksaan kebocoran data, SAST/DAST, pemindaian dependensi
+Kinerja
+Berkas 100 MiB, 1 GiB, dan 4 GiB; pengukuran memori puncak
+Interoperabilitas
+Test vector bersama di setiap platform
+9.2 Kriteria Penerimaan Utama
+ID
+Kriteria
+Terkait
+AC-01
+Test vector deterministik dan pengujian properti (enkripsi lalu dekripsi = berkas asli) lulus pada setiap perubahan; sebelum rilis, 1.000 berkas acak (distribusi 0 B s.d. 100 MiB, total data ditetapkan) menghasilkan berkas identik byte demi byte.
+FR-CRY-01/02
+AC-02
+Mengubah satu bit di header, header record, atau ciphertext mana pun menyebabkan dekripsi gagal.
+FR-CRY-06/07
+AC-03
+Menukar dua record, menghapus record final, menambah record, atau menambah byte setelah record final menyebabkan dekripsi gagal.
+FR-CRY-07
+AC-04
+Berkas yang terpotong 1–3 byte atau di batas mana pun ditolak tanpa keluaran parsial yang diserahkan ke pengguna.
+FR-CRY-07/08
+AC-05
+Dekripsi berkas 1 GiB berjalan di bawah 256 MiB memori puncak pada browser dan perangkat acuan yang ditetapkan, dengan keluaran sementara; metode pengukuran didokumentasikan.
+FR-CRY-04/08, NFR-PER-01
+AC-06
+Berkas v2 nyata tetap dapat didekripsi memakai test vector v2.
+FR-CRY-10
+AC-07
+Header dengan iterasi, ukuran chunk, KDF ID, atau flag di luar batas ditolak sebelum KDF dijalankan.
+FR-CRY-09
+AC-08
+Mengganti password hanya mengubah header; isi record tidak berubah dan berkas tetap terbuka dengan password baru.
+FR-CRY-11
+AC-09
+Dengan jaringan diputus total selama enkripsi dan dekripsi, hasilnya tetap benar; analisis lalu lintas tidak menunjukkan data pengguna keluar perangkat.
+NFR-SEC-01, NFR-LIC-03
+AC-10
+Reset password akun tidak mengubah kemampuan mendekripsi berkas.
+FR-ACC-03/08
+AC-11
+Lisensi Pro kedaluwarsa, dicabut, atau akun dihapus tidak menghalangi dekripsi berkas apa pun.
+FR-LIC-06, NFR-LIC-04
+AC-12
+Entitlement dengan tanda tangan salah, diubah, kid/schema_version tak didukung, atau untuk instalasi lain ditolak dengan pesan jelas.
+FR-LIC-02
+AC-13
+Entitlement tetap terverifikasi setelah browser ditutup dan dibuka kembali saat offline.
+FR-LIC-03
+AC-14
+Aplikasi web dapat dimuat dari kondisi tertutup saat offline dan berfungsi penuh.
+FR-LIC-14
+AC-15
+Perpanjangan menghasilkan entitlement baru yang dapat diverifikasi offline.
+FR-LIC-08
+AC-16
+Penonaktifan perangkat atau penghapusan cache aplikasi tidak menghilangkan berkas pengguna maupun kemampuan mendekripsinya (setelah aplikasi dimuat ulang).
+FR-LIC-06/12
+AC-17
+Memutar jam mundur pada skenario yang dapat dideteksi (waktu terakhir terlihat lebih baru) tidak memperpanjang lisensi; keterbatasan terhadap manipulasi penyimpanan didokumentasikan.
+FR-LIC-07
+AC-18
+Seluruh test vector lintas platform lulus.
+NFR-CMP-01
+10. Roadmap dan Keterlacakan
+Fase
+Fokus
+Status (14 Nov 2026)
+Kebutuhan utama
+Keluaran
+1
+Crypto Core Hardening (publik)
+Selesai di kode; verifikasi produksi tertunda
+FR-CRY-*, FR-SHR-01..03, FR-REC-04, Bagian 5, AC-01..09
+Format v3 beku, dekripsi streaming, test vector bersama, LICENSE, CI diperluas
+2
+Akun, Aktivasi, Lisensi Offline
+Belum dimulai
+FR-ACC-01..08, FR-LIC-01..07/10..14, FR-SUB-01..03/06, NFR-LIC-*, AC-10..17
+Login online sekali, entitlement bertanda tangan, paket Free
+3
+Pembayaran dan Perpanjangan
+Belum dimulai
+FR-SUB-04/05, FR-LIC-08/09
+Langganan Pro, perpanjangan online, pencabutan
+4
+Modul Opsional
+Sebagian: Recovery Key, ganti password (rewrap), nama berkas terenkripsi sudah di klien; Vault dan kemudahan berbagi belum
+FR-VLT-*, FR-REC-01..03, FR-SHR-04, FR-CRY-14
+Local Vault, kemudahan berbagi
+5
+Lintas Platform
+Sebagian: klien desktop (Core, aplikasi, CLI) ada; mobile belum
+Build native/terpasang, FR-ACC-09
+Desktop dan mobile dengan format identik
+6
+Organisasi dan Kesiapan Bisnis
+Belum dimulai
+FR-ORG-*, FR-REC-05, FR-SHR-05, NFR-SEC-08
+Lisensi organisasi dan audit independen
+Syarat masuk Fase 2: Fase 1 selesai (AC-01 s.d. AC-09 dan AC-18 lulus) dan format v3 dibekukan, sebelum ada pengguna sungguhan atau lisensi berbayar.
 
-**Production Readiness Plan** — dari inti teknis yang kuat menjadi layanan berbayar yang dapat dipercaya  
-**Versi 1.0 · 13 November 2026 · Penyusun: Muhammad Dhiyaul Atha**  
-Dokumen pendamping SRS AegisCrypt (SaaS) v1.2
+## 11. Gate 1 - Masukan Pengguna (Validasi Pasar)
 
-## 1. Tujuan dan Prinsip
+Gate 1 mengumpulkan masukan dari pengguna versi gratis lewat form masukan. Tujuannya menetapkan OD-02 (isi paket Pro), OD-05 (masa berlaku, grace period, batas instalasi), dan OD-09 (harga dan batas paket) berdasarkan data dan masukan, bukan tebakan.
 
-### 1.1 Arti "matang"
-AegisCrypt dianggap matang untuk diluncurkan sebagai layanan berbayar bila: (a) inti kriptografinya teruji dan diaudit pihak independen, (b) layanan akun dan lisensi aman, tersedia, dan dapat dipulihkan saat gangguan, (c) aspek hukum dan pembayaran siap, (d) ada pelanggan nyata yang membayar karena nilai yang jelas, dan (e) ada proses operasional untuk menjaga semuanya setelah rilis.
+Lulus bila (usulan, bisa disesuaikan): sedikitnya 30 respons yang terisi; satu masalah atau kebutuhan disebut oleh sedikitnya 8 responden; sedikitnya 5 responden memilih fitur berbayar yang sama; dan ada alasan yang berulang mengapa orang tidak memakai alat lain.
 
-### 1.2 Prinsip kerja
-1. **Berbasis gate.** Setiap tahap punya kriteria lulus yang terukur; tahap berikutnya tidak dimulai sebelum gate lulus, kecuali pekerjaan paralel yang disebut eksplisit.
-2. **Keamanan tidak dikompromikan demi kecepatan.** Hal yang tidak bisa diperbaiki setelah ada pengguna (format berkas, model kunci, skema lisensi) diselesaikan lebih dulu.
-3. **Lisensi tidak pernah menghalangi dekripsi.** Ini prinsip produk yang tidak diubah (SRS 2.6).
-4. **Klaim mengikuti bukti.** Tidak ada klaim "aman" atau "zero-knowledge" yang dipublikasikan sebelum didukung audit dan dokumentasi.
-5. **Validasi pasar berjalan paralel dengan pembangunan,** bukan menunggu sesudahnya.
-6. **Kapasitas realistis.** Rencana mengasumsikan tim kecil (1–2 orang) paruh waktu; lingkup dipotong sebelum kualitas.
+Revisi bila: alasan penolakan berbeda-beda tanpa pola, atau sebagian besar responden hanya menginginkan hal yang sudah gratis.
 
-## 2. Posisi Saat Ini
+Keputusan dan alasannya ditulis di bagian ini sebelum pekerjaan Fase 2 yang menyangkut paket dan harga dimulai.
 
-| Area | Status | Catatan |
-|---|---|---|
-| Inti kriptografi (web) | Selesai | Format v3 envelope, streaming, AAD, test vector beku, fuzzing |
-| Klien desktop | Ada | Core, aplikasi, CLI; mereproduksi test vector v3 |
-| PWA offline dan CSP | Ada | Terverifikasi di produksi (header + `security.txt`) |
-| CI | Lint, typecheck, audit, unit, E2E, secret scan, SBOM, desktop | Belum ada build tertanda |
-| Lisensi repositori | Apache-2.0 | Perlu dikonfirmasi sebagai keputusan final (OD-03) |
-| Backend akun, aktivasi, lisensi | Belum ada | Inti Gate 2 |
-| Pembayaran | Belum ada | Gate 3 |
-| Validasi pasar, harga, isi paket Pro | Belum ada | Gate 1 — risiko terbesar |
-| Hukum, kepatuhan, audit independen | Belum ada | Gate 4 |
-| Operasional (pemantauan, backup, insiden) | Belum ada | Gate 2–4 |
+Rincian pertanyaan form tersedia di [`docs/guides/user-feedback-form.md`](../guides/user-feedback-form.md).
 
-## 3. Peta Gate
-
-| Gate | Fokus | Kriteria lulus utama | Perkiraan durasi* |
-|---|---|---|---|
-| 0 | Fondasi dirapikan | SRS v1.3, test vector bersama, header produksi terverifikasi, SECURITY.md, threat model v1 | 1–2 minggu |
-| 1 | Validasi pasar dan keputusan produk | OD-02, OD-05, OD-09 diputuskan berdasarkan data; penyedia pembayaran dan stack backend dipilih | 4–8 minggu (paralel dengan Gate 0 dan 2) |
-| 2 | Backend, identitas, entitlement (Fase 2) | AC-10 s.d. AC-17 lulus; lingkungan staging; kunci penanda tangan di KMS/HSM | 8–12 minggu |
-| 3 | Pembayaran dan siklus lisensi (Fase 3) | Pembayaran sampai perpanjangan dan pencabutan berfungsi end-to-end di staging | 4–8 minggu |
-| 4 | Kesiapan peluncuran | Audit independen, dokumen hukum, pemantauan, uji pemulihan, beta tertutup | 8–12 minggu |
-| 5 | Peluncuran dan pertumbuhan | Peluncuran berbayar; metrik dipantau; fitur lanjutan sesuai permintaan | Berkelanjutan |
-
-\*Perkiraan kasar untuk tim kecil paruh waktu; disesuaikan setelah Gate 0 dan setelah kapasitas nyata diketahui.
-
-## 4. Gate 0 — Fondasi Dirapikan
-
-| # | Pekerjaan | Hasil |
-|---|---|---|
-| 0.1 | Perbarui SRS ke v1.3 (status Fase 1, OD-03, Lampiran A) | SRS selaras dengan kode |
-| 0.2 | Satu berkas test vector bersama dibaca oleh test web dan desktop | Interoperabilitas tidak dapat menyimpang diam-diam |
-| 0.3 | Verifikasi header keamanan dan CSP pada domain produksi; satukan domain resmi di README, dokumentasi, slide | Klaim keamanan sesuai produksi |
-| 0.4 | SECURITY.md dan security.txt (alamat pelaporan, SLA respons, kebijakan pengungkapan) | Jalur pelaporan kerentanan |
-| 0.5 | Threat model tertulis v1 (aset, aktor, batas kepercayaan, mitigasi) | Dasar audit dan desain backend |
-| 0.6 | Pemindaian rahasia dan SBOM di CI; proteksi branch; 2FA wajib untuk semua kontributor | Rantai suplai dasar |
-| 0.7 | Putuskan nama dan merek; periksa ketersediaan nama dan domain; catatan merek dagang | Hindari perubahan nama setelah peluncuran |
-| 0.8 | Konfirmasi lisensi publik Crypto Core (Apache-2.0 atau alternatif) | OD-03 ditutup |
-| 0.9 | Perbarui materi presentasi agar mencerminkan format v3 | Dokumentasi tidak menyesatkan |
-
-Gate 0 lulus bila semua butir di atas selesai dan CI hijau, termasuk test vector bersama.
-
-### 4.1 Status Gate 0 (2026-11-14)
-
-| # | Status | Bukti |
-|---|---|---|
-| 0.1 | Terbuka | SRS v1.3 belum masuk repositori (konten eksternal) |
-| 0.2 | Selesai | `apps/web/tests/fixtures/v3-vector.json`, `apps/web/tests/fixtures/v2-vector.json` dibaca Web + Desktop |
-| 0.3 | Selesai | CSP, HSTS, nosniff, frame DENY, no-referrer, Permissions-Policy, COOP/CORP terverifikasi di `https://aegiscrypt.bangkah.tech`; `/.well-known/security.txt` disajikan `text/plain` |
-| 0.4 | Selesai | `SECURITY.md` + `public/.well-known/security.txt` (atha@bangkah.tech) |
-| 0.5 | Selesai (draft) | `docs/specs/threat-model-v1.md`; tinjauan di Issue #34 |
-| 0.6 | Sebagian | Secret scan + SBOM di CI selesai; proteksi branch dan 2FA adalah setelan repositori |
-| 0.7 | Terbuka | Keputusan nama/merek (konten pengguna) |
-| 0.8 | Terbuka | Konfirmasi lisensi publik (OD-03) |
-| 0.9 | Terbuka | Materi presentasi |
-
-Spesifikasi format v3 berstatus **FROZEN-CANDIDATE v1.0** (`docs/specs/spec-aegis-v3.md`), dengan D1 provisional menunggu tinjauan kriptografis independen (Issue #31). Fase 1 dilacak di Issue #31–#36.
-
-## 5. Gate 1 — Validasi Pasar dan Keputusan Produk
-
-Risiko utama bukan teknis: enkripsi dasar gratis, offline, dan terbuka, sementara alternatif gratis sudah ada. Pro harus menjual sesuatu yang memang dibayar orang, dan keputusan ini harus datang dari data.
-
-### 5.1 Hipotesis yang diuji
-
-| ID | Hipotesis | Segmen | Cara menguji |
-|---|---|---|---|
-| H1 | Individu nonteknis butuh enkripsi yang mudah dan mau membayar untuk kemudahan dan aplikasi terpasang bertanda tangan | Individu | Wawancara, uji kegunaan |
-| H2 | Perusahaan kecil membutuhkan distribusi lisensi dan kebijakan (password, 2FA) untuk berkas sensitif | UKM/profesional (hukum, kesehatan, konsultan) | Wawancara, penawaran pra-daftar |
-| H3 | Pengguna menginginkan Recovery Key dan pengelolaan kunci yang lebih mudah | Individu dan UKM | Uji prototipe |
-| H4 | Penyedia jasa yang mengirim dokumen ke klien membutuhkan cara berbagi terenkripsi yang sederhana | Profesional | Wawancara |
-
-### 5.2 Rencana kerja
-1. Wawancara 15–20 calon pengguna dari dua segmen (individu dan organisasi kecil); fokus pada kebiasaan sekarang, alat yang dipakai, dan kerepotan nyata, bukan menjual fitur.
-2. Halaman pendaratan dan daftar tunggu yang menjelaskan nilai dan model offline-first; ukur pendaftaran.
-3. Uji prototipe dengan pengguna nyata (versi gratis yang sudah ada sudah cukup).
-4. Bandingkan dengan alternatif (VeraCrypt, Cryptomator, age, fitur enkripsi bawaan sistem) dan rumuskan perbedaan yang nyata.
-5. Tentukan harga dengan pengujian kesediaan membayar, bukan angka tebakan.
-
-### 5.3 Kriteria lulus (usulan)
-- Setidaknya sebagian besar wawancara pada satu segmen menyebut masalah yang sama dan konkret.
-- Ada pelanggan awal yang bersedia pra-daftar berbayar atau menandatangani surat minat.
-- OD-02 (isi Pro), OD-05 (masa berlaku, grace period, batas instalasi), dan OD-09 (harga) diputuskan secara tertulis.
-- Penyedia pembayaran dan stack backend dipilih setelah memeriksa ketersediaan dan syarat di Indonesia.
-
-Bila tidak ada segmen yang memenuhi kriteria, hasilnya adalah keputusan untuk menyesuaikan posisi produk, bukan membangun fitur lebih banyak.
-
-### 5.4 Perangkat Gate 1
-
-- Skrip wawancara, rubrik sinyal, dan ambang keputusan: [`docs/guides/gate1-interview-guide.md`](../guides/gate1-interview-guide.md).
-- Halaman pendaratan uji: `https://aegiscrypt.bangkah.tech/awal/` (statis, `noindex`, tanpa analitik).
-- Pendaftaran daftar tunggu memakai surel agar tidak memerlukan backend atau pelacakan pihak ketiga.
-
-## 6. Gate 2 — Backend, Identitas, dan Entitlement
-
-### 6.1 Arsitektur
-
-| Komponen | Tanggung jawab | Catatan |
-|---|---|---|
-| API Akun | Registrasi, login, 2FA TOTP, reset password, verifikasi email | Password akun di-hash dengan Argon2id atau bcrypt |
-| Layanan Aktivasi | Mendaftarkan instalasi, mengelola daftar perangkat | ID instalasi acak; tanpa sidik jari perangkat |
-| License Issuer | Menerbitkan entitlement JWS dan daftar kunci ber-kid | Kunci penanda tangan di KMS/HSM, tidak pernah di server aplikasi |
-| Layanan Langganan | Status paket, perpanjangan, pencabutan | Terhubung ke penyedia pembayaran (Gate 3) |
-| Basis data | Akun, perangkat, langganan, jejak audit | Cadangan terenkripsi dan uji pemulihan |
-| Audit/Log | Peristiwa keamanan dan administrasi | Tidak mencatat isi atau nama berkas |
-
-Prinsip desain: kegagalan layanan lisensi tidak boleh memengaruhi enkripsi, dekripsi, atau fitur Free (degradasi anggun); server tidak pernah menerima password enkripsi, keyfile, atau berkas.
-
-### 6.2 Pekerjaan
-1. Keputusan stack backend, hosting, dan KMS; infrastruktur sebagai kode; lingkungan dev, staging, dan produksi terpisah.
-2. Skema data dan migrasi; kebijakan penyimpanan dan penghapusan data (hapus akun menghapus data server).
-3. Implementasi akun, 2FA, sesi, dan rate limiting.
-4. Upacara kunci tertulis: pembuatan root key, kunci penerbit, rotasi, pencabutan, dan prosedur bila kunci diduga bocor.
-5. Entitlement: format JWS, klaim, verifikasi klien, rotasi kunci berakar pada root key tertanam (FR-LIC-01..13).
-6. Aktivasi perangkat, daftar perangkat, penonaktifan, aktivasi ulang.
-7. Modul lisensi klien (tertutup) dengan masa tenggang offline dan deteksi jam best-effort.
-8. Pengujian keamanan sejak awal: threat model backend, pemindaian SAST/DAST, pengujian otorisasi, pengujian entitlement palsu.
-
-### 6.3 Kriteria lulus
-AC-10 s.d. AC-17 lulus; seluruh endpoint punya pengujian otorisasi; kunci penanda tangan tidak pernah berada di repositori atau lingkungan aplikasi; prosedur rotasi kunci dilatih di staging; layanan dapat dipulihkan dari cadangan dalam waktu target yang tertulis.
-
-## 7. Gate 3 — Pembayaran dan Siklus Lisensi
-
-| # | Pekerjaan |
-|---|---|
-| 3.1 | Integrasi penyedia pembayaran pilihan; webhook bertanda tangan dengan idempotensi |
-| 3.2 | Siklus langganan: beli, perpanjang, upgrade, downgrade, batal, gagal bayar, pengembalian dana |
-| 3.3 | Penerbitan entitlement setelah pembayaran valid; perpanjangan online; pencabutan saat perangkat terhubung |
-| 3.4 | Pajak dan faktur sesuai ketentuan yang berlaku (dikonfirmasi ahli) |
-| 3.5 | Portal pelanggan: paket, masa berlaku, perangkat aktif, riwayat tagihan |
-| 3.6 | Pengujian kasus tepi: pembayaran ganda, webhook terlambat atau berulang, perangkat offline saat kedaluwarsa, jam perangkat salah |
-
-Kriteria lulus: seluruh siklus berjalan end-to-end di staging dengan data uji; pembatalan dan kedaluwarsa tidak pernah menghalangi dekripsi (AC-11); rekonsiliasi pembayaran dan lisensi berjalan otomatis.
-
-## 8. Gate 4 — Kesiapan Peluncuran
-
-### 8.1 Keamanan
-- Audit keamanan independen atas Crypto Core (web dan desktop) dan desain protokol lisensi; temuan tingkat tinggi dan kritis ditutup sebelum rilis.
-- Uji penetrasi pada backend dan alur akun.
-- Rilis tertanda tangan (kode desktop ditandatangani sertifikat penerbit; build web dapat diverifikasi) dan pembaruan otomatis yang diverifikasi tanda tangannya.
-- Kebijakan pengungkapan kerentanan berjalan; pertimbangkan program hadiah kerentanan setelah peluncuran.
-- Rencana respons insiden tertulis, termasuk skenario kebocoran kunci penanda tangan dan kerentanan kriptografi.
-
-### 8.2 Hukum dan kepatuhan
-(Dikonsultasikan dengan ahli hukum dan pajak.)
-
-- Bentuk badan usaha dan kepemilikan kekayaan intelektual.
-- Syarat Layanan, Kebijakan Privasi, dan kebijakan penggunaan yang dapat diterima.
-- Kepatuhan UU Pelindungan Data Pribadi, termasuk hak pengguna dan retensi data.
-- Kewajiban pendaftaran sebagai penyelenggara sistem elektronik dan ketentuan terkait layanan digital.
-- Perlakuan pajak atas langganan, termasuk pajak pertambahan nilai.
-- Merek dagang dan lisensi sumber (Apache-2.0 atau alternatif) serta konsekuensinya bagi model bisnis.
-- Pertimbangan regulasi distribusi perangkat lunak kriptografi lintas negara.
-
-### 8.3 Operasional
-- Pemantauan ketersediaan, galat, latensi, dan penerbitan lisensi; peringatan dan prosedur on-call yang realistis untuk tim kecil.
-- Target tingkat layanan (SLO) tertulis, mis. ketersediaan layanan lisensi dan waktu respons API.
-- Cadangan basis data terenkripsi dan uji pemulihan terjadwal (cadangan yang belum pernah diuji dianggap tidak ada).
-- Halaman status publik, kanal dukungan, dan pedoman layanan pelanggan.
-- Model biaya infrastruktur dan titik impas.
-
-### 8.4 Kualitas
-- Uji beban pada layanan aktivasi dan lisensi.
-- Uji kegagalan: layanan lisensi mati, penyedia pembayaran terganggu, kunci diputar.
-- Uji kompatibilitas browser dan sistem operasi pada daftar yang dijanjikan.
-- Test vector lintas platform menjadi gerbang rilis di CI.
-
-### 8.5 Beta tertutup
-10–30 pengguna awal dari Gate 1, termasuk setidaknya beberapa organisasi kecil; kumpulkan kegagalan aktivasi, kebingungan alur, dan masalah pembayaran sebelum peluncuran umum.
-
-Kriteria lulus: daftar periksa peluncuran (Bagian 11) terpenuhi seluruhnya.
-
-## 9. Gate 5 — Peluncuran dan Pertumbuhan
-
-1. Peluncuran bertahap; pantau metrik aktivasi, konversi Free ke Pro, retensi, dan tiket dukungan.
-2. Tinjauan pascapeluncuran 30, 60, dan 90 hari; sesuaikan paket dan harga.
-3. Fitur lanjutan hanya berdasarkan permintaan nyata: Local Vault, Recovery Key, berbagi lanjutan, fitur organisasi (FR-ORG), aplikasi mobile.
-4. Audit ulang berkala dan pembaruan threat model pada setiap perubahan besar.
-
-## 10. Risiko Utama dan Mitigasi
-
-| Risiko | Dampak | Mitigasi |
-|---|---|---|
-| Tidak ada pelanggan yang mau membayar | Seluruh investasi backend sia-sia | Gate 1 sebelum investasi besar; pra-daftar berbayar sebagai bukti |
-| Kerentanan kriptografi | Hilangnya kepercayaan | Audit independen, fuzzing, test vector, inti terbuka |
-| Kunci penanda tangan bocor | Pemalsuan lisensi | KMS/HSM, rotasi terlatih, rencana pencabutan |
-| Lisensi klien dilewati | Pendapatan bocor | Terima risiko di web; hak bernilai tinggi dikaitkan ke server atau build native |
-| Klaim keamanan berlebihan | Reputasi dan risiko hukum | Klaim hanya setelah audit; dokumentasikan batasan |
-| Kapasitas tim terbatas | Jadwal molor, kualitas turun | Potong lingkup, bukan kualitas; hindari fitur di luar gate |
-| Ketergantungan pada satu penyedia pembayaran atau hosting | Gangguan layanan | Abstraksi pembayaran; cadangan; degradasi anggun |
-| Perubahan regulasi | Biaya kepatuhan | Konsultasi ahli, tinjauan berkala |
-| Cakupan fitur membengkak | Peluncuran tertunda | Gate dan daftar "tidak dikerjakan sekarang" |
-| Penyalahgunaan alat enkripsi | Risiko reputasi dan hukum | Kebijakan penggunaan, kepatuhan terhadap permintaan hukum yang sah (dikonsultasikan ahli) |
-
-## 11. Daftar Periksa Peluncuran
-
-**Produk dan bisnis**
-- Pelanggan beta membayar atau sepakat membayar; harga dan paket final.
-- Nilai Pro dapat dijelaskan dalam satu kalimat.
-
-**Teknis**
-- Semua kriteria penerimaan SRS (AC-01 s.d. AC-18) lulus.
-- Test vector lintas platform lulus di CI sebagai gerbang rilis.
-- Dekripsi tidak pernah bergantung pada lisensi, akun, atau jaringan (diuji).
-
-**Keamanan**
-- Audit independen selesai; temuan tinggi dan kritis ditutup.
-- Uji penetrasi backend selesai.
-- Rilis tertanda tangan; kunci penanda tangan di KMS/HSM; rotasi dilatih.
-- SECURITY.md, rencana respons insiden, dan kontak keamanan aktif.
-
-**Hukum dan keuangan**
-- Badan usaha, Syarat Layanan, Kebijakan Privasi, kewajiban pendaftaran, dan perlakuan pajak dikonfirmasi ahli.
-- Alur pembayaran, faktur, dan pengembalian dana diuji.
-
-**Operasional**
-- Pemantauan, peringatan, dan halaman status aktif.
-- Uji pemulihan cadangan berhasil dalam waktu target.
-- Kanal dukungan dan dokumentasi pengguna siap.
-
-## 12. Jadwal Kasar (perkiraan)
-
-Asumsi: tim kecil paruh waktu dan kapasitas berkurang selama periode magang industri pada Januari–Juli 2027. Jadwal berikut perkiraan dan ditinjau ulang di akhir Gate 0.
-
-| Periode | Fokus |
-|---|---|
-| Nov–Des 2026 | Gate 0 selesai; Gate 1 dimulai (wawancara, halaman pendaratan) |
-| Jan–Feb 2027 | Gate 1 selesai (keputusan produk); desain teknis backend dan threat model; mulai Gate 2 secara terbatas |
-| Mar–Mei 2027 | Gate 2 (akun, aktivasi, entitlement) dengan kapasitas paruh waktu |
-| Jun–Jul 2027 | Gate 3 (pembayaran); persiapan audit dan dokumen hukum |
-| Agu–Okt 2027 | Gate 4 (audit, pentest, beta tertutup, uji pemulihan) |
-| Q4 2027 | Gate 5: peluncuran berbayar bila kriteria Gate 4 terpenuhi |
-
-Bila kapasitas lebih kecil dari asumsi, urutan gate tetap; yang bergeser adalah tanggal peluncuran, bukan kualitas.
-
-## 13. Keputusan yang Harus Diambil
-
-| ID | Keputusan | Gate | Dasar keputusan |
-|---|---|---|---|
-| OD-02 | Apa yang dijual di Pro | 1 | Wawancara dan pra-daftar |
-| OD-03 | Lisensi publik Crypto Core | 0 | Tujuan: adopsi/kepercayaan atau imbalan komersial; konsultasi hukum |
-| OD-05 | Masa berlaku, grace period, batas instalasi | 1–2 | Uji dengan pengguna beta |
-| OD-07 | KDF final (PBKDF2 atau Argon2id) | 2 | Benchmark nyata dan hasil audit |
-| OD-08 | Teknologi mobile | 5 | Permintaan pengguna |
-| OD-09 | Harga dan paket | 1 | Uji kesediaan membayar |
-| Baru | Penyedia pembayaran | 1 | Ketersediaan, biaya, dan syarat di Indonesia |
-| Baru | Stack backend, hosting, KMS | 1–2 | Biaya, keamanan, keahlian tim |
-| Baru | Nama dan merek | 0 | Pemeriksaan ketersediaan |
-| Baru | Badan usaha | 4 | Konsultasi hukum dan pajak |
-
-## 14. Tiga Puluh Hari Pertama
-
-1. **Minggu 1:** SRS v1.3, test vector bersama, SECURITY.md, pemindaian rahasia dan SBOM di CI, verifikasi header produksi.
-2. **Minggu 1–2:** threat model v1, keputusan lisensi publik, pembaruan materi presentasi, keputusan nama dan merek.
-3. **Minggu 2–4:** susun daftar 20 calon wawancara (individu dan organisasi kecil), jalankan wawancara pertama, bangun halaman pendaratan dan daftar tunggu.
-4. **Minggu 3–4:** survei penyedia pembayaran dan stack backend; susun draf arsitektur Gate 2 untuk ditinjau.
-5. **Akhir bulan:** tinjauan Gate 0 dan penyesuaian jadwal berdasarkan kapasitas nyata.
-
-*Dokumen ini ditinjau ulang di akhir setiap gate dan diperbarui bersama SRS.*
+## 12. Keputusan Terbuka
+ID
+Pertanyaan
+Opsi
+Dampak
+Status
+OD-01
+Penyimpanan atau sinkronisasi berkas di server
+Tidak ada / opsional
+Model ancaman, biaya, identitas produk
+Diputuskan: tidak ada cloud storage
+OD-02
+Apa yang dijual pada paket Pro
+Build terpasang bertanda tangan, fitur organisasi, Vault, berbagi lanjutan, dukungan
+Nilai bisnis
+Terbuka; ditentukan dari masukan pengguna versi gratis. Batasan tetap: keamanan dasar dan dekripsi tidak dijual
+OD-03
+Lisensi publik Crypto Core
+MIT atau Apache-2.0 / AGPL-3.0 + lisensi komersial / BSL atau PolyForm
+Hak penggunaan ulang komersial, kepercayaan komunitas
+Berkas LICENSE kini Apache-2.0; konfirmasi final sebelum ada kontributor eksternal
+OD-04
+Menghadapi pemeriksaan lisensi yang dilewati
+Terima risiko / hak diterbitkan server / build native
+Kekuatan penegakan paket Pro
+Diputuskan: terima risiko pada web; fitur bernilai tinggi dikaitkan ke server atau build native
+OD-05
+Masa berlaku lisensi, grace period, batas instalasi
+Mis. grace 7 hari; 2–5 instalasi
+Pengalaman offline dan penyalahgunaan
+Terbuka; ditetapkan sebelum Fase 3
+OD-06
+Model recovery
+Tanpa pemulihan / Recovery Key / escrow organisasi
+Desain kunci
+Diputuskan dan diimplementasikan di klien: envelope encryption dan Recovery Key slot
+OD-07
+KDF akhir
+PBKDF2 / Argon2id (WASM)
+Ketahanan terhadap serangan GPU
+PBKDF2 (batas 600.000–5.000.000) pada v3; default ditetapkan lewat benchmark; KDF ID disiapkan untuk Argon2id
+OD-08
+Teknologi mobile
+Flutter / native / PWA
+Implementasi ulang crypto dan test vector
+Dievaluasi di Fase 5; desktop memakai .NET (Avalonia)
+OD-09
+Harga dan batas paket
+—
+Model bisnis
+Terbuka; dijadikan konfigurasi
+OD-10
+Penyedia pembayaran, stack backend, hosting, KMS
+Lihat dokumen Rencana Kematangan Produksi
+Fase 2 dan 3
+Terbuka; diputuskan sebelum desain Fase 2
+Lampiran A. Status Implementasi Saat Ini terhadap Target
+Area
+Kondisi saat ini (hasil membaca kode; test belum dijalankan oleh penyusun)
+Status vs SRS
+Format v3
+Envelope encryption, header 128 B, record ber-AAD, flag final, batas iterasi dan ukuran chunk
+Terpenuhi
+Pengikatan urutan dan pemotongan
+Terkunci lewat AAD dan flag final; ada test pemotongan dan data tambahan
+Terpenuhi
+Dekripsi
+Streaming ke keluaran sementara dan difinalisasi setelah record final terverifikasi
+Terpenuhi
+KDF
+600.000–5.000.000 di header v3; v2 tetap 100.000
+Terpenuhi
+Keyfile
+Ada; istilah "2FA" hanya untuk akun
+Terpenuhi
+Recovery Key, ganti password, nama berkas terenkripsi
+Sudah di klien, lebih awal dari rencana (Fase 4)
+Terpenuhi
+Test vector
+Berkas bersama v2, v3, v3-unicode, katalog galat; dipakai web dan desktop
+Terpenuhi
+PWA offline dan CSP
+sw.js, precache manifest, _headers dengan CSP ketat, E2E cold-start
+Terpenuhi di kode; perlu verifikasi di produksi
+Klien desktop
+Core, aplikasi Avalonia, CLI, test; SecureDelete dengan peringatan SSD
+Ada; peringatan perlu muncul di antarmuka
+Lisensi publik
+Apache-2.0
+Perlu konfirmasi final (OD-03)
+Struktur repositori
+Monorepo apps/web, apps/desktop, docs/
+Selesai
+CI dan rantai suplai
+Lint, typecheck, audit, secret scan, SBOM, Dependabot, unit, E2E, desktop, fuzzing web
+Terpenuhi; belum ada build tertanda dan SAST/DAST
+Dokumen keamanan
+SECURITY.md, security.txt, threat model v1, arsitektur v1, spesifikasi v3
+Terpenuhi
+Validasi pasar
+Halaman /awal/, form masukan; rencana: kumpulkan masukan dari versi gratis
+Berjalan
+Akun, aktivasi, lisensi, langganan
+Belum ada
+Fase 2 dan 3
+Local Vault, kemudahan berbagi
+Belum ada
+Fase 4
+Audit independen, hukum, operasional
+Belum ada
+Gate 4
