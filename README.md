@@ -1,223 +1,141 @@
 # AegisCrypt Web
 
-> **English Version:** bisa dilihat [disini](README.md).
+**English** | [Bahasa Indonesia](README.id.md)
 
-![AegisCrypt Banner](https://via.placeholder.com/1200x400/0f172a/3b82f6?text=AegisCrypt+Web+Keamanan)
+**Live:** [App](https://aegiscrypt.bangkah.tech) · [Documentation](https://docs.aegiscrypt.bangkah.tech)
 
-**Suite Enkripsi Berbasis Klien Profesional**
+AegisCrypt Web is a browser-based encryption tool designed with a **zero-knowledge** approach: files and passwords are processed entirely in the browser (Web Crypto API, in-memory/OPFS-bounded flows) and are never sent to any server.
 
-**Live:** [Aplikasi](https://aegiscrypt.bangkah.tech) · [Dokumentasi](https://docs.aegiscrypt.bangkah.tech)
-
-AegisCrypt Web adalah alat enkripsi berbasis browser dengan standar militer. Dirancang dengan prinsip **Zero-Knowledge**, yang berarti file dan kata sandi Anda diproses sepenuhnya di dalam RAM browser melalui Web Crypto API dan tidak pernah dikirimkan ke server eksternal mana pun.
+> Status: production-readiness work in progress (Gate 1 feedback). Not independently audited yet.
 
 ---
 
-## Fitur Utama
+## Key Features
 
-* **AES-256-GCM**: Enkripsi terotentikasi yang dapat mendeteksi manipulasi data.
-* **Autentikasi Dua Faktor (2FA)**: Menggabungkan `Kata Sandi` + `Keyfile` (misalnya foto, dokumen) untuk keamanan tingkat lanjut.
-* **Streaming Engine (v3)**: Enkripsi envelope per file dengan header 128 byte, record terautentikasi, dan pemrosesan per chunk — cocok untuk file berukuran gigabyte tanpa membuat browser *crash*.
-* **Nama file terenkripsi**: Nama asli disimpan sebagai metadata terenkripsi di container (flag bit2) dan dipulihkan saat dekripsi.
-* **Ganti kata sandi (rewrap)**: Bungkus ulang kunci file dengan kata sandi/keyfile baru tanpa mengenkripsi ulang payload.
-* **Kunci recovery opsional**: Slot recovery 60 byte memungkinkan dekripsi tanpa kata sandi; sesi recovery bersifat hanya-dekripsi.
-* **Auto-lock & zeroisasi**: Sesi terkunci setelah 10 menit idle; byte kata sandi dan buffer keyfile dihapus dari memori saat lock/logout.
-* **Neo-Brutalism UI**: Antarmuka modern, tegas, dan sepenuhnya responsif dengan kontras tinggi.
-* **Telemetri Waktu Nyata**: Memantau kecepatan enkripsi (MB/s) dan estimasi waktu selesai (ETA).
-* **Pemrosesan Batch**: Seret dan lepaskan (*drag & drop*) seluruh folder ke dalam antrean pemrosesan.
-* **Kripto di Web Worker**: PBKDF2 dan enkripsi/dekripsi berjalan di luar thread UI agar aplikasi tetap responsif.
-* **PWA & offline**: Dapat dipasang sebagai aplikasi dan dibuka tanpa jaringan; cache hanya berisi app shell.
-* **Antarmuka dua bahasa**: Inggris dan Indonesia, dapat diganti dari header dan diingat antar kunjungan.
+- **AES-256-GCM**: authenticated encryption that detects tampering.
+- **Two-factor derivation (optional)**: `Password` + `Keyfile` (`KeyMaterial = UTF8(password) || SHA256(keyfile bytes)`).
+- **Streaming envelope (v3)**: 128-byte header, authenticated records, chunked processing (64 KiB–16 MiB, default 1 MiB) suitable for large files.
+- **Encrypted filenames**: original name stored as encrypted metadata (flag bit 2) and restored on decrypt.
+- **Rewrap**: re-wrap the file key with a new password/keyfile without re-encrypting payload.
+- **Optional recovery key**: 60-byte recovery slot (HKDF info `"AEGISRCV"||fileId`) for decrypt without password; recovery sessions are decrypt-only.
+- **Session hardening**: 10-minute idle auto-lock and best-effort zeroization of password/keyfile material on lock/logout.
+- **Web Worker crypto**: PBKDF2 and encrypt/decrypt run off the UI thread.
+- **PWA/offline**: installable; cache contains app shell only.
+- **Bilingual UI**: English and Indonesian, switchable from the header.
 
----
+## Security Overview
 
+- **Cipher:** AES-256-GCM (authenticated encryption).
+- **KDF:** PBKDF2-HMAC-SHA-256, 600,000–5,000,000 iterations (stored in header), 32-byte random salt per file.
+- **Keyfile logic:** `KeyMaterial = Password_Bytes + SHA256(Keyfile_Bytes)`.
+- **v3 streaming:** random 256-bit DEK wrapped by PBKDF2-derived KEK; per-record nonce `prefix(4) || index(8)` (not stored); 43-byte AAD binds header/record context. Filename metadata block (when present) uses index `2^64-1`.
 
+Full format details: [docs/specs/spec-aegis-v3.md](docs/specs/spec-aegis-v3.md). Threat model: [docs/specs/threat-model-v1.md](docs/specs/threat-model-v1.md).
 
-## Arsitektur Keamanan
+## Project Structure
 
-AegisCrypt mengikuti standar kriptografi yang ketat untuk memastikan integritas dan kerahasiaan data.
-
-### 1. Algoritma Utama
-
-* **Sandi (Cipher):** AES-256-GCM (Galois/Counter Mode).
-* **Mengapa GCM?:** Berbeda dengan mode CBC, GCM menyediakan **Authenticated Enkripsi**. Sistem ini memastikan bahwa jika sebuah file dirusak (bahkan hanya satu bit yang diubah), proses dekripsi akan langsung gagal alih-alih menghasilkan data korup.
-
-### 2. Derivasi Kunci (PBKDF2)
-
-* **Fungsi:** `PBKDF2` dengan `HMAC-SHA-256`.
-* **Iterasi:** 600.000 (disimpan di header; rentang 600.000–5.000.000, dapat dinaikkan sesuai kebutuhan).
-* **Garam (Salt):** 32-byte *Cryptographically Secure Random Salt* yang dihasilkan per file.
-* **Tujuan:** Melindungi sistem dari serangan *Brute-Force* dan *Rainbow Table*.
-
-### 3. Logika Keyfile (2FA)
-
-* **Logika:** `KeyMaterial = Password_Bytes + SHA256(Keyfile_Bytes)`
-* **Tujuan:** Memastikan bahwa meskipun seorang penyerang berhasil menebak kata sandi Anda, mereka tetap tidak dapat mendekripsi file tanpa file fisik yang persis sama yang digunakan sebagai kunci.
-
-### 4. Streaming & Envelope Encryption (v3)
-
-* Setiap file memakai **DEK acak 256-bit** yang dibungkus oleh KEK hasil PBKDF2 (envelope encryption), sehingga rewrap tidak perlu menulis ulang payload.
-* File dipecah ke dalam **chunk** (default 1 MiB; 64 KiB–16 MiB) yang dicatat di header.
-* Setiap record memakai **nonce turunan** `prefix(4) || index(8)` — nonce tidak disimpan di kontainer.
-* **AAD 43 byte** per record mengikat magic, versi, ukuran chunk, file ID, prefix, header record, dan indeks sehingga record tidak dapat dipindah atau dipotong.
-
----
-
-## Panduan Pengguna
-
-Buka aplikasi langsung dan ikuti panduan di dokumentasi:
-
-[Buka Aplikasi](https://aegiscrypt.bangkah.tech) ・ [Buka Dokumentasi](https://docs.aegiscrypt.bangkah.tech)
-
----
-
-## Struktur Project
-
-```
+```text
 aegiscrypt-web/
-├── apps/
-│   ├── web/                     # Aplikasi web (Vite + React 19)
-│   │   ├── src/
-│   │   │   ├── components/      # UI Neo-Brutalism (ui/, FileList, LogBox, LoginScreen, PasswordInput)
-│   │   │   ├── services/        # cryptoService.ts (mesin inti AES-GCM) + worker
-│   │   │   ├── lib/             # errors, files, recovery, utils
-│   │   │   ├── i18n/            # kamus en/id
-│   │   │   ├── constants.ts     # Konfigurasi & magic bytes
-│   │   │   └── App.tsx, main.tsx, index.css, types.ts
-│   │   ├── tests/
-│   │   │   ├── unit/            # Suite Vitest
-│   │   │   ├── e2e/             # Playwright (3 browser)
-│   │   │   ├── perf/            # Benchmark throughput
-│   │   │   └── fixtures/        # Vektor beku v2/v3 + katalog error
-│   │   ├── public/              # _headers, sw.js, manifest, security.txt
-│   │   ├── scripts/             # precache manifest
-│   │   ├── index.html
-│   │   └── cloudflare.config.ts # Worker aegiscrypt-web
-│   └── desktop/                 # Solusi .NET 8 (Core, CLI, App Avalonia)
-│       ├── src/
-│       ├── tests/
-│       └── AegisCrypt.sln
-├── docs/
-│   ├── specs/                   # Spesifikasi v3, threat model, arsitektur, rencana kesiapan
-│   ├── guides/                  # Panduan use case (Inggris/Indonesia)
-│   ├── assets/screenshots/      # Tangkapan layar (dipakai docs/site)
-│   └── site/                    # Docusaurus (worker aegiscrypt-docs)
-├── .github/                     # CI dan Dependabot
-└── global.json                  # Pin SDK .NET 8
+├─ apps/
+│  ├─ web/                  # Vite + React 19 web app
+│  │  ├─ src/               # components/, services/crypto, lib/, i18n/
+│  │  ├─ tests/             # unit (Vitest), e2e (Playwright), perf, fixtures
+│  │  ├─ public/            # headers, sw.js, manifest, security.txt
+│  │  └─ cloudflare.config.ts
+│  └─ desktop/              # .NET 8 (Core, CLI, Avalonia) — same v3 format
+├─ docs/
+│  ├─ specs/                # v3 spec, threat model, architecture, readiness plan
+│  ├─ guides/               # use-case guides
+│  ├─ assets/screenshots/
+│  └─ site/                 # Docusaurus (EN default, ID at /id/)
+└─ .github/                 # CI and Dependabot
 ```
 
----
+## Development & Testing
 
-## Deployment
-
-Kedua situs (aplikasi dan dokumentasi) di-deploy sebagai Cloudflare Workers dengan aset statis. Aplikasi memakai [`cf` CLI](https://developers.cloudflare.com/cf/); dokumentasi (Docusaurus) memakai [Wrangler](https://developers.cloudflare.com/workers/wrangler/).
-
-| Situs | URL | Worker |
-|---|---|---|
-| Aplikasi | https://aegiscrypt.bangkah.tech | `aegiscrypt-web` |
-| Dokumentasi | https://docs.aegiscrypt.bangkah.tech | `aegiscrypt-docs` |
+Web app (run from `apps/web`):
 
 ```bash
-# Deploy aplikasi
-cd apps/web
-npm run build
-npm run deploy            # atau: cf deploy --message "rilis"
-
-# Deploy dokumentasi
-cd docs/site
 npm install
-npm run build
-npm run deploy            # wrangler deploy
-
-# Validasi tanpa mengunggah
-cd apps/web; cf deploy --dry-run
-cd docs/site; npx wrangler deploy --dry-run
-```
-
-Domain kustom dideklarasikan dalam `apps/web/cloudflare.config.ts` (aplikasi) dan `docs/site/wrangler.jsonc` (dokumentasi). Cloudflare membuat catatan DNS dan sertifikat pada saat deploy.
-
----
-
-## Pengujian
-
-```bash
-cd apps/web
 npm run typecheck
-npm run test:unit                    # Vitest (unit + integrasi)
+npm run lint
+npm run test:unit                    # Vitest (unit + integration)
 npm run build && npm run test:e2e    # Playwright: Chromium, Firefox, WebKit
-npm run test:bench                   # Benchmark throughput 16 MiB
+npm run test:bench                   # throughput benchmark
 ```
 
-## Versi Desktop (.NET 8)
-
-Mesin format yang sama tersedia sebagai pustaka .NET, CLI, dan aplikasi Avalonia di [`apps/desktop/`](apps/desktop/README.md). Kontainer `.aegis` v3 yang dihasilkannya identik dengan versi web dan dapat dibaca oleh keduanya.
+Desktop (.NET 8): see [apps/desktop/README.md](apps/desktop/README.md).
 
 ```bash
 dotnet test apps/desktop/AegisCrypt.sln
-dotnet run --project apps/desktop/src/AegisCrypt.App   # aplikasi grafis
-dotnet run --project apps/desktop/src/AegisCrypt.Cli -- --help
 ```
 
-## Spesifikasi Format File (.aegis v3)
+## Deployment
 
-Header tetap 128 byte, big-endian. Kontainer v2 lama tetap dapat dibaca.
+Static assets deployed as Cloudflare Workers.
 
-| Offset Byte | Panjang | Konten | Nilai |
-|---|---|---|---|
+| Site | URL | Worker |
+|---|---|---|
+| App | https://aegiscrypt.bangkah.tech | `aegiscrypt-web` |
+| Docs | https://docs.aegiscrypt.bangkah.tech | `aegiscrypt-docs` |
+
+```bash
+# App
+cd apps/web && npm run build && cf deploy
+
+# Docs (Docusaurus)
+cd docs/site && npm install && npm run build && npx wrangler deploy
+```
+
+## `.aegis` v3 Format (summary)
+
+128-byte fixed header, big-endian. Legacy v2 containers remain readable.
+
+| Offset | Length | Field | Value |
+|---|---:|---|---|
 | 0 | 5 | Magic | `AEGIS` |
-| 5 | 1 | Versi | `0x03` |
-| 6 | 1 | ID KDF | `0x01` (PBKDF2-HMAC-SHA256) |
-| 7 | 1 | Flag | bit0 keyfile, bit1 recovery slot, bit2 metadata nama terenkripsi |
-| 8 | 4 | Iterasi PBKDF2 | uint32, 600.000–5.000.000 |
-| 12 | 4 | Ukuran chunk | uint32, 65.536–16.777.216 |
-| 16 | 32 | Salt | Random bytes |
-| 48 | 16 | File ID | Random bytes |
-| 64 | 4 | Prefix nonce | Random bytes |
-| 68 | 12 | Nonce wrap | Random bytes |
-| 80 | 32 | DEK terbungkus | Ciphertext AES-GCM |
-| 112 | 16 | Tag wrap | 128-bit |
+| 5 | 1 | Version | `0x03` |
+| 6 | 1 | KDF id | `0x01` (PBKDF2-HMAC-SHA256) |
+| 7 | 1 | Flags | bit0 keyfile, bit1 recovery, bit2 encrypted filename |
+| 8 | 4 | PBKDF2 iterations | uint32, 600k–5M |
+| 12 | 4 | Chunk size | uint32, 64 KiB–16 MiB |
+| 16 | 32 | Salt | random |
+| 48 | 16 | File ID | random |
+| 64 | 4 | Nonce prefix | random |
+| 68 | 12 | Wrap nonce | random |
+| 80 | 32 | Wrapped DEK | ciphertext |
+| 112 | 16 | Wrap tag | 128-bit |
 
-Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu ciphertext + tag. Nonce = `prefix || index`; AAD 43 byte. Bila flag bit2 aktif, blok metadata nama terenkripsi (2 byte panjang + ciphertext + tag, nonce indeks `2^64-1`, AAD 36 byte) berada setelah header. Detail lengkap ada di dokumentasi.
+Each record: 5-byte header (`final flag` + uint32 ciphertext length) + ciphertext + tag. See [docs/specs/spec-aegis-v3.md](docs/specs/spec-aegis-v3.md) for full details.
 
----
+## Security & Reporting
 
-## Keamanan dan Pelaporan Kerentanan
+- Policy: [SECURITY.md](SECURITY.md)
+- Contact: **atha@bangkah.tech** (do not open public issues for vulnerabilities)
+- `/.well-known/security.txt` included in web build
 
-- Kebijakan keamanan dan pelaporan: [`SECURITY.md`](SECURITY.md)
-- Kontak pelaporan: **atha@bangkah.tech** (harap jangan membuka issue publik untuk kerentanan)
-- `/.well-known/security.txt` disertakan pada build web untuk penemuan otomatis
+## Documentation
 
-## Dokumentasi Teknis
+- [docs/specs/spec-aegis-v3.md](docs/specs/spec-aegis-v3.md) — `.aegis` v3 format (frozen-candidate)
+- [docs/specs/threat-model-v1.md](docs/specs/threat-model-v1.md) — threat model and residual risks
+- [docs/specs/architecture-v1.md](docs/specs/architecture-v1.md) — architecture and data flow
+- [docs/specs/production-readiness-plan-v1.0.md](docs/specs/production-readiness-plan-v1.0.md) — readiness plan (Gate 0–5)
+- [apps/desktop/README.md](apps/desktop/README.md) — desktop implementation
 
-- Spesifikasi format `.aegis` v3 (beku, FROZEN-CANDIDATE): [`docs/specs/spec-aegis-v3.md`](docs/specs/spec-aegis-v3.md)
-- Model ancaman dan risiko residual: [`docs/specs/threat-model-v1.md`](docs/specs/threat-model-v1.md)
-- Arsitektur dan alur data: [`docs/specs/architecture-v1.md`](docs/specs/architecture-v1.md)
-- Rencana kesiapan produksi (Gate 0-5): [`docs/specs/production-readiness-plan-v1.0.md`](docs/specs/production-readiness-plan-v1.0.md)
-- Implementasi desktop (.NET 8): [`apps/desktop/`](apps/desktop/README.md)
+## FAQ
 
-## FAQ & Pemecahan Masalah
+**Lost password/keyfile?**  
+Without a recovery key, no. AegisCrypt is zero-knowledge with no backdoor. Enable and store a recovery key offline if you need a recovery path.
 
-**T: Saya kehilangan kata sandi/keyfile saya. Apakah data saya bisa dipulihkan?**
+**Browser asks to download multiple files?**  
+Batch operations trigger one download per file; allow multiple downloads when prompted.
 
-> **Tanpa kunci recovery, tidak.** AegisCrypt menggunakan prinsip *zero-knowledge* dan tidak memiliki pintu belakang (*backdoor*). Jika kredensial hilang dan berkas tidak memiliki slot recovery, data secara matematis tidak dapat dipulihkan. Aktifkan **Recovery key** sebelum enkripsi dan simpan kuncinya offline untuk mendapatkan jalur pemulihan.
+**Is the filename encrypted?**  
+The original name is stored as encrypted metadata and restored on decrypt. The downloaded container name is `original.ext.aegis` — rename the container if the filename itself is sensitive.
 
-**T: Mengapa browser meminta izin untuk mengunduh banyak file sekaligus?**
+**Does AegisCrypt send anything to a server?**  
+No file contents, password/keyfile bytes, or derived keys are sent. The app is a static bundle (only app assets are fetched; crypto works after load even offline).
 
-> Saat memproses *batch*, aplikasi memicu unduhan untuk setiap file. Browser sering kali memblokir unduhan otomatis ganda. Silakan klik "Allow" saat diminta.
-
-**T: Berapa batas ukuran file maksimum?**
-
-> Telah diuji hingga **10GB** pada Chrome 120+. Batasannya bergantung pada implementasi Blob browser. Untuk file berukuran 100GB+, versi AegisCrypt Desktop (C#) sudah direncanakan tapi belum diimplementasikan — lihat `apps/desktop/README.md`.
-
-**T: Apakah nama file dienkripsi?**
-
-> Ya. Nama asli disimpan sebagai metadata terenkripsi di dalam container dan dipakai kembali saat dekripsi. Nama container yang diunduh tetap `original.ext.aegis`, jadi ubah nama container jika nama file itu sendiri sensitif.
-
-**T: Apakah AegisCrypt mengirimkan sesuatu ke server?**
-
-> Tidak ada konten file, byte kata sandi, byte keyfile, atau kunci turunan yang dikirim. Aplikasi adalah bundel statis; satu-satunya permintaan jaringan adalah untuk aset aplikasi dan stylesheet Google Fonts. Kripto tetap bekerja setelah halaman dimuat bahkan jika jaringan putus.
-
----
-
-## Lisensi
+## License
 
 [Apache-2.0](LICENSE)
