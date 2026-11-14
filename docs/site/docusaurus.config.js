@@ -39,7 +39,6 @@ const config = {
       {
         docs: {
           sidebarPath: require.resolve("./sidebars.js"),
-          editUrl: "https://github.com/Bangkahdev/AegisCrypt-Web/edit/main/docs/site/",
           routeBasePath: "/",
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
