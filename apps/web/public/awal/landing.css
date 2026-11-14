@@ -374,3 +374,79 @@ h2 {
     transition: none;
   }
 }
+
+/* Form masukan */
+.form-page {
+  max-width: 760px;
+}
+.form-page h1 {
+  margin: 0 0 0.75rem;
+}
+.feedback-form {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 1.25rem;
+}
+.feedback-form fieldset {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--line);
+  background: var(--card);
+}
+.feedback-form legend {
+  padding: 0 0.4rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.field {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+}
+.field-label {
+  font-weight: 600;
+}
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.option {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.option input {
+  margin-top: 0.3rem;
+}
+.subfield {
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.feedback-form input[type="text"],
+.feedback-form textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+.feedback-form input[type="text"]:focus,
+.feedback-form textarea:focus {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+.feedback-form .button.primary {
+  border: 2px solid var(--line);
+  cursor: pointer;
+}
