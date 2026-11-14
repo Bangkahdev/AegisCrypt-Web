@@ -59,13 +59,13 @@ export const FileList: React.FC<FileListProps> = ({ files, onRemove, disabled })
         return (
           <div
             key={`${file.name}-${idx}`}
-            className="group flex items-center gap-3 border-2 border-border bg-background p-3 hover:bg-secondary"
+            className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-secondary/60"
           >
             <span className="hidden w-5 shrink-0 font-mono text-[10px] text-muted-foreground sm:block">
               {String(idx + 1).padStart(2, "0")}
             </span>
 
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center border-2 border-border bg-secondary text-foreground">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-muted-foreground">
               {getFileIcon(file.name)}
             </div>
 
@@ -102,4 +102,3 @@ export const FileList: React.FC<FileListProps> = ({ files, onRemove, disabled })
     </div>
   );
 };
-

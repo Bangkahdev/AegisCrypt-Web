@@ -24,7 +24,6 @@ import { useI18n } from "@/i18n/I18nProvider";
 
 interface LoginScreenProps {
   onLogin: (session: AuthSession) => void;
-  /** Optional banner shown after an automatic lock or forced logout. */
   notice?: string | null;
 }
 
@@ -95,27 +94,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <a href="#main-content" tabIndex={0} className="skip-link">
         {t("common.skipToContent")}
       </a>
-      <header className="border-b-2 border-border bg-card">
-        <div className="flex h-16 w-full items-center justify-between gap-4 px-4 sm:px-8">
+
+      <header className="sticky top-0 z-20 border-b border-border/80 bg-card/90 backdrop-blur">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Shield className="h-5 w-5" />
             </div>
             <div className="leading-tight">
-              <p className="text-sm font-bold tracking-tight">AegisCrypt</p>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                {t("login.zeroKnowledgeSuite")}
-              </p>
+              <p className="text-sm font-semibold tracking-tight">AegisCrypt</p>
+              <p className="text-[11px] text-muted-foreground">{t("login.zeroKnowledgeSuite")}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <a
               href="https://docs.aegiscrypt.bangkah.tech"
-              className="hidden items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground sm:flex"
+              className="hidden items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"
             >
               {t("common.documentation")}
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -126,46 +124,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
         </div>
       </header>
 
-      <main
-        id="main-content"
-        tabIndex={-1}
-        className="flex flex-1 flex-col px-4 py-8 sm:px-8 lg:py-12"
-      >
-        <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
-          <section className="order-2 text-left lg:order-1">
-            <Badge variant="outline" className="bg-accent">
-              <span className="h-2 w-2 bg-accent-foreground" />
+      <main id="main-content" tabIndex={-1} className="flex-1">
+        <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-10 sm:px-8 lg:grid-cols-[1.05fr_420px] lg:items-center lg:py-16">
+          <section className="order-2 lg:order-1">
+            <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               {t("login.badge")}
             </Badge>
-            <h2 className="mt-5 max-w-2xl text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
+            <h2 className="mt-5 max-w-2xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
               {t("login.headline1")}
-              <br />
-              {t("login.headline2")}
+              <span className="block text-muted-foreground">{t("login.headline2")}</span>
             </h2>
-            <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground">
-              {t("login.introBefore")}{" "}
-              <span className="font-mono text-foreground">.aegis</span>{" "}
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
+              {t("login.introBefore")} <span className="font-mono text-foreground">.aegis</span>{" "}
               {t("login.introAfter")}
             </p>
 
-            <ul className="mt-7 grid max-w-xl gap-3">
+            <ul className="mt-8 grid max-w-xl gap-3">
               {FEATURES.map((feature) => (
-                <li key={feature} className="flex items-start gap-3 text-sm">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
+                <li key={feature} className="flex items-start gap-3 text-sm text-muted-foreground">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Check className="h-3 w-3" />
                   </span>
-                  <span className="text-muted-foreground">{t(feature)}</span>
+                  <span>{t(feature)}</span>
                 </li>
               ))}
             </ul>
 
             <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
               {FACTS.map((fact) => (
-                <div key={fact.label} className="border-2 border-border bg-card p-3">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+                <div key={fact.label} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                     {t(fact.label)}
                   </p>
-                  <p className="mt-1 text-xs font-bold">
+                  <p className="mt-1.5 text-sm font-semibold text-foreground">
                     {fact.value.startsWith("login.") ? t(fact.value as "login.factDataPathValue") : fact.value}
                   </p>
                 </div>
@@ -173,27 +165,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
             </div>
           </section>
 
-          <Card className="order-1 w-full border-2 bg-card p-6 sm:p-8 lg:order-2">
+          <Card className="order-1 w-full p-6 sm:p-7 lg:order-2">
             {notice && (
               <div
                 role="status"
-                className="mb-5 border-2 border-border bg-accent px-3 py-2 text-[11px] font-semibold leading-relaxed text-accent-foreground"
+                className="mb-5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-sm text-foreground"
               >
                 {notice}
               </div>
             )}
-            <div className="mb-7 text-left">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
-                <Shield className="h-6 w-6" />
+
+            <div className="mb-6">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Shield className="h-5 w-5" />
               </div>
-              <h1 className="text-2xl font-extrabold tracking-tight">AegisCrypt</h1>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t("login.startSubtitle")}
-              </p>
+              <h1 className="text-2xl font-semibold tracking-tight">AegisCrypt</h1>
+              <p className="mt-1 text-sm text-muted-foreground">{t("login.startSubtitle")}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid grid-cols-2 gap-2" role="group" aria-label={t("login.modePassword")}>
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-secondary/60 p-1" role="group" aria-label={t("login.modePassword")}>
                 {(["password", "recovery"] as const).map((value) => (
                   <button
                     key={value}
@@ -202,10 +193,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
                     onClick={() => switchMode(value)}
                     disabled={isAnimating}
                     className={cn(
-                      "border-2 border-border px-3 py-2 text-xs font-bold uppercase tracking-wide outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50",
+                      "rounded-lg px-3 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
                       mode === value
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-card text-muted-foreground hover:bg-secondary",
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     {t(value === "password" ? "login.modePassword" : "login.modeRecovery")}
@@ -216,16 +207,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
               <div className={mode === "recovery" ? "hidden" : "space-y-5"}>
                 <PasswordInput value={password} onChange={setPassword} disabled={isAnimating} />
 
-                <div
-                  className={`border-2 border-border p-3.5 ${
-                    useKeyFile ? "bg-accent" : "bg-card"
-                  }`}
-                >
+                <div className={cn("rounded-xl border p-3.5 transition-colors", useKeyFile ? "border-primary/20 bg-primary/5" : "border-border bg-card")}>
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2.5">
                       <Key className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-sm font-semibold">{t("login.useKeyfile")}</p>
+                        <p className="text-sm font-medium">{t("login.useKeyfile")}</p>
                         <p className="text-[11px] text-muted-foreground">{t("login.secondFactor")}</p>
                       </div>
                     </div>
@@ -243,22 +230,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
                   {useKeyFile && (
                     <div
                       onClick={() => keyFileInputRef.current?.click()}
-                      className="mt-3 flex cursor-pointer items-center gap-3 border-2 border-dashed border-border bg-card p-3 hover:bg-secondary"
+                      className="mt-3 flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border bg-card p-3 hover:bg-secondary/60"
                     >
-                      <div className="flex h-8 w-8 items-center justify-center border-2 border-border bg-background text-muted-foreground">
-                        {keyFile ? (
-                          <FileCheck className="h-4 w-4 text-foreground" />
-                        ) : (
-                          <FileUp className="h-4 w-4" />
-                        )}
+                      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-secondary text-muted-foreground">
+                        {keyFile ? <FileCheck className="h-4 w-4 text-primary" /> : <FileUp className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold">
+                        <p className="truncate text-sm font-medium">
                           {keyFile ? keyFile.name : t("login.selectKeyfile")}
                         </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {t("login.keyfileHint")}
-                        </p>
+                        <p className="text-[11px] text-muted-foreground">{t("login.keyfileHint")}</p>
                       </div>
                       <input
                         type="file"
@@ -273,7 +254,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
 
               {mode === "recovery" && (
                 <div className="space-y-2">
-                  <label htmlFor="recovery-key" className="text-sm font-semibold">
+                  <label htmlFor="recovery-key" className="text-sm font-medium">
                     {t("login.recoveryLabel")}
                   </label>
                   <Input
@@ -284,13 +265,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
                     placeholder={t("login.recoveryPlaceholder")}
                     autoComplete="off"
                     spellCheck={false}
-                    className="h-11 font-mono text-xs"
+                    className="font-mono text-xs"
                   />
-                  <p className="text-[11px] text-muted-foreground">
-                    {t("login.recoveryHint")}
-                  </p>
+                  <p className="text-[11px] text-muted-foreground">{t("login.recoveryHint")}</p>
                   {recoveryInput.length > 0 && !parsedRecovery && (
-                    <p role="alert" className="text-[11px] font-semibold text-destructive">
+                    <p role="alert" className="text-[11px] font-medium text-destructive">
                       {t("login.recoveryInvalid")}
                     </p>
                   )}
@@ -319,7 +298,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
                 )}
               </Button>
 
-              <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <p className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
                 <Lock className="h-3 w-3" />
                 {t("login.filesNeverLeave")}
               </p>
@@ -328,15 +307,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
         </div>
       </main>
 
-      <footer className="flex flex-col justify-between gap-2 border-t-2 border-border bg-card px-4 py-4 text-[11px] text-muted-foreground sm:flex-row sm:px-8">
-        <p>{t("login.footer")}</p>
-        <a
-          href="https://docs.aegiscrypt.bangkah.tech"
-          className="flex items-center gap-1 font-semibold hover:text-foreground"
-        >
-          {t("common.readDocs")}
-          <ArrowUpRight className="h-3 w-3" />
-        </a>
+      <footer className="border-t border-border bg-card/60">
+        <div className="mx-auto flex w-full max-w-6xl flex-col justify-between gap-2 px-4 py-4 text-[11px] text-muted-foreground sm:flex-row sm:px-8">
+          <p>{t("login.footer")}</p>
+          <a
+            href="https://docs.aegiscrypt.bangkah.tech"
+            className="inline-flex items-center gap-1 font-medium hover:text-foreground"
+          >
+            {t("common.readDocs")}
+            <ArrowUpRight className="h-3 w-3" />
+          </a>
+        </div>
       </footer>
     </div>
   );

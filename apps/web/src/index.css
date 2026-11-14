@@ -3,54 +3,54 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f4f0e6;
-  --foreground: #17150f;
-  --card: #fffdf6;
-  --card-foreground: #17150f;
-  --popover: #fffdf6;
-  --popover-foreground: #17150f;
-  --primary: #17150f;
-  --primary-foreground: #fffdf6;
-  --secondary: #e9e1cf;
-  --secondary-foreground: #17150f;
-  --muted: #e1d8c4;
-  --muted-foreground: #5d574a;
-  --accent: #f5d76e;
-  --accent-foreground: #17150f;
-  --destructive: #b42318;
-  --destructive-foreground: #fffdf6;
-  --success: #2f7d5a;
-  --warning: #a16207;
-  --border: #17150f;
-  --input: #17150f;
-  --ring: #17150f;
-  --radius: 0;
-  --font-sans: system-ui, ui-sans-serif, sans-serif;
-  --font-mono: ui-monospace, monospace;
+  --background: #f7f8fa;
+  --foreground: #1f2937;
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
+  --primary: #4f7cff;
+  --primary-foreground: #ffffff;
+  --secondary: #eef2f7;
+  --secondary-foreground: #334155;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #e8f0ff;
+  --accent-foreground: #1e3a8a;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --warning: #d97706;
+  --border: #e2e8f0;
+  --input: #d7deea;
+  --ring: #93b4ff;
+  --radius: 12px;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .dark {
-  --background: #141210;
-  --foreground: #f4f0e6;
-  --card: #1d1a16;
-  --card-foreground: #f4f0e6;
-  --popover: #1d1a16;
-  --popover-foreground: #f4f0e6;
-  --primary: #f5d76e;
-  --primary-foreground: #141210;
-  --secondary: #2a251f;
-  --secondary-foreground: #f4f0e6;
-  --muted: #332d25;
-  --muted-foreground: #c9c0ae;
-  --accent: #b7d8a8;
-  --accent-foreground: #141210;
-  --destructive: #ffb4ab;
-  --destructive-foreground: #3b0a06;
-  --success: #8fd6b4;
-  --warning: #f5d76e;
-  --border: #f4f0e6;
-  --input: #f4f0e6;
-  --ring: #f5d76e;
+  --background: #0f172a;
+  --foreground: #e5edf8;
+  --card: #172235;
+  --card-foreground: #e5edf8;
+  --popover: #172235;
+  --popover-foreground: #e5edf8;
+  --primary: #7aa2ff;
+  --primary-foreground: #0b1220;
+  --secondary: #1e293b;
+  --secondary-foreground: #d7e3f4;
+  --muted: #1b2638;
+  --muted-foreground: #94a3b8;
+  --accent: #243b63;
+  --accent-foreground: #dbeafe;
+  --destructive: #f87171;
+  --destructive-foreground: #1f2937;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --border: #2a3850;
+  --input: #33465f;
+  --ring: #7aa2ff;
 }
 
 @theme inline {
@@ -107,38 +107,23 @@
   }
 }
 
-/* Neo-brutalism soft: solid fills, thick borders, no effects */
-.nb-panel {
-  border: 2px solid var(--border);
+/* Soft UI utilities */
+.soft-panel {
+  border: 1px solid var(--border);
   background-color: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.nb-divider {
-  border-color: var(--border);
-  border-width: 2px;
-}
-
-.nb-accent {
-  background-color: var(--accent);
-  color: var(--accent-foreground);
-}
-
-.nb-muted {
+.soft-muted {
   background-color: var(--secondary);
   color: var(--secondary-foreground);
-}
-
-.nb-input {
-  border: 2px solid var(--input);
-  background-color: var(--background);
-  color: var(--foreground);
 }
 
 [disabled],
 .disabled,
 .cursor-not-allowed {
-  opacity: 0.45;
-  pointer-events: none;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -146,34 +131,40 @@
   width: 10px;
   height: 10px;
 }
-
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: var(--background);
+  background: transparent;
 }
-
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border: 2px solid var(--background);
+  background: #cbd5e1;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #475569;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
-/* Accessibility: skip link and reduced-motion support */
 .skip-link {
   position: absolute;
   left: 1rem;
   top: -10rem;
   z-index: 100;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   background-color: var(--card);
   color: var(--foreground);
   padding: 0.5rem 0.75rem;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
-.skip-link:focus {
+.skip-link:focus {
   top: 1rem;
 }
-@media (prefers-reduced-motion: reduce) {
+
+@media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {

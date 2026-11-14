@@ -18,7 +18,6 @@ interface RewrapDialogProps {
   isProcessing: boolean;
   onCancel: () => void;
   onSubmit: (request: RewrapRequest) => void;
-  /** Element to focus when the dialog closes. */
   returnFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
@@ -118,33 +117,33 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground/20 p-4 backdrop-blur-sm sm:items-center">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="rewrap-title"
         aria-describedby="rewrap-description"
-        className="w-full max-w-md border-2 border-border bg-card p-5 sm:p-6"
+        className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg sm:p-6"
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <RefreshCw className="h-5 w-5" />
             </div>
             <div>
-              <h2 id="rewrap-title" className="text-lg font-bold tracking-tight">
+              <h2 id="rewrap-title" className="text-lg font-semibold tracking-tight">
                 {t("rewrap.title")}
               </h2>
-              <p id="rewrap-description" className="mt-0.5 text-[11px] text-muted-foreground">
+              <p id="rewrap-description" className="mt-0.5 text-sm text-muted-foreground">
                 {t("rewrap.description", { count: fileCount })}
               </p>
             </div>
           </div>
           <Button
             variant="ghost"
-            size="sm"
-            className="h-8 w-8 shrink-0 p-0"
+            size="icon"
+            className="h-8 w-8 shrink-0"
             onClick={onCancel}
             disabled={isProcessing}
             aria-label={t("rewrap.close")}
@@ -163,7 +162,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
           />
 
           <div className="space-y-2">
-            <label htmlFor="rewrap-confirm" className="text-sm font-semibold">
+            <label htmlFor="rewrap-confirm" className="text-sm font-medium">
               {t("rewrap.confirmPassword")}
             </label>
             <Input
@@ -174,12 +173,11 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
               disabled={isProcessing}
               placeholder={t("rewrap.confirmPlaceholder")}
               autoComplete="new-password"
-              className="h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="rewrap-iterations" className="text-sm font-semibold">
+            <label htmlFor="rewrap-iterations" className="text-sm font-medium">
               {t("rewrap.iterations")}
             </label>
             <select
@@ -187,7 +185,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
               value={iterations}
               onChange={(event) => setIterations(Number(event.target.value))}
               disabled={isProcessing}
-              className="h-11 w-full border-2 border-border bg-card px-3 text-sm font-medium outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50"
+              className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             >
               {ITERATION_OPTIONS.map((value) => (
                 <option key={value} value={value}>
@@ -197,15 +195,13 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
             </select>
           </div>
 
-          <div className="border-2 border-border p-3">
+          <div className="rounded-xl border border-border p-3.5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
                 <Key className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-semibold">{t("rewrap.newKeyfile")}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {t("rewrap.newKeyfileHint")}
-                  </p>
+                  <p className="text-sm font-medium">{t("rewrap.newKeyfile")}</p>
+                  <p className="text-[11px] text-muted-foreground">{t("rewrap.newKeyfileHint")}</p>
                 </div>
               </div>
               <Switch
@@ -220,9 +216,9 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
             </div>
 
             {useKeyFile && (
-              <label className="mt-3 flex cursor-pointer items-center gap-3 border-2 border-dashed border-border bg-card p-3 hover:bg-secondary">
+              <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border bg-card p-3 hover:bg-secondary/60">
                 <FileUp className="h-4 w-4 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">
                   {keyFile ? keyFile.name : t("rewrap.selectKeyfile")}
                 </span>
                 <input
@@ -235,7 +231,7 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
           </div>
 
           {error && (
-            <p role="alert" className="text-[11px] font-semibold text-destructive">
+            <p role="alert" className="text-sm font-medium text-destructive">
               {error}
             </p>
           )}
@@ -260,5 +256,3 @@ export const RewrapDialog: React.FC<RewrapDialogProps> = ({
     </div>
   );
 };
-
-
