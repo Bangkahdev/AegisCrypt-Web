@@ -1,69 +1,69 @@
 ---
 sidebar_position: 2
 slug: /mulai-cepat
-title: "Mulai Cepat"
-description: "Langkah cepat mengenkripsi dan mendekripsi berkas dengan AegisCrypt di browser."
+title: "Quick Start"
+description: "Quick steps to encrypt and decrypt files with AegisCrypt in the browser."
 ---
 
-# Mulai Cepat
+# Quick Start
 
-AegisCrypt berjalan sebagai aplikasi web statis. Anda tidak perlu menginstal dependensi atau membuat akun untuk menggunakan fitur enkripsi inti.
+AegisCrypt runs as a static web app. You do not need to install dependencies or create an account to use the core encryption features.
 
-## Prasyarat
+## Prerequisites
 
-- Browser modern dengan dukungan `crypto.subtle`, `File`, `Blob`, dan (disarankan) Web Worker.
-- Koneksi internet untuk memuat aplikasi pertama kali. Setelah aset tersimpan, operasi kriptografi dapat berjalan secara lokal/offline.
+- A modern browser with support for `crypto.subtle`, `File`, `Blob`, and (recommended) Web Workers.
+- An internet connection to load the app for the first time. Once assets are cached, cryptographic operations can run locally/offline.
 
-## 1. Buka aplikasi
+## 1. Open the app
 
-Buka [aegiscrypt.bangkah.tech](https://aegiscrypt.bangkah.tech).
+Go to [aegiscrypt.bangkah.tech](https://aegiscrypt.bangkah.tech).
 
 <div className="screenshot-frame">
-  <img src="/screenshots/login.png" alt="Layar masuk AegisCrypt" />
+  <img src="/screenshots/login.png" alt="AegisCrypt login screen" />
 </div>
-<div className="screenshot-caption">Layar awal: pilih mode kredensial, masukkan kata sandi, dan opsional keyfile atau kunci pemulihan.</div>
+<div className="screenshot-caption">Start screen: choose a credential mode, enter a password, and optionally add a keyfile or recovery key.</div>
 
-## 2. Mulai sesi
+## 2. Start a session
 
-1. Masukkan **kata sandi** yang kuat.
-2. (Opsional) Aktifkan **keyfile** dan pilih berkas apa pun sebagai faktor tambahan. Keyfile yang sama persis diperlukan saat dekripsi.
-3. Klik **Mulai sesi** / **Start Session**.
+1. Enter a **strong password**.
+2. (Optional) Enable a **keyfile** and choose any file as an additional factor. The exact same keyfile is required for decryption.
+3. Click **Start Session**.
 
-:::warning Simpan kredensial dengan aman
-Tanpa kata sandi dan keyfile yang benar (atau kunci pemulihan yang valid untuk berkas yang memiliki slot recovery), berkas terenkripsi tidak dapat dipulihkan. AegisCrypt tidak menyediakan reset kata sandi sisi server.
+:::warning Keep your credentials safe
+Without the correct password and keyfile (or a valid recovery key for files that include a recovery slot), encrypted files cannot be recovered. AegisCrypt does not provide server-side password reset.
 :::
 
-## 3. Enkripsi berkas
+## 3. Encrypt files
 
-1. Tambahkan berkas atau folder ke antrean (seret/lepas atau pilih dari dialog berkas).
-2. Klik **Encrypt**.
-3. Pantau progres dan status operasi.
-4. Unduh berkas hasil dengan ekstensi `.aegis` (nama kontainer umumnya `nama-asli.ext.aegis`).
+1. Add files or folders to the queue (drag and drop or use the file picker).
+2. Click **Encrypt**.
+3. Monitor progress and operation status.
+4. Download the output file with the `.aegis` extension (the container name is typically `original-name.ext.aegis`).
 
 <div className="screenshot-frame">
-  <img src="/screenshots/dashboard.png" alt="Dasbor pemrosesan AegisCrypt" />
+  <img src="/screenshots/dashboard.png" alt="AegisCrypt processing dashboard" />
 </div>
-<div className="screenshot-caption">Dasbor: antrean berkas, aksi enkripsi/dekripsi, progres, dan log.</div>
+<div className="screenshot-caption">Dashboard: file queue, encrypt/decrypt actions, progress, and logs.</div>
 
-## 4. Dekripsi berkas
+## 4. Decrypt files
 
-1. Mulai sesi dengan **kata sandi dan keyfile yang sama** seperti saat enkripsi.
-2. Tambahkan berkas `.aegis`.
-3. Klik **Decrypt**.
-4. Unduh berkas hasil. Jika kontainer menyimpan metadata nama terenkripsi, nama asli dipulihkan dari metadata.
+1. Start a session with the **same password and keyfile** used for encryption.
+2. Add the `.aegis` file(s).
+3. Click **Decrypt**.
+4. Save the result. If the container stores encrypted filename metadata, the original name is restored from metadata.
 
-## 5. Opsi lanjutan (opsional)
+## 5. Advanced options (optional)
 
-| Fitur | Kapan digunakan | Catatan |
+| Feature | When to use | Notes |
 | --- | --- | --- |
-| **Keyfile** | Menambah faktor kedua di luar kata sandi | Materi kunci memakai hash SHA-256 dari byte keyfile. |
-| **Kunci pemulihan** | Cadangan akses bila kata sandi/keyfile hilang | Harus dibuat dan disimpan sebelum/selama enkripsi berkas terkait; hanya berlaku untuk berkas yang memiliki slot recovery. |
-| **Rewrap** | Mengganti kata sandi/keyfile | Menulis ulang header tanpa mengenkripsi ulang payload. |
-| **PWA/offline** | Pemakaian berulang atau tanpa jaringan | Install dari browser; cache hanya menyimpan aset aplikasi, bukan berkas pengguna. |
+| **Keyfile** | Add a second factor beyond the password | Key material uses the SHA-256 hash of the keyfile bytes. |
+| **Recovery key** | Backup access if the password/keyfile is lost | Must be created and saved before/during encryption of the relevant files; only works for files that include a recovery slot. |
+| **Rewrap** | Change the password/keyfile | Rewrites the header without re-encrypting the payload. |
+| **PWA/offline** | Repeated use or no network | Install from the browser; cache stores only app assets, not user files. |
 
-## Langkah berikutnya
+## Next steps
 
-- Pelajari alur lengkap di [Panduan Pengguna](/panduan-pengguna).
-- Pahami jaminan dan batasan di [Model Keamanan](/keamanan).
-- Lihat struktur kontainer di [Format .aegis v3](/format-file).
-- Jika terjadi kendala, buka [Pemecahan Masalah](/troubleshooting).
+- Learn the full workflows in the [User Guide](/panduan-pengguna).
+- Understand guarantees and limits in the [Security Model](/keamanan).
+- See the container structure in the [.aegis v3 Format](/format-file).
+- If you run into issues, check [Troubleshooting](/troubleshooting).

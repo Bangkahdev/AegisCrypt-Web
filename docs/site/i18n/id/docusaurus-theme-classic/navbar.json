@@ -1,0 +1,30 @@
+﻿{
+  "title": {
+    "message": "AegisCrypt",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "Logo AegisCrypt",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.Documentation": {
+    "message": "Dokumentasi",
+    "description": "Navbar item with label Documentation"
+  },
+  "item.label.Quick Start": {
+    "message": "Mulai Cepat",
+    "description": "Navbar item with label Quick Start"
+  },
+  "item.label.Reference": {
+    "message": "Referensi",
+    "description": "Navbar item with label Reference"
+  },
+  "item.label.Open App": {
+    "message": "Buka Aplikasi",
+    "description": "Navbar item with label Open App"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}

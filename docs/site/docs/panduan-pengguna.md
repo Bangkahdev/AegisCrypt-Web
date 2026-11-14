@@ -1,118 +1,118 @@
 ---
 sidebar_position: 3
 slug: /panduan-pengguna
-title: "Panduan Pengguna"
-description: "Panduan lengkap penggunaan AegisCrypt: sesi, enkripsi/dekripsi, keyfile, kunci pemulihan, rewrap, offline, dan praktik aman."
+title: "User Guide"
+description: "Complete guide to using AegisCrypt: sessions, encryption/decryption, keyfiles, recovery keys, rewrap, offline use, and safe practices."
 ---
 
-# Panduan Pengguna
+# User Guide
 
-Halaman ini menjelaskan alur penggunaan AegisCrypt di aplikasi web, termasuk fitur keamanan tambahan dan batasan operasional.
+This page explains how to use AegisCrypt in the web app, including additional security features and operational limits.
 
-## Memulai sesi
+## Starting a session
 
-AegisCrypt memerlukan kredensial untuk menurunkan kunci enkripsi selama sesi aktif.
+AegisCrypt requires credentials to derive encryption keys during an active session.
 
-1. Buka aplikasi dan pilih mode masuk: **Password** atau **Recovery key** (untuk pemulihan/dekripsi berkas yang memiliki slot recovery).
-2. Masukkan kredensial:
-   - **Password:** kata sandi, opsional dengan keyfile.
-   - **Recovery key:** kunci 32 byte (format heksadesimal) untuk berkas yang menyertakan slot recovery.
-3. Mulai sesi. Kredensial dipakai untuk operasi kriptografi di klien.
+1. Open the app and choose a sign-in mode: **Password** or **Recovery key** (for recovery/decryption of files that include a recovery slot).
+2. Provide credentials:
+   - **Password:** your password, optionally with a keyfile.
+   - **Recovery key:** a 32-byte key (hex format) for files that include a recovery slot.
+3. Start the session. Credentials are used for cryptographic operations on the client.
 
 :::info Keyfile
-Keyfile adalah berkas apa pun yang byte-nya di-hash (SHA-256) dan digabungkan ke materi kunci. Perubahan satu byte pada keyfile akan menghasilkan kunci berbeda. Gunakan salinan yang stabil dan simpan cadangannya.
+A keyfile is any file whose bytes are hashed (SHA-256) and combined into the key material. Changing a single byte in the keyfile produces a different key. Use a stable copy and keep a backup.
 :::
 
-## Mengenkripsi berkas
+## Encrypting files
 
-1. Pastikan sesi aktif dengan kata sandi (dan keyfile bila digunakan).
-2. Tambahkan berkas atau folder ke **Processing Queue**.
-3. Jalankan **Encrypt**.
-4. Setelah selesai, unduh keluaran `.aegis`.
+1. Ensure a session is active with a password (and keyfile if used).
+2. Add files or folders to the **Processing Queue**.
+3. Run **Encrypt**.
+4. When finished, download the `.aegis` output.
 
-**Catatan perilaku:**
-- Enkripsi memproses data per chunk (default 1 MiB; sesuai parameter kontainer).
-- Nama berkas asli dapat disimpan sebagai metadata terenkripsi di dalam kontainer (sesuai implementasi saat ini), sementara nama kontainer unduhan tetap mengandung nama asli (`nama.ext.aegis`). Ganti nama kontainer jika nama file itu sendiri sensitif.
-- Operasi berat dijalankan di Web Worker agar UI tetap responsif.
+**Behavior notes:**
+- Encryption processes data in chunks (default 1 MiB; per container parameters).
+- The original filename can be stored as encrypted metadata inside the container (current implementation), while the downloaded container name still includes the original name (`name.ext.aegis`). Rename the container if the filename itself is sensitive.
+- Heavy operations run in a Web Worker to keep the UI responsive.
 
-## Mendekripsi berkas
+## Decrypting files
 
-1. Mulai sesi dengan kredensial yang sesuai:
-   - Kata sandi + keyfile yang sama, atau
-   - Kunci pemulihan (hanya untuk berkas yang memiliki slot recovery).
-2. Tambahkan berkas `.aegis`.
-3. Jalankan **Decrypt**.
-4. Simpan berkas hasil.
+1. Start a session with matching credentials:
+   - The same password + keyfile, or
+   - A recovery key (only for files that include a recovery slot).
+2. Add `.aegis` file(s).
+3. Run **Decrypt**.
+4. Save the result.
 
-Jika autentikasi atau integritas gagal, dekripsi dibatalkan dan hasil parsial tidak dipublikasikan.
+If authentication or integrity fails, decryption is aborted and partial output is not published.
 
-## Pemrosesan banyak berkas / folder
+## Batch and folder processing
 
-- Anda dapat menambahkan beberapa berkas sekaligus atau menjatuhkan folder (jika browser mendukung) untuk diproses dalam antrean.
-- Proses berjalan per berkas; pantau status, progres, dan log.
-- Untuk berkas sangat besar atau perangkat dengan memori terbatas, proses satu per satu untuk mengurangi tekanan memori/penyimpanan.
+- You can add multiple files at once or drop folders (if supported by the browser) to process them in a queue.
+- Processing runs per file; monitor status, progress, and logs.
+- For very large files or memory-constrained devices, process one at a time to reduce memory/storage pressure.
 
-## Kunci pemulihan (Recovery key)
+## Recovery key
 
-Kunci pemulihan adalah kunci 256-bit terpisah yang dapat membuka **DEK** berkas melalui slot recovery.
+A recovery key is a separate 256-bit key that can unlock a file's **DEK** through the recovery slot.
 
-### Membuat dan menyimpan
-1. Masuk dengan kata sandi.
-2. Buka menu/dialog **Recovery key**.
-3. Buat kunci, lalu salin atau unduh ke penyimpanan aman offline.
+### Create and store
+1. Sign in with a password.
+2. Open the **Recovery key** menu/dialog.
+3. Generate the key, then copy or download it to secure offline storage.
 
-### Kapan berlaku
-- Berkas yang dienkripsi saat/ketika slot recovery disertakan akan memiliki flag recovery.
-- Berkas lama tanpa slot recovery **tidak** dapat dibuka dengan kunci pemulihan.
+### When it applies
+- Files encrypted when/with a recovery slot included will carry the recovery flag.
+- Older files without a recovery slot **cannot** be opened with a recovery key.
 
-### Batasan sesi recovery
-- Sesi berbasis kunci pemulihan ditujukan untuk **dekripsi/pemulihan**.
-- Tidak digunakan untuk mengenkripsi berkas baru atau mengganti kata sandi.
+### Recovery session limits
+- A recovery-key session is intended for **decryption/recovery**.
+- It is not used to encrypt new files or change the password.
 
 :::warning
-AegisCrypt tidak menyimpan kunci pemulihan. Jika kunci hilang dan kata sandi/keyfile juga tidak tersedia, data tidak dapat dipulihkan.
+AegisCrypt does not store the recovery key. If the key is lost and the password/keyfile are also unavailable, the data cannot be recovered.
 :::
 
-## Mengganti kata sandi / keyfile (Rewrap)
+## Changing password / keyfile (Rewrap)
 
-**Rewrap** membungkus ulang DEK dengan kredensial baru tanpa mengenkripsi ulang payload.
+**Rewrap** re-wraps the DEK with new credentials without re-encrypting the payload.
 
-1. Tambahkan berkas `.aegis` yang valid.
-2. Buka **Change password** / rewrap.
-3. Masukkan kredensial lama (untuk membuka DEK) dan kredensial baru.
-4. (Opsional) Sesuaikan iterasi PBKDF2 dalam rentang yang didukung.
-5. Unduh berkas hasil rewrap dan simpan sebagai salinan baru.
+1. Add a valid `.aegis` file.
+2. Open **Change password** / rewrap.
+3. Enter the old credentials (to unlock the DEK) and the new credentials.
+4. (Optional) Adjust PBKDF2 iterations within the supported range.
+5. Download the rewrapped file and keep it as a new copy.
 
-Rewrap memerlukan kredensial lama yang benar. Slot recovery (bila ada) disalin apa adanya dan tetap terikat ke `fileId`, sehingga kunci pemulihan yang sama tetap berlaku untuk berkas tersebut.
+Rewrap requires correct old credentials. The recovery slot (if present) is copied as-is and remains bound to the `fileId`, so the same recovery key remains valid for that file.
 
-## Kunci sesi, auto-lock, dan pembersihan
+## Session lock, auto-lock, and cleanup
 
-- Sesi dapat dikunci manual atau otomatis setelah periode tidak aktif (sesuai pengaturan aplikasi).
-- Saat sesi dikunci/berakhir, aplikasi membersihkan antrean dan berupaya men-zeroisasi material sensitif di sisi UI (mis. buffer kata sandi/keyfile yang dikelola sebagai byte).
-- Tutup tab/peramban pada perangkat bersama untuk mengurangi risiko paparan.
+- A session can be locked manually or automatically after a period of inactivity (per app settings).
+- When a session is locked/ended, the app clears the queue and makes a best-effort attempt to zeroize sensitive material in the UI (e.g. password/keyfile buffers managed as bytes).
+- Close the tab/browser on shared devices to reduce exposure risk.
 
-## Bahasa antarmuka
+## Interface language
 
-Aplikasi mendukung bahasa Inggris dan Indonesia. Pilihan bahasa dapat diganti dari header dan disimpan untuk kunjungan berikutnya (bila penyimpanan browser tersedia).
+The app supports English and Indonesian. The language can be switched from the header and is remembered for future visits (when browser storage is available).
 
-## Mode offline dan instalasi PWA
+## Offline mode and PWA installation
 
-- **Instalasi:** gunakan opsi *Install* dari browser yang mendukung PWA.
-- **Offline:** setelah kunjungan pertama berhasil, service worker dapat menyajikan app shell dari cache.
-- **Pembaruan:** muat ulang saat online untuk mengambil versi baru.
-- **Privasi cache:** service worker tidak menyimpan berkas pengguna, kata sandi, keyfile, atau plaintext.
+- **Install:** use the browser's *Install* option where PWA is supported.
+- **Offline:** after the first successful load, the service worker can serve the app shell from cache.
+- **Updates:** reload while online to fetch a new version.
+- **Cache privacy:** the service worker does not store user files, passwords, keyfiles, or plaintext.
 
-## Praktik yang disarankan
+## Recommended practices
 
-- Gunakan kata sandi panjang/unik dan simpan di pengelola kata sandi tepercaya.
-- Simpan keyfile dan kunci pemulihan di lokasi terpisah dan aman (offline/terenkripsi).
-- Verifikasi dekripsi berkas penting sebelum menghapus sumber asli.
-- Cadangkan berkas `.aegis` dan kredensial secara terpisah.
-- Perbarui browser untuk dukungan Web Crypto/OPFS dan perbaikan keamanan.
+- Use a long, unique password and store it in a trusted password manager.
+- Keep keyfiles and recovery keys in separate, secure locations (offline/encrypted).
+- Verify decryption of important files before deleting originals.
+- Back up `.aegis` files and credentials separately.
+- Keep your browser up to date for Web Crypto/OPFS support and security fixes.
 
-## Terkait
+## Related
 
-- [Model Keamanan](/keamanan)
-- [Format .aegis v3](/format-file)
-- [Pemecahan Masalah](/troubleshooting)
+- [Security Model](/keamanan)
+- [.aegis v3 Format](/format-file)
+- [Troubleshooting](/troubleshooting)
 - [FAQ](/faq)

@@ -2,29 +2,29 @@
 sidebar_position: 9
 slug: /deployment
 title: "Deployment"
-description: "Cara membangun dan men-deploy aplikasi web dan situs dokumentasi AegisCrypt ke Cloudflare."
+description: "How to build and deploy the AegisCrypt web app and documentation site to Cloudflare."
 ---
 
 # Deployment
 
-AegisCrypt Web dan dokumentasi disajikan sebagai aset statis pada Cloudflare Workers. Tidak ada backend aplikasi untuk memproses data pengguna.
+AegisCrypt Web and its documentation are served as static assets on Cloudflare Workers. There is no application backend processing user data.
 
-## Target deployment
+## Deployment targets
 
-| Situs | Direktori | URL | Worker | Alat |
+| Site | Directory | URL | Worker | Tool |
 | --- | --- | --- | --- | --- |
-| Aplikasi web | `apps/web` | [aegiscrypt.bangkah.tech](https://aegiscrypt.bangkah.tech) | `aegiscrypt-web` | `cf` CLI (`cloudflare.config.ts`) |
-| Dokumentasi | `docs/site` | [docs.aegiscrypt.bangkah.tech](https://docs.aegiscrypt.bangkah.tech) | `aegiscrypt-docs` | Wrangler (`wrangler.jsonc`) |
+| Web app | `apps/web` | [aegiscrypt.bangkah.tech](https://aegiscrypt.bangkah.tech) | `aegiscrypt-web` | `cf` CLI (`cloudflare.config.ts`) |
+| Documentation | `docs/site` | [docs.aegiscrypt.bangkah.tech](https://docs.aegiscrypt.bangkah.tech) | `aegiscrypt-docs` | Wrangler (`wrangler.jsonc`) |
 
-## Prasyarat
+## Prerequisites
 
-- Node.js dan npm
-- Akses/autentikasi Cloudflare yang sesuai (akun, domain/route, dan permission)
-- Dependensi terpasang (`npm ci`/`npm install`) di direktori terkait
+- Node.js and npm
+- Appropriate Cloudflare access/authentication (account, domain/route, and permissions)
+- Dependencies installed (`npm ci`/`npm install`) in the relevant directory
 
-## Deploy aplikasi web
+## Deploy the web app
 
-Jalankan dari `apps/web`:
+Run from `apps/web`:
 
 ```bash
 npm ci
@@ -32,11 +32,11 @@ npm run build
 cf deploy
 ```
 
-`cf deploy` menggunakan konfigurasi `apps/web/cloudflare.config.ts` untuk membangun/mengunggah aset sesuai pengaturan proyek.
+`cf deploy` uses `apps/web/cloudflare.config.ts` to build/upload assets according to the project configuration.
 
-## Deploy dokumentasi
+## Deploy the documentation
 
-Jalankan dari `docs/site`:
+Run from `docs/site`:
 
 ```bash
 npm ci
@@ -44,19 +44,19 @@ npm run build
 npx wrangler deploy
 ```
 
-Konfigurasi berada di `docs/site/wrangler.jsonc` (aset `./build`, domain kustom `docs.aegiscrypt.bangkah.tech`).
+Configuration is in `docs/site/wrangler.jsonc` (assets `./build`, custom domain `docs.aegiscrypt.bangkah.tech`).
 
-## Validasi sebelum deploy
+## Pre-deploy validation
 
 ```bash
-# Aplikasi (dari apps/web)
+# App (from apps/web)
 cf deploy --dry-run
 
-# Dokumentasi (dari docs/site)
+# Docs (from docs/site)
 npx wrangler deploy --dry-run
 ```
 
-Disarankan juga menjalankan pemeriksaan kualitas sebelum rilis:
+It is also recommended to run quality checks before release:
 
 ```bash
 # apps/web
@@ -66,20 +66,20 @@ npm run test:unit
 npm run build
 ```
 
-## Catatan operasional
+## Operational notes
 
-- **Sertifikat/domain:** pada penambahan domain kustom pertama kali, penyediaan HTTPS dapat memerlukan waktu singkat.
-- **Rollback:** gunakan riwayat deployment Cloudflare/commit Git untuk kembali ke versi sebelumnya.
-- **Cache/PWA:** setelah deploy, klien yang pernah membuka aplikasi dapat memuat app shell lama dari cache hingga service worker diperbarui; instruksikan pengguna memuat ulang saat online bila perlu.
-- **Header keamanan:** aplikasi dan docs menyertakan header keamanan statis (`_headers`) seperti CSP, HSTS, dan kebijakan terkait sesuai konfigurasi masing-masing.
-- **Rahasia:** jangan menyimpan kredensial di repositori; gunakan secret/env yang dikelola platform.
+- **Certificates/domain:** when adding a custom domain for the first time, HTTPS provisioning may take a short while.
+- **Rollback:** use Cloudflare deployment history and/or Git commits to return to a previous version.
+- **Cache/PWA:** after deployment, clients that previously opened the app may load an old app shell from cache until the service worker updates; instruct users to reload while online if needed.
+- **Security headers:** the app and docs include static security headers (`_headers`) such as CSP, HSTS, and related policies per configuration.
+- **Secrets:** do not store credentials in the repository; use platform-managed secrets/env.
 
 ## CI
 
-Workflow CI di `.github/workflows/ci.yml` menjalankan pemeriksaan Web/Desktop (lint, typecheck, unit, e2e, audit, secret scan, SBOM, build) sesuai konfigurasi saat ini. Deployment produksi dilakukan manual sesuai proses proyek.
+The CI workflow in `.github/workflows/ci.yml` runs Web/Desktop checks (lint, typecheck, unit, e2e, audit, secret scan, SBOM, build) per current configuration. Production deployment is performed manually according to the project process.
 
-## Referensi
+## References
 
 - [Cloudflare `cf` CLI](https://developers.cloudflare.com/cf/)
 - [Wrangler](https://developers.cloudflare.com/workers/wrangler/)
-- [Pemecahan Masalah](/troubleshooting)
+- [Troubleshooting](/troubleshooting)

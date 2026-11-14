@@ -1,49 +1,49 @@
 ---
 sidebar_position: 12
 slug: /tangkapan-layar
-title: "Tangkapan Layar"
-description: "Cuplikan antarmuka AegisCrypt pada tampilan desktop dan seluler."
+title: "Screenshots"
+description: "Screenshots of the AegisCrypt interface on desktop and mobile views."
 ---
 
-# Tangkapan Layar
+# Screenshots
 
-Cuplikan berikut menunjukkan alur utama antarmuka AegisCrypt. Tampilan aktual dapat berubah seiring pembaruan UI.
+The following screenshots show the main AegisCrypt interface flows. The actual UI may change as the app is updated.
 
 ## Desktop
 
-### Layar masuk / mulai sesi
+### Login / start session
 
 <div className="screenshot-frame">
-  <img src="/screenshots/login.png" alt="Layar masuk AegisCrypt pada desktop" />
+  <img src="/screenshots/login.png" alt="AegisCrypt login screen on desktop" />
 </div>
-<div className="screenshot-caption">Pengguna memilih mode kredensial dan memulai sesi lokal sebelum memproses berkas.</div>
+<div className="screenshot-caption">Users choose a credential mode and start a local session before processing files.</div>
 
-### Dasbor pemrosesan
+### Processing dashboard
 
 <div className="screenshot-frame">
-  <img src="/screenshots/dashboard.png" alt="Dasbor pemrosesan berkas AegisCrypt" />
+  <img src="/screenshots/dashboard.png" alt="AegisCrypt file processing dashboard" />
 </div>
-<div className="screenshot-caption">Antrean berkas, aksi enkripsi/dekripsi, progres, dan log operasi ditampilkan di satu layar.</div>
+<div className="screenshot-caption">File queue, encrypt/decrypt actions, progress, and operation logs are shown in one view.</div>
 
-## Seluler
+## Mobile
 
 <div className="doc-grid">
   <div>
     <div className="screenshot-frame">
-      <img src="/screenshots/login-mobile.png" alt="Layar masuk AegisCrypt pada perangkat seluler" />
+      <img src="/screenshots/login-mobile.png" alt="AegisCrypt login screen on mobile" />
     </div>
-    <div className="screenshot-caption">Layar masuk pada lebar perangkat seluler.</div>
+    <div className="screenshot-caption">Login screen on a mobile-width device.</div>
   </div>
   <div>
     <div className="screenshot-frame">
-      <img src="/screenshots/dashboard-mobile.png" alt="Dasbor AegisCrypt pada perangkat seluler" />
+      <img src="/screenshots/dashboard-mobile.png" alt="AegisCrypt dashboard on mobile" />
     </div>
-    <div className="screenshot-caption">Dasbor pemrosesan pada perangkat seluler.</div>
+    <div className="screenshot-caption">Processing dashboard on a mobile-width device.</div>
   </div>
 </div>
 
-## Tautan
+## Links
 
-- [Buka Aplikasi](https://aegiscrypt.bangkah.tech)
-- [Mulai Cepat](/mulai-cepat)
-- [Panduan Pengguna](/panduan-pengguna)
+- [Open App](https://aegiscrypt.bangkah.tech)
+- [Quick Start](/mulai-cepat)
+- [User Guide](/panduan-pengguna)

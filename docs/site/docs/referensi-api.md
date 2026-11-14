@@ -1,108 +1,108 @@
 ---
 sidebar_position: 6
 slug: /referensi-api
-title: "Referensi API Web"
-description: "Referensi fungsi dan konstanta kriptografi publik pada implementasi Web AegisCrypt."
+title: "Web API Reference"
+description: "Reference for public cryptography functions and constants in the AegisCrypt Web implementation."
 ---
 
-# Referensi API Web
+# Web API Reference
 
-Referensi ini merangkum antarmuka kriptografi utama pada `apps/web/src/services/cryptoService.ts`, `apps/web/src/constants.ts`, dan utilitas terkait. Ini ditujukan untuk pengembang yang membaca atau mengintegrasikan kode Web di monorepo.
+This reference summarizes the main cryptography interfaces in `apps/web/src/services/cryptoService.ts`, `apps/web/src/constants.ts`, and related utilities. It is intended for developers reading or integrating the Web code in the monorepo.
 
 :::info
-Permukaan API ini adalah API internal modul TypeScript (bukan SDK paket npm publik yang distabilkan). Perilaku normatif kontainer ditentukan oleh [spesifikasi v3](/format-file).
+This API surface is an internal TypeScript module interface (not a stabilized public npm SDK). Normative container behavior is defined by the [v3 specification](/format-file).
 :::
 
-## Modul utama
+## Main modules
 
-| Modul | Isi |
+| Module | Contents |
 | --- | --- |
-| `apps/web/src/services/cryptoService.ts` | Enkripsi, dekripsi, rewrap, derivasi kunci, sink, helper nama berkas, `AegisError` |
-| `apps/web/src/constants.ts` | Konstanta format v3/v2, batas parameter, offset header, domain AAD |
-| `apps/web/src/lib/recovery.ts` | Pembuatan/codec kunci recovery dan utilitas slot |
-| `apps/web/src/lib/errors.ts` | Pemetaan pesan error ke kunci i18n UI |
+| `apps/web/src/services/cryptoService.ts` | Encrypt, decrypt, rewrap, key derivation, sinks, filename helpers, `AegisError` |
+| `apps/web/src/constants.ts` | v3/v2 format constants, parameter limits, header offsets, AAD domains |
+| `apps/web/src/lib/recovery.ts` | Recovery key generation/codec and slot utilities |
+| `apps/web/src/lib/errors.ts` | Error message mapping to UI i18n keys |
 
-## Tipe dan opsi penting
+## Important types and options
 
-### Sumber & kata sandi
+### Source & password
 
-- **`password`**: `string | Uint8Array` (UTF-8). Bentuk byte memungkinkan zeroisasi di UI.
+- **`password`**: `string | Uint8Array` (UTF-8). Byte form allows zeroization in the UI.
 - **`keyFileBuffer`**: `ArrayBuffer | null | undefined`.
-- **Sumber dekripsi/rewrap (`source`)**: `File | Blob | ArrayBuffer` (pembacaan streaming didukung untuk `Blob/File`).
+- **Decrypt/rewrap source (`source`)**: `File | Blob | ArrayBuffer` (streaming reads supported for `Blob/File`).
 
-### Opsi enkripsi
+### Encryption options
 
-| Opsi | Tipe | Keterangan |
+| Option | Type | Description |
 | --- | --- | --- |
-| `iterations` | `number` | Iterasi PBKDF2 (600.000-5.000.000) |
-| `chunkSize` | `number` | Ukuran chunk plaintext (64 KiB-16 MiB) |
-| `filename` | `string \| null` | Nama UTF-8 untuk metadata terenkripsi (flag bit2); `null`/kosong menonaktifkan |
-| `recoveryKey` | `Uint8Array` | Menyertakan slot recovery (32 byte) |
-| `randomBytes` | `(n) => Uint8Array` | RNG injeksi untuk uji deterministik |
+| `iterations` | `number` | PBKDF2 iterations (600,000-5,000,000) |
+| `chunkSize` | `number` | Plaintext chunk size (64 KiB-16 MiB) |
+| `filename` | `string \| null` | UTF-8 name for encrypted metadata (flag bit2); `null`/empty disables |
+| `recoveryKey` | `Uint8Array` | Include a recovery slot (32 bytes) |
+| `randomBytes` | `(n) => Uint8Array` | RNG injection for deterministic tests |
 
-### Opsi dekripsi
+### Decryption options
 
-| Opsi | Tipe | Keterangan |
+| Option | Type | Description |
 | --- | --- | --- |
-| `sink` | `DecryptSink` | Tujuan keluaran plaintext |
-| `recoveryKey` | `Uint8Array` | Buka DEK via slot recovery |
-| `onFilename` | `(name: string) => void` | Callback nama berkas dari metadata terenkripsi |
+| `sink` | `DecryptSink` | Plaintext output destination |
+| `recoveryKey` | `Uint8Array` | Unlock DEK via recovery slot |
+| `onFilename` | `(name: string) => void` | Callback for filename from encrypted metadata |
 
-### Opsi rewrap
+### Rewrap options
 
-| Opsi | Tipe | Keterangan |
+| Option | Type | Description |
 | --- | --- | --- |
-| `iterations` | `number` | Iterasi baru (default mempertahankan nilai lama) |
-| `randomBytes` | `(n) => Uint8Array` | RNG injeksi untuk uji deterministik |
+| `iterations` | `number` | New iterations (defaults to preserving the old value) |
+| `randomBytes` | `(n) => Uint8Array` | RNG injection for deterministic tests |
 
-## Fungsi
+## Functions
 
-| Fungsi | Tanda tangan (ringkas) | Hasil / perilaku |
+| Function | Signature (summary) | Result / behavior |
 | --- | --- | --- |
-| `prepareKeyMaterial` | `(password, keyFileBuffer?) => Promise<Uint8Array>` | `UTF8(password) \|\| SHA-256(keyfile)` atau password saja |
-| `deriveKey` | `(keyMaterial, salt, usage, iterations?) => Promise<CryptoKey>` | Kunci AES-GCM via PBKDF2-HMAC-SHA256 |
-| `processFileEncrypt` | `(file, password, keyFileBuffer?, signal?, onProgress?, options?) => Promise<Blob>` | Kontainer `.aegis` v3; mendukung pembatalan/progres |
-| `processFileDecrypt` | `(source, password, keyFileBuffer?, signal?, onProgress?, options?) => Promise<Blob>` | Plaintext terautentikasi; dukung v3 dan legacy v2 (baca) |
-| `rewrapFile` | `(source, oldPassword, oldKeyFile?, newPassword, newKeyFile?, options?) => Promise<Blob>` | Header baru, payload/metadata/slot (sesuai aturan) dipertahankan |
-| `createDefaultSink` | `() => Promise<DecryptSink>` | OPFS jika tersedia, fallback sink memori |
-| `createBlobSink` | `() => DecryptSink` | Sink memori (Blob) |
-| `getEncryptedFilename` | `(originalName) => string` | Menambahkan ekstensi `.aegis` |
-| `getDecryptedFilename` | `(encryptedName) => string` | Melepas `.aegis` atau memberi nama fallback |
+| `prepareKeyMaterial` | `(password, keyFileBuffer?) => Promise<Uint8Array>` | `UTF8(password) \|\| SHA-256(keyfile)` or password only |
+| `deriveKey` | `(keyMaterial, salt, usage, iterations?) => Promise<CryptoKey>` | AES-GCM key via PBKDF2-HMAC-SHA256 |
+| `processFileEncrypt` | `(file, password, keyFileBuffer?, signal?, onProgress?, options?) => Promise<Blob>` | `.aegis` v3 container; supports cancellation/progress |
+| `processFileDecrypt` | `(source, password, keyFileBuffer?, signal?, onProgress?, options?) => Promise<Blob>` | Authenticated plaintext; supports v3 and legacy v2 (read) |
+| `rewrapFile` | `(source, oldPassword, oldKeyFile?, newPassword, newKeyFile?, options?) => Promise<Blob>` | New header, payload/metadata/slot preserved per rules |
+| `createDefaultSink` | `() => Promise<DecryptSink>` | OPFS when available, in-memory fallback |
+| `createBlobSink` | `() => DecryptSink` | In-memory (Blob) sink |
+| `getEncryptedFilename` | `(originalName) => string` | Appends `.aegis` extension |
+| `getDecryptedFilename` | `(encryptedName) => string` | Strips `.aegis` or provides a fallback name |
 
-> Catatan: `onProgress` menerima nilai progres byte (implementasi dapat melaporkan byte sumber yang diproses/posisi baca; lihat `cryptoService.ts`/worker untuk detail pemanggilan).
+> Note: `onProgress` receives byte progress values (the implementation may report processed source bytes/read position; see `cryptoService.ts`/worker for call details).
 
-## Sink dekripsi
+## Decryption sink
 
-`DecryptSink` menyediakan antarmuka penulisan bertahap (`write`), finalisasi (`close` -> `Blob`/hasil), dan pembatalan/pembersihan (`abort`). Gunakan `createDefaultSink()` untuk memilih OPFS bila tersedia.
+`DecryptSink` provides an incremental write interface (`write`), finalization (`close` -> `Blob`/result), and cancellation/cleanup (`abort`). Use `createDefaultSink()` to select OPFS when available.
 
-## Kesalahan (`AegisError`)
+## Errors (`AegisError`)
 
-Mesin kripto melempar pesan/kesalahan terstruktur untuk kondisi seperti:
+The crypto engine throws structured errors for conditions such as:
 
-- format/versi/KDF/flag/iterasi/chunk size tidak valid
-- metadata nama rusak/tidak sah
-- kontainer terpotong, record final hilang, trailing data, struktur record tidak valid
-- autentikasi gagal/tamper, kredensial salah
-- slot recovery hilang atau kunci recovery salah
-- kontainer legacy v2 rusak
-- operasi dibatalkan
+- invalid format/version/KDF/flags/iterations/chunk size
+- corrupted or invalid filename metadata
+- truncated container, missing final record, trailing data, invalid record structure
+- authentication failure/tamper, wrong credentials
+- missing recovery slot or wrong recovery key
+- corrupted legacy v2 container
+- cancelled operation
 
-UI memetakan pesan ini ke teks terlokalisasi melalui `apps/web/src/lib/errors.ts`.
+The UI maps these messages to localized text via `apps/web/src/lib/errors.ts`.
 
-## Konstanta penting (`constants.ts`)
+## Important constants (`constants.ts`)
 
-| Konstanta | Nilai / makna |
+| Constant | Value / meaning |
 | --- | --- |
-| Magic / versi | `AEGIS`, v3 tulis, v2 baca |
-| Header | 128 byte, AAD wrap 68 byte |
-| KDF | PBKDF2-SHA256 (`0x01`), iterasi 600.000-5.000.000, salt 32 byte |
-| Chunk | default 1 MiB, rentang 64 KiB-16 MiB |
-| Record | header 5 byte, tag 16 byte, AAD 43 byte, flag final |
-| Recovery | slot 60 byte, domain `AEGISRCV`, AAD 30 byte |
-| Filename metadata | domain `AEGISFNM`, AAD 36 byte, indeks nonce khusus `2^64-1`, nama maks 1024 byte |
-| Batas record | `MAX_RECORDS` (provisional, lihat spesifikasi) |
+| Magic / version | `AEGIS`, v3 write, v2 read |
+| Header | 128 bytes, 68-byte wrap AAD |
+| KDF | PBKDF2-SHA256 (`0x01`), 600,000-5,000,000 iterations, 32-byte salt |
+| Chunk | default 1 MiB, range 64 KiB-16 MiB |
+| Record | 5-byte header, 16-byte tag, 43-byte AAD, final flag |
+| Recovery | 60-byte slot, `AEGISRCV` domain, 30-byte AAD |
+| Filename metadata | `AEGISFNM` domain, 36-byte AAD, reserved nonce index `2^64-1`, max 1024-byte name |
+| Record limit | `MAX_RECORDS` (provisional, see specification) |
 
-## Contoh penggunaan (konseptual)
+## Usage example (conceptual)
 
 ```ts
 import { processFileEncrypt, processFileDecrypt } from "@/services/cryptoService";
@@ -117,8 +117,8 @@ const plaintext = await processFileDecrypt(container, password, keyFileBuffer, a
 });
 ```
 
-## Referensi
+## References
 
-- [Format .aegis v3](/format-file)
-- [Arsitektur](/arsitektur)
-- [Model Keamanan](/keamanan)
+- [.aegis v3 Format](/format-file)
+- [Architecture](/arsitektur)
+- [Security Model](/keamanan)

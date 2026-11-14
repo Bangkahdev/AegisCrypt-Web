@@ -1,89 +1,89 @@
 ---
 sidebar_position: 1
 slug: /
-title: "Ringkasan"
-description: "Pengantar AegisCrypt, model zero-knowledge, kemampuan utama, dan peta dokumentasi."
+title: "Overview"
+description: "Introduction to AegisCrypt, its zero-knowledge model, key capabilities, and documentation map."
 ---
 
 <div className="doc-hero">
-  <div className="doc-hero__eyebrow">Dokumentasi Resmi</div>
+  <div className="doc-hero__eyebrow">Official Documentation</div>
   <h1>AegisCrypt Documentation</h1>
   <p className="lead">
-    AegisCrypt adalah alat enkripsi berkas berbasis browser dengan prinsip <strong>zero-knowledge</strong>.
-    Enkripsi, dekripsi, dan pengelolaan kunci berjalan secara lokal di perangkat pengguna melalui Web Crypto API.
-    Berkas, kata sandi, keyfile, dan kunci tidak dikirim ke server.
+    AegisCrypt is a browser-based file encryption tool built on a <strong>zero-knowledge</strong> principle.
+    Encryption, decryption, and key handling run locally on the user's device through the Web Crypto API.
+    Files, passwords, keyfiles, and keys are never sent to a server.
   </p>
   <div className="doc-hero__actions">
-    <a className="btn-doc btn-doc--primary" href="/mulai-cepat">Mulai Cepat</a>
-    <a className="btn-doc" href="https://aegiscrypt.bangkah.tech" target="_blank" rel="noopener noreferrer">Buka Aplikasi</a>
-    <a className="btn-doc" href="https://github.com/Bangkahdev/AegisCrypt-Web" target="_blank" rel="noopener noreferrer">Repositori GitHub</a>
+    <a className="btn-doc btn-doc--primary" href="/mulai-cepat">Quick Start</a>
+    <a className="btn-doc" href="https://aegiscrypt.bangkah.tech" target="_blank" rel="noopener noreferrer">Open App</a>
+    <a className="btn-doc" href="https://github.com/Bangkahdev/AegisCrypt-Web" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
   </div>
 </div>
 
-## Mulai dari sini
+## Start here
 
 <div className="doc-grid">
   <a className="doc-card" href="/mulai-cepat">
-    <div className="doc-card__label">Pengantar</div>
-    <h3>Mulai Cepat</h3>
-    <p>Buka aplikasi, mulai sesi, lalu enkripsi dan dekripsi berkas pertama Anda dalam beberapa langkah.</p>
+    <div className="doc-card__label">Introduction</div>
+    <h3>Quick Start</h3>
+    <p>Open the app, start a session, and encrypt and decrypt your first file in a few steps.</p>
   </a>
   <a className="doc-card" href="/panduan-pengguna">
-    <div className="doc-card__label">Panduan</div>
-    <h3>Panduan Pengguna</h3>
-    <p>Alur lengkap: keyfile, kunci pemulihan, ganti kata sandi (rewrap), pemrosesan banyak berkas, dan mode offline.</p>
+    <div className="doc-card__label">Guide</div>
+    <h3>User Guide</h3>
+    <p>Complete workflows: keyfiles, recovery keys, password rewrap, batch processing, and offline mode.</p>
   </a>
   <a className="doc-card" href="/arsitektur">
-    <div className="doc-card__label">Konsep</div>
-    <h3>Arsitektur & Keamanan</h3>
-    <p>Bagaimana data diproses di klien, batas kepercayaan, Web Worker, penyimpanan sementara, dan model ancaman.</p>
+    <div className="doc-card__label">Concepts</div>
+    <h3>Architecture & Security</h3>
+    <p>How data is processed on the client, trust boundaries, Web Workers, temporary storage, and the threat model.</p>
   </a>
   <a className="doc-card" href="/format-file">
-    <div className="doc-card__label">Referensi</div>
-    <h3>Format .aegis v3</h3>
-    <p>Spesifikasi kontainer: header, envelope DEK/KEK, record terautentikasi, metadata nama, dan slot recovery.</p>
+    <div className="doc-card__label">Reference</div>
+    <h3>.aegis v3 Format</h3>
+    <p>Container specification: header, DEK/KEK envelope, authenticated records, filename metadata, and recovery slot.</p>
   </a>
 </div>
 
-## Kemampuan utama
+## Key capabilities
 
-| Kemampuan | Keterangan |
+| Capability | Description |
 | --- | --- |
-| **Enkripsi terautentikasi** | AES-256-GCM untuk payload, metadata nama berkas, dan pembungkusan DEK. Manipulasi terdeteksi dan operasi gagal aman. |
-| **Envelope encryption** | Setiap berkas memakai DEK acak 256-bit yang dibungkus KEK turunan kata sandi/keyfile, sehingga kredensial dapat diganti tanpa mengenkripsi ulang payload. |
-| **Kata sandi + keyfile** | Materi kunci: `UTF8(password) \|\| SHA-256(byte keyfile)` (keyfile opsional). |
-| **Kunci pemulihan** | Slot recovery opsional (256-bit, disimpan offline oleh pengguna) untuk membuka berkas yang memiliki slot. |
-| **Rewrap kredensial** | Ganti kata sandi/keyfile/iterasi dengan menulis ulang header; payload tetap utuh. |
-| **Streaming & responsif** | Pemrosesan per chunk/record di Web Worker; dekripsi dapat memakai OPFS bila tersedia. |
-| **Offline / PWA** | Aset aplikasi dapat di-cache untuk penggunaan offline; berkas pengguna tidak pernah disimpan di cache. |
-| **Paritas Web & Desktop** | Format `.aegis` v3 dan vektor uji digunakan lintas implementasi Web dan .NET 8. |
+| **Authenticated encryption** | AES-256-GCM for payload, filename metadata, and DEK wrapping. Tampering is detected and operations fail safely. |
+| **Envelope encryption** | Each file uses a random 256-bit DEK wrapped by a credential-derived KEK, allowing credentials to be changed without re-encrypting the payload. |
+| **Password + keyfile** | Key material: `UTF8(password) \|\| SHA-256(keyfile bytes)` (keyfile optional). |
+| **Recovery key** | Optional recovery slot (256-bit key stored offline by the user) to open files that include a recovery slot. |
+| **Credential rewrap** | Change password/keyfile/iterations by rewriting the header; the payload remains intact. |
+| **Streaming & responsiveness** | Chunk/record processing in a Web Worker; decryption can use OPFS when available. |
+| **Offline / PWA** | App assets can be cached for offline use; user files are never stored in cache. |
+| **Web & Desktop parity** | The `.aegis` v3 format and test vectors are shared across Web and .NET 8 implementations. |
 
-## Properti keamanan (ringkas)
+## Security properties (summary)
 
-- **Lokal di perangkat:** kriptografi dijalankan di browser; tidak ada unggah berkas atau pengelolaan kunci di server.
-- **KDF:** PBKDF2-HMAC-SHA256, default 600.000 iterasi (rentang 600.000-5.000.000, tersimpan di header).
-- **Integritas:** AAD mengikat header, indeks record, metadata nama, dan domain recovery; kontainer terpotong/diubah ditolak.
-- **Kontrol sesi:** kunci sesi ada di memori selama sesi aktif; aplikasi menyediakan kunci/auto-lock dan pembersihan terbaik pada UI.
+- **Local to the device:** cryptography runs in the browser; there is no file upload or server-side key management.
+- **KDF:** PBKDF2-HMAC-SHA256, default 600,000 iterations (range 600,000-5,000,000, stored in the header).
+- **Integrity:** AAD binds the header, record indices, filename metadata, and recovery domain; truncated or modified containers are rejected.
+- **Session control:** session keys live in memory while active; the app provides lock/auto-lock and best-effort cleanup in the UI.
 
-:::warning Batasan penting
-AegisCrypt tidak dapat melindungi data pada perangkat/OS/browser yang telah terkompromi. Kehilangan kata sandi, keyfile, dan kunci pemulihan dapat menyebabkan berkas tidak dapat dibuka. Penghapusan berkas sementara bukan jaminan *secure erase* pada semua media penyimpanan. Format v3 berada pada status *frozen-candidate* dan belum diaudit kriptografi secara independen.
+:::warning Important limitations
+AegisCrypt cannot protect data on a compromised device, OS, or browser. Losing the password, keyfile, and recovery key can make files unrecoverable. Temporary-file deletion is not a guaranteed secure erase on all storage media. The v3 format is a frozen candidate and has not yet undergone an independent cryptographic audit.
 :::
 
-## Situs & sumber
+## Sites & sources
 
-| Sumber | Alamat | Keterangan |
+| Resource | URL | Description |
 | --- | --- | --- |
-| Aplikasi web | [aegiscrypt.bangkah.tech](https://aegiscrypt.bangkah.tech) | Enkripsi/dekripsi berkas di browser |
-| Dokumentasi | [docs.aegiscrypt.bangkah.tech](https://docs.aegiscrypt.bangkah.tech) | Situs ini |
-| Kode sumber | [GitHub](https://github.com/Bangkahdev/AegisCrypt-Web) | Monorepo Web, Desktop, dan dokumentasi |
+| Web app | [aegiscrypt.bangkah.tech](https://aegiscrypt.bangkah.tech) | Encrypt/decrypt files in the browser |
+| Documentation | [docs.aegiscrypt.bangkah.tech](https://docs.aegiscrypt.bangkah.tech) | This site |
+| Source code | [GitHub](https://github.com/Bangkahdev/AegisCrypt-Web) | Monorepo for Web, Desktop, and documentation |
 
-## Peta dokumentasi
+## Documentation map
 
 <div className="doc-grid doc-grid-3">
-  <a className="doc-card" href="/mulai-cepat"><h3>Mulai Cepat</h3><p>Langkah pertama menggunakan aplikasi.</p></a>
-  <a className="doc-card" href="/panduan-pengguna"><h3>Panduan Pengguna</h3><p>Fitur dan alur penggunaan sehari-hari.</p></a>
-  <a className="doc-card" href="/keamanan"><h3>Model Keamanan</h3><p>Ancaman, mitigasi, dan tanggung jawab pengguna.</p></a>
-  <a className="doc-card" href="/format-file"><h3>Format .aegis v3</h3><p>Struktur biner dan aturan validasi.</p></a>
-  <a className="doc-card" href="/referensi-api"><h3>Referensi API</h3><p>API kriptografi Web (`cryptoService`).</p></a>
-  <a className="doc-card" href="/troubleshooting"><h3>Pemecahan Masalah</h3><p>Gejala umum dan cara mengatasinya.</p></a>
+  <a className="doc-card" href="/mulai-cepat"><h3>Quick Start</h3><p>First steps to use the app.</p></a>
+  <a className="doc-card" href="/panduan-pengguna"><h3>User Guide</h3><p>Features and everyday workflows.</p></a>
+  <a className="doc-card" href="/keamanan"><h3>Security Model</h3><p>Threats, mitigations, and user responsibilities.</p></a>
+  <a className="doc-card" href="/format-file"><h3>.aegis v3 Format</h3><p>Binary structure and validation rules.</p></a>
+  <a className="doc-card" href="/referensi-api"><h3>Web API Reference</h3><p>Web cryptography API (<code>cryptoService</code>).</p></a>
+  <a className="doc-card" href="/troubleshooting"><h3>Troubleshooting</h3><p>Common symptoms and fixes.</p></a>
 </div>

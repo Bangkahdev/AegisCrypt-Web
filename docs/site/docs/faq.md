@@ -2,74 +2,74 @@
 sidebar_position: 11
 slug: /faq
 title: "FAQ"
-description: "Pertanyaan umum tentang privasi, kredensial, kunci pemulihan, kompatibilitas, offline, dan keterbatasan AegisCrypt."
+description: "Common questions about privacy, credentials, recovery keys, compatibility, offline use, and AegisCrypt limitations."
 ---
 
 # FAQ
 
-## Privasi dan pengiriman data
+## Privacy and data transmission
 
-### Apakah AegisCrypt mengunggah berkas atau kata sandi saya?
-Tidak. Operasi kriptografi inti berjalan di klien (browser/perangkat). Berkas, kata sandi, keyfile, kunci pemulihan, dan kunci turunan tidak dikirim ke server aplikasi.
+### Does AegisCrypt upload my files or passwords?
+No. Core cryptographic operations run on the client (browser/device). Files, passwords, keyfiles, recovery keys, and derived keys are not sent to the app server.
 
-### Apakah AegisCrypt menyimpan cadangan kunci?
-Tidak. AegisCrypt tidak menyimpan kata sandi, keyfile, atau kunci pemulihan untuk Anda. Simpan kredensial dan cadangan secara mandiri.
+### Does AegisCrypt store key backups?
+No. AegisCrypt does not store passwords, keyfiles, or recovery keys for you. Keep credentials and backups yourself.
 
-## Kredensial dan pemulihan
+## Credentials and recovery
 
-### Apa bedanya kata sandi, keyfile, dan kunci pemulihan?
-- **Kata sandi:** rahasia utama yang dimasukkan pengguna.
-- **Keyfile (opsional):** faktor tambahan; hash SHA-256 dari byte keyfile digabung ke materi kunci.
-- **Kunci pemulihan (opsional):** kunci 256-bit untuk membuka slot recovery pada berkas yang memang memiliki slot tersebut.
+### What is the difference between a password, keyfile, and recovery key?
+- **Password:** the primary secret entered by the user.
+- **Keyfile (optional):** an additional factor; the SHA-256 hash of the keyfile bytes is combined into the key material.
+- **Recovery key (optional):** a 256-bit key to unlock the recovery slot on files that include one.
 
-### Bisakah berkas dipulihkan jika kata sandi/keyfile hilang?
-Hanya jika Anda memiliki **kunci pemulihan yang valid** dan berkas tersebut dienkripsi dengan **slot recovery**. Tanpa kredensial yang sesuai, berkas tidak dapat dipulihkan.
+### Can files be recovered if the password/keyfile is lost?
+Only if you have a **valid recovery key** and the file was encrypted with a **recovery slot**. Without matching credentials, files cannot be recovered.
 
-### Apakah kunci pemulihan bisa menggantikan kata sandi untuk semua hal?
-Tidak. Sesi recovery ditujukan untuk pemulihan/dekripsi berkas yang memiliki slot recovery. Sesi ini tidak digunakan untuk mengenkripsi berkas baru atau mengganti kata sandi.
+### Can a recovery key replace the password for everything?
+No. A recovery session is intended for recovery/decryption of files that have a recovery slot. It is not used to encrypt new files or change the password.
 
-### Apakah mengganti kata sandi (rewrap) membatalkan kunci pemulihan?
-Tidak. Slot recovery disalin saat rewrap dan tetap terikat ke berkas (melalui `fileId`), sehingga kunci pemulihan yang sama tetap berlaku.
+### Does changing the password (rewrap) invalidate the recovery key?
+No. The recovery slot is copied during rewrap and remains bound to the file (via `fileId`), so the same recovery key remains valid.
 
-## Fitur dan kompatibilitas
+## Features and compatibility
 
-### Apakah nama berkas dienkripsi?
-Nama asli dapat disimpan sebagai **metadata terenkripsi** di dalam kontainer v3 (flag bit2). Namun, nama kontainer yang diunduh biasanya masih mencerminkan nama asli (mis. `dokumen.pdf.aegis`), jadi ubah nama kontainer jika nama file itu sendiri sensitif.
+### Are filenames encrypted?
+The original name can be stored as **encrypted metadata** inside the v3 container (flag bit2). However, the downloaded container name usually still reflects the original name (e.g. `document.pdf.aegis`), so rename the container if the filename itself is sensitive.
 
-### Bisakah saya mengganti kata sandi tanpa mengenkripsi ulang seluruh berkas?
-Ya. Gunakan **rewrap**: DEK dibuka dengan kredensial lama lalu dibungkus ulang dengan kredensial baru, sehingga payload tidak perlu dienkripsi ulang.
+### Can I change the password without re-encrypting the entire file?
+Yes. Use **rewrap**: the DEK is unlocked with old credentials and re-wrapped with new credentials, so the payload does not need to be re-encrypted.
 
-### Apakah berkas v2 lama masih bisa dibuka?
-Ya, implementasi saat ini dapat membaca/dekripsi kontainer v2 legacy. Penulisan kontainer baru menggunakan format v3.
+### Can old v2 files still be opened?
+Yes, the current implementation can read/decrypt legacy v2 containers. New container writes always use v3 format.
 
-### Apakah AegisCrypt Web kompatibel dengan Desktop?
-Targetnya ya: Web dan Desktop berbagi format `.aegis` v3 dan vektor uji untuk paritas. Selalu verifikasi dengan uji round-trip untuk data penting.
+### Is AegisCrypt Web compatible with Desktop?
+The goal is yes: Web and Desktop share the `.aegis` v3 format and test vectors for parity. Always verify with a round-trip test for important data.
 
-## Offline, PWA, dan performa
+## Offline, PWA, and performance
 
-### Apakah bisa digunakan offline?
-Ya, setelah aset aplikasi berhasil dimuat dan di-cache oleh service worker. Fitur kriptografi berjalan lokal tanpa jaringan.
+### Can it be used offline?
+Yes, after app assets have been successfully loaded and cached by the service worker. Cryptographic features run locally without a network.
 
-### Apakah berkas saya disimpan di cache PWA?
-Tidak. Cache PWA ditujukan untuk app shell/aset statis, bukan berkas pengguna, kata sandi, atau plaintext.
+### Are my files stored in the PWA cache?
+No. The PWA cache is intended for the app shell/static assets, not user files, passwords, or plaintext.
 
-### Mengapa proses berkas besar bisa lambat atau gagal?
-Faktor umum: KDF (iterasi tinggi), ukuran berkas, performa perangkat, ketersediaan OPFS, dan kuota penyimpanan browser. Lihat [Performa & Batasan](/performa) dan [Pemecahan Masalah](/troubleshooting).
+### Why can processing large files be slow or fail?
+Common factors: KDF (high iterations), file size, device performance, OPFS availability, and browser storage quota. See [Performance & Limits](/performa) and [Troubleshooting](/troubleshooting).
 
-## Kesalahan dan keamanan
+## Errors and security
 
-### Mengapa dekripsi gagal padahal saya merasa kata sandinya benar?
-Penyebab umum: kata sandi/keyfile tidak identik, berkas terpotong/tamper, kontainer bukan v3/v2 valid, slot recovery tidak ada/salah kunci, atau parameter/konteks tidak sesuai. AegisCrypt menolak output jika autentikasi/integritas gagal.
+### Why does decryption fail even though I think the password is correct?
+Common causes: non-identical password/keyfile, truncated/tampered file, not a valid v3/v2 container, missing recovery slot/wrong key, or mismatched parameters/context. AegisCrypt rejects output if authentication/integrity fails.
 
-### Apakah AegisCrypt aman jika perangkat saya terinfeksi malware?
-Tidak ada aplikasi enkripsi yang dapat sepenuhnya melindungi data pada perangkat/OS/browser yang telah terkompromi. Amankan endpoint terlebih dahulu.
+### Is AegisCrypt safe if my device is infected with malware?
+No encryption app can fully protect data on a compromised device/OS/browser. Secure the endpoint first.
 
-### Di mana saya melaporkan kerentanan?
-Gunakan proses di [SECURITY.md](https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/SECURITY.md). Jangan membuka issue publik untuk masalah keamanan.
+### Where do I report a vulnerability?
+Use the process in [SECURITY.md](https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/SECURITY.md). Do not open a public issue for security problems.
 
-## Referensi
+## References
 
-- [Mulai Cepat](/mulai-cepat)
-- [Panduan Pengguna](/panduan-pengguna)
-- [Model Keamanan](/keamanan)
-- [Format .aegis v3](/format-file)
+- [Quick Start](/mulai-cepat)
+- [User Guide](/panduan-pengguna)
+- [Security Model](/keamanan)
+- [.aegis v3 Format](/format-file)
