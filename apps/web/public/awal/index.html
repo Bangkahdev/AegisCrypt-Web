@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Enkripsi berkas sensitif langsung di browser dengan AES-256-GCM. Kata sandi dan kunci tidak pernah meninggalkan perangkat Anda."
+    />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#f4f0e6" />
+    <title>AegisCrypt - Enkripsi Berkas Tanpa Unggah</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/awal/landing.css" />
+  </head>
+  <body>
+    <a class="skip" href="#konten">Lompat ke konten</a>
+
+    <header class="site-header">
+      <a class="brand" href="/awal/">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>AegisCrypt</span>
+      </a>
+      <nav aria-label="Navigasi utama">
+        <a href="#cara-kerja">Cara kerja</a>
+        <a href="#bukti">Bukti teknis</a>
+        <a href="#daftar">Daftar tunggu</a>
+      </nav>
+    </header>
+
+    <main id="konten">
+      <section class="hero" aria-labelledby="judul">
+        <p class="eyebrow">Gate 1 - validasi awal</p>
+        <h1 id="judul">
+          Enkripsi berkas sensitif di browser.
+          <span>Kuncinya tidak pernah pergi.</span>
+        </h1>
+        <p class="lede">
+          Mengirim laporan, kontrak, atau arsip pribadi lewat email dan aplikasi
+          pesan berarti menyerahkan salinan ke pihak lain. AegisCrypt mengenkripsi
+          berkas di perangkat Anda sebelum ada yang diunggah.
+        </p>
+        <div class="cta-row">
+          <a class="button primary" href="mailto:atha@bangkah.tech?subject=Gate%201%3A%20Daftar%20tunggu%20AegisCrypt&amp;body=Halo%2C%20saya%20tertarik%20menguji%20AegisCrypt.%0A%0APenggunaan%20utama%3A%20%0AUkuran%20berkas%20biasa%3A%20%0ASistem%20operasi%3A%20%0AKetersediaan%20untuk%20wawancara%2015%20menit%3A%20">
+            Ikut daftar tunggu
+          </a>
+          <a class="button" href="/">Coba versi sekarang</a>
+        </div>
+        <p class="fine-print">
+          Gratis selama Gate 1. Tanpa akun, tanpa unggahan, tanpa pelacakan.
+        </p>
+      </section>
+
+      <section class="problem" aria-labelledby="masalah">
+        <h2 id="masalah">Masalahnya bukan enkripsi. Masalahnya langkahnya.</h2>
+        <div class="grid two">
+          <article class="card">
+            <p class="card-label">Cara lama</p>
+            <ul>
+              <li>Berkas diunggah ke penyimpanan awan pihak ketiga.</li>
+              <li>Kata sandi arsip dikirim di kanal yang sama.</li>
+              <li>Tidak ada yang tahu siapa memegang salinan.</li>
+              <li>Alat enkripsi desktop butuh pemasangan dan kebiasaan baru.</li>
+            </ul>
+          </article>
+          <article class="card accent">
+            <p class="card-label">Dengan AegisCrypt</p>
+            <ul>
+              <li>Enkripsi berjalan lokal memakai Web Crypto API.</li>
+              <li>Berkas hasil enkripsi yang Anda bagikan, bukan aslinya.</li>
+              <li>Format terbuka, dapat dibaca versi web dan desktop.</li>
+              <li>Tidak perlu memasang aplikasi.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="cara-kerja" aria-labelledby="cara-kerja-judul">
+        <h2 id="cara-kerja-judul">Tiga langkah, tanpa unggahan</h2>
+        <ol class="steps">
+          <li>
+            <span class="step-number" aria-hidden="true">01</span>
+            <h3>Pilih berkas</h3>
+            <p>Tentukan berkas yang ingin dienkripsi. Berkas tetap di perangkat Anda.</p>
+          </li>
+          <li>
+            <span class="step-number" aria-hidden="true">02</span>
+            <h3>Buat kata sandi</h3>
+            <p>
+              Kunci diturunkan dengan PBKDF2-HMAC-SHA256 dan dipakai untuk
+              AES-256-GCM. Keyfile opsional dapat ditambahkan.
+            </p>
+          </li>
+          <li>
+            <span class="step-number" aria-hidden="true">03</span>
+            <h3>Bagikan berkas .aegis</h3>
+            <p>
+              Berkas terenkripsi siap dikirim. Penerima membukanya dengan kata
+              sandi yang Anda berikan lewat kanal terpisah.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section id="bukti" aria-labelledby="bukti-judul">
+        <h2 id="bukti-judul">Yang bisa Anda periksa sendiri</h2>
+        <div class="grid three">
+          <article class="card">
+            <h3>Spesifikasi terbuka</h3>
+            <p>
+              Header 128 byte, tata letak record, dan AAD didokumentasikan dan
+              dibekukan sebagai kontrak.
+            </p>
+            <a href="https://docs.aegiscrypt.bangkah.tech/format-file">Baca format v3</a>
+          </article>
+          <article class="card">
+            <h3>Dua implementasi</h3>
+            <p>
+              Versi web (TypeScript) dan desktop (.NET 8) diuji terhadap vektor
+              beku yang sama, termasuk vektor kata sandi Unicode.
+            </p>
+            <a href="https://docs.aegiscrypt.bangkah.tech/arsitektur">Lihat arsitektur</a>
+          </article>
+          <article class="card">
+            <h3>Gagal tertutup</h3>
+            <p>
+              Setiap kegagalan autentikasi membatalkan operasi dan membuang
+              keluaran parsial. Header produksi memakai CSP ketat dan HSTS.
+            </p>
+            <a href="https://docs.aegiscrypt.bangkah.tech/keamanan">Catatan keamanan</a>
+          </article>
+        </div>
+        <p class="fine-print">
+          Belum ada audit keamanan independen. Jangan gunakan sebagai satu-satunya
+          salinan berkas penting.
+        </p>
+      </section>
+
+      <section id="daftar" class="waitlist" aria-labelledby="daftar-judul">
+        <h2 id="daftar-judul">Ingin mencoba lebih awal?</h2>
+        <p>
+          Saya sedang mewawancarai orang yang rutin mengirim berkas sensitif untuk
+          memastikan produk ini menyelesaikan masalah nyata. Ikut daftar tunggu
+          berarti Anda diundang menguji versi awal dan diminta masukan, bukan
+          dikirimi promosi.
+        </p>
+        <div class="cta-row">
+          <a class="button primary" href="mailto:atha@bangkah.tech?subject=Gate%201%3A%20Daftar%20tunggu%20AegisCrypt&amp;body=Halo%2C%20saya%20tertarik%20menguji%20AegisCrypt.%0A%0APenggunaan%20utama%3A%20%0AUkuran%20berkas%20biasa%3A%20%0ASistem%20operasi%3A%20%0AKetersediaan%20untuk%20wawancara%2015%20menit%3A%20">
+            Kirim email pendaftaran
+          </a>
+          <a class="button" href="/">Langsung coba</a>
+        </div>
+        <p class="fine-print">
+          Hanya dipakai untuk mengatur wawancara dan undangan uji. Tidak dibagikan
+          ke pihak ketiga.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>AegisCrypt - proyek Gate 1. Format v3, Apache-2.0.</p>
+      <nav aria-label="Tautan footer">
+        <a href="https://docs.aegiscrypt.bangkah.tech/">Dokumentasi</a>
+        <a href="https://github.com/Bangkahdev/AegisCrypt-Web">Kode sumber</a>
+        <a href="https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/SECURITY.md">Keamanan</a>
+      </nav>
+    </footer>
+  </body>
+</html>
