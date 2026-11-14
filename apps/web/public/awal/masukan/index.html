@@ -29,143 +29,21 @@
         <p class="eyebrow">Versi gratis — kami butuh masukan Anda</p>
         <h1 id="judul-form">Bantu kami menyempurnakan AegisCrypt</h1>
         <p class="lede">
-          Jawaban hanya dipakai untuk menyempurnakan AegisCrypt. Isi kontak bersifat opsional
-          dan bisa dihapus kapan saja dengan menghubungi
-          <a href="mailto:atha@bangkah.tech">atha@bangkah.tech</a>. Waktu pengisian sekitar 3 menit.
+          Isi form singkat (sekitar 3 menit) agar kami tahu fitur mana yang paling bernilai dan
+          bagian mana yang masih membingungkan. Jawaban dipakai untuk menyempurnakan AegisCrypt,
+          bukan promosi.
         </p>
-        <p class="fine-print">
-          Form ini di-host di domain AegisCrypt. Aplikasi enkripsi AegisCrypt tetap tanpa akun,
-          tanpa unggahan, dan tanpa pelacakan. AegisCrypt belum diaudit pihak independen.
-        </p>
-      </section>
-
-      <form class="feedback-form" action="mailto:atha@bangkah.tech" method="post" enctype="text/plain">
-        <fieldset>
-          <legend>Bagian A — Tentang kamu</legend>
-
-          <div class="field">
-            <span class="field-label">A1. Kamu memakai AegisCrypt sebagai? <span aria-hidden="true">*</span></span>
-            <label class="option"><input type="radio" name="A1_peran" value="Individu" required /> Individu</label>
-            <label class="option"><input type="radio" name="A1_peran" value="Mahasiswa" /> Mahasiswa</label>
-            <label class="option"><input type="radio" name="A1_peran" value="Pekerja atau profesional" /> Pekerja atau profesional</label>
-            <label class="option"><input type="radio" name="A1_peran" value="Pemilik usaha kecil" /> Pemilik usaha kecil</label>
-            <label class="option"><input type="radio" name="A1_peran" value="Lainnya" /> Lainnya</label>
-            <label class="subfield" for="a1-lainnya">Jika lainnya, sebutkan</label>
-            <input id="a1-lainnya" type="text" name="A1_lainnya" />
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="a2-berkas">A2. Berkas apa yang paling sering ingin kamu lindungi? <span aria-hidden="true">*</span></label>
-            <p class="hint" id="a2-hint">Contoh: kontrak, dokumen identitas, laporan.</p>
-            <input id="a2-berkas" type="text" name="A2_berkas" aria-describedby="a2-hint" required />
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Bagian B — Pengalaman pakai</legend>
-
-          <div class="field">
-            <span class="field-label">B3. Kamu memakai versi apa? <span aria-hidden="true">*</span></span>
-            <label class="option"><input type="radio" name="B3_versi" value="Web" required /> Web</label>
-            <label class="option"><input type="radio" name="B3_versi" value="Desktop" /> Desktop</label>
-            <label class="option"><input type="radio" name="B3_versi" value="Keduanya" /> Keduanya</label>
-          </div>
-
-          <div class="field">
-            <span class="field-label">B4. Apakah kamu berhasil mengenkripsi dan mendekripsi berkas? <span aria-hidden="true">*</span></span>
-            <label class="option"><input type="radio" name="B4_berhasil" value="Ya, lancar" required /> Ya, lancar</label>
-            <label class="option"><input type="radio" name="B4_berhasil" value="Ya, tapi membingungkan" /> Ya, tapi membingungkan</label>
-            <label class="option"><input type="radio" name="B4_berhasil" value="Tidak berhasil" /> Tidak berhasil</label>
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="b5-sulit">B5. Bagian mana yang paling membingungkan atau menyulitkan?</label>
-            <textarea id="b5-sulit" name="B5_membingungkan" rows="4"></textarea>
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="b6-ragu">B6. Apakah ada yang membuatmu ragu mempercayai aplikasinya?</label>
-            <textarea id="b6-ragu" name="B6_ragu" rows="4"></textarea>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Bagian C — Alternatif dan kebutuhan</legend>
-
-          <div class="field">
-            <span class="field-label">C7. Sebelum ini, bagaimana kamu melindungi berkas tersebut? (boleh lebih dari satu)</span>
-            <label class="option"><input type="checkbox" name="C7_alternatif" value="Tidak dilindungi" /> Tidak dilindungi</label>
-            <label class="option"><input type="checkbox" name="C7_alternatif" value="Kata sandi pada PDF atau zip" /> Kata sandi pada PDF atau zip</label>
-            <label class="option"><input type="checkbox" name="C7_alternatif" value="Aplikasi enkripsi lain" /> Aplikasi enkripsi lain</label>
-            <label class="option"><input type="checkbox" name="C7_alternatif" value="Layanan awan" /> Layanan awan</label>
-            <label class="option"><input type="checkbox" name="C7_alternatif" value="Lainnya" /> Lainnya</label>
-            <label class="subfield" for="c7-lainnya">Jika aplikasi/layanan lain, sebutkan</label>
-            <input id="c7-lainnya" type="text" name="C7_lainnya" />
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="c8-alasan">C8. Apa yang membuatmu memilih AegisCrypt, atau apa yang membuatmu tidak akan memakainya lagi?</label>
-            <textarea id="c8-alasan" name="C8_alasan" rows="4"></textarea>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Bagian D — Nilai</legend>
-
-          <div class="field">
-            <span class="field-label">D9. Fitur mana yang paling membuatmu rela membayar? (pilih maksimal dua)</span>
-            <label class="option"><input type="checkbox" name="D9_fitur" value="Aplikasi desktop terpasang dan bertanda tangan" /> Aplikasi desktop terpasang dan bertanda tangan</label>
-            <label class="option"><input type="checkbox" name="D9_fitur" value="Mengelola banyak perangkat" /> Mengelola banyak perangkat</label>
-            <label class="option"><input type="checkbox" name="D9_fitur" value="Pengelolaan kunci dan pemulihan yang lebih mudah" /> Pengelolaan kunci dan pemulihan yang lebih mudah</label>
-            <label class="option"><input type="checkbox" name="D9_fitur" value="Berbagi berkas terenkripsi dengan tim" /> Berbagi berkas terenkripsi dengan tim</label>
-            <label class="option"><input type="checkbox" name="D9_fitur" value="Kebijakan dan administrasi untuk organisasi" /> Kebijakan dan administrasi untuk organisasi</label>
-            <label class="option"><input type="checkbox" name="D9_fitur" value="Tidak ada; yang gratis sudah cukup" /> Tidak ada; yang gratis sudah cukup</label>
-            <label class="option"><input type="checkbox" name="D9_fitur" value="Lainnya" /> Lainnya</label>
-            <label class="subfield" for="d9-lainnya">Jika lainnya, sebutkan</label>
-            <input id="d9-lainnya" type="text" name="D9_lainnya" />
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="d10-tambah">D10. Satu hal yang paling ingin kamu tambahkan atau ubah.</label>
-            <textarea id="d10-tambah" name="D10_tambahan" rows="4"></textarea>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Bagian E — Opsional</legend>
-
-          <div class="field">
-            <span class="field-label">E11. Boleh dihubungi untuk menanyakan lebih lanjut?</span>
-            <label class="option"><input type="radio" name="E11_hubungi" value="Ya" /> Ya</label>
-            <label class="option"><input type="radio" name="E11_hubungi" value="Tidak" /> Tidak</label>
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="e12-kontak">E12. Email atau WhatsApp (hanya diisi kalau menjawab Ya)</label>
-            <input id="e12-kontak" type="text" name="E12_kontak" />
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Persetujuan</legend>
-          <div class="field">
-            <label class="option">
-              <input type="checkbox" name="persetujuan" value="setuju" required />
-              Saya mengerti data ini dipakai untuk menyempurnakan AegisCrypt dan dapat dihapus atas permintaan. <span aria-hidden="true">*</span>
-            </label>
-          </div>
-        </fieldset>
-
-        <div class="form-actions">
-          <button class="button primary" type="submit">Kirim masukan</button>
+        <div class="cta-row">
+          <a class="button primary" href="https://tally.so/r/Ar2XOk">Isi form masukan</a>
           <a class="button" href="/awal/">Kembali</a>
         </div>
         <p class="fine-print">
-          Tombol kirim akan membuka aplikasi email Anda untuk mengirim jawaban ke
-          <a href="mailto:atha@bangkah.tech">atha@bangkah.tech</a>. Jika tidak terbuka, salin jawaban
-          dan kirim manual ke alamat tersebut.
+          Form dikelola oleh layanan pihak ketiga (Tally). Aplikasi enkripsi AegisCrypt tetap
+          tanpa akun, tanpa unggahan, dan tanpa pelacakan. AegisCrypt belum diaudit pihak
+          independen. Isi kontak di form bersifat opsional; permintaan hapus data:
+          <a href="mailto:atha@bangkah.tech">atha@bangkah.tech</a>.
         </p>
-      </form>
+      </section>
     </main>
 
     <footer class="site-footer">

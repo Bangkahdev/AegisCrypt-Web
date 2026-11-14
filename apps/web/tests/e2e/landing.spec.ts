@@ -11,14 +11,16 @@ test.describe('Gate 1 landing page', () => {
     await expect(
       page.getByRole('heading', { name: 'Tiga langkah, tanpa unggahan' })
     ).toBeVisible();
-    await expect(page.getByText('AegisCrypt belum diaudit pihak independen')).toBeVisible();
+    await expect(page.locator('.hero .fine-print')).toContainText(
+      'AegisCrypt belum diaudit pihak independen'
+    );
   });
 
   test('menyediakan tautan form masukan dan tautan masuk ke aplikasi', async ({ page }) => {
     await page.goto('/awal/');
 
     const form = page.getByRole('link', { name: 'Isi form masukan' }).first();
-    await expect(form).toHaveAttribute('href', '/awal/masukan/');
+    await expect(form).toHaveAttribute('href', 'https://tally.so/r/Ar2XOk');
 
     await expect(page.getByRole('link', { name: 'Coba versi sekarang' })).toHaveAttribute(
       'href',
@@ -61,5 +63,16 @@ test.describe('Gate 1 landing page', () => {
     expect(errors).toEqual([]);
     expect(await page.locator('[style]').count()).toBe(0);
     expect(await page.locator('script').count()).toBe(0);
+  });
+
+  test('halaman masukan mengarahkan ke form Tally tanpa form lokal', async ({ page }) => {
+    const response = await page.goto('/awal/masukan/');
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole('link', { name: 'Isi form masukan' })).toHaveAttribute(
+      'href',
+      'https://tally.so/r/Ar2XOk'
+    );
+    await expect(page.getByText('Form dikelola oleh layanan pihak ketiga (Tally)')).toBeVisible();
+    expect(await page.locator('form').count()).toBe(0);
   });
 });

@@ -1,6 +1,6 @@
 # Form Masukan Pengguna — AegisCrypt (Gate 1)
 
-Dokumen ini berisi isi form masukan (waktu pengisian sekitar 3 menit). Form di-host sendiri di domain AegisCrypt: [`apps/web/public/awal/masukan/index.html`](../../apps/web/public/awal/masukan/index.html) (tautan `/awal/masukan/`).
+Dokumen ini berisi rencana/isi form masukan (waktu pengisian sekitar 3 menit). Form dikelola oleh layanan pihak ketiga (Tally): [https://tally.so/r/Ar2XOk](https://tally.so/r/Ar2XOk). Halaman pengantar di domain AegisCrypt: [`apps/web/public/awal/masukan/index.html`](../../apps/web/public/awal/masukan/index.html) (tautan `/awal/masukan/`).
 
 Tujuan: menetapkan OD-02 (isi paket Pro), OD-05 (masa berlaku, grace period, batas instalasi), dan OD-09 (harga dan batas paket) berdasarkan data dan masukan, bukan tebakan.
 
@@ -12,7 +12,7 @@ Bantu kami menyempurnakan AegisCrypt
 
 ## Pengantar
 
-Jawaban hanya dipakai untuk menyempurnakan AegisCrypt. Form ini di-host di domain AegisCrypt. Isi kontak bersifat opsional dan bisa dihapus kapan saja dengan menghubungi atha@bangkah.tech.
+Jawaban hanya dipakai untuk menyempurnakan AegisCrypt. Form dikelola oleh layanan pihak ketiga (Tally). Isi kontak bersifat opsional dan bisa dihapus kapan saja dengan menghubungi atha@bangkah.tech.
 
 ## Bagian A — Tentang kamu
 
@@ -86,4 +86,4 @@ Saya mengerti data ini dipakai untuk menyempurnakan AegisCrypt dan dapat dihapus
 
 ## Catatan kejujuran (tambahkan di dekat tautan form di /awal/)
 
-Form masukan di-host di domain AegisCrypt. Aplikasi enkripsi AegisCrypt itu sendiri tetap tanpa akun, tanpa unggahan, dan tanpa pelacakan. AegisCrypt belum diaudit pihak independen.
+Form dikelola oleh layanan pihak ketiga (Tally). Aplikasi enkripsi AegisCrypt itu sendiri tetap tanpa akun, tanpa unggahan, dan tanpa pelacakan. AegisCrypt belum diaudit pihak independen.
