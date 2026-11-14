@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -491,6 +492,35 @@ public class AegisCryptoTests
         var error = Assert.Throws<AegisFormatException>(() => Decrypt(container, "warisan"));
         Assert.Equal(AegisErrors.Credentials, error.Message);
     }
+
+    [Fact]
+    public void ErrorCatalogMatchesDesktopMessages()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "fixtures", "error-catalog.json");
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var root = document.RootElement;
+
+        var catalogued = root.GetProperty("messages")
+            .EnumerateObject()
+            .ToDictionary(p => p.Name, p => p.Value.GetString()!);
+
+        var fields = typeof(AegisErrors)
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(f => f.IsLiteral && f.FieldType == typeof(string))
+            .ToDictionary(f => ToCamelCase(f.Name), f => (string)f.GetRawConstantValue()!);
+
+        Assert.Equal(catalogued.Keys.OrderBy(k => k), fields.Keys.OrderBy(k => k));
+        foreach (var (name, value) in fields)
+        {
+            Assert.Equal(catalogued[name], value);
+        }
+
+        var template = root.GetProperty("versionTemplate").GetString()!;
+        Assert.Equal(template.Replace("{v}", "7"), AegisErrors.Version(7));
+    }
+
+    private static string ToCamelCase(string name) =>
+        char.ToLowerInvariant(name[0]) + name[1..];
 
     [Fact]
     public void WrongPasswordIsRejected()

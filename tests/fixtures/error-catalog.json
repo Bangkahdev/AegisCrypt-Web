@@ -1,0 +1,21 @@
+{
+  "versionTemplate": "Versi file tidak didukung (v{v}). Perbarui aplikasi.",
+  "messages": {
+    "format": "Format file tidak valid (.aegis tidak dikenali).",
+    "kdf": "KDF tidak didukung oleh versi aplikasi ini.",
+    "iterations": "Parameter iterasi KDF di luar batas yang diizinkan.",
+    "chunkSize": "Ukuran chunk di luar batas yang diizinkan.",
+    "flags": "Header memuat flag yang tidak dikenal.",
+    "filenameMetadata": "Metadata nama berkas rusak atau tidak valid.",
+    "truncated": "Berkas terpotong atau tidak lengkap.",
+    "missingFinal": "Record final tidak ditemukan; berkas mungkin terpotong.",
+    "trailing": "Terdapat data setelah record final; berkas dimanipulasi.",
+    "record": "Struktur record tidak valid; berkas dimanipulasi atau rusak.",
+    "tampered": "Autentikasi berkas gagal; data dimanipulasi atau rusak.",
+    "credentials": "Kata sandi atau keyfile salah.",
+    "recoveryMissing": "Berkas ini tidak memiliki slot recovery.",
+    "recoveryKey": "Kunci recovery salah atau slot rusak.",
+    "legacyCorrupt": "Berkas corrupt: struktur v2 tidak valid.",
+    "cancelled": "Operation Cancelled"
+  }
+}
