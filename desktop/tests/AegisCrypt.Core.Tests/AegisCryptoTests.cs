@@ -1,4 +1,4 @@
-using System.Buffers.Binary;
+﻿using System.Buffers.Binary;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -18,6 +18,12 @@ public class AegisCryptoTests
         int Iterations,
         int ChunkSize,
         int RngSeed,
+        string ContainerHex);
+
+    private sealed record LegacyVector(
+        string PlaintextUtf8,
+        string Password,
+        string KeyfileHex,
         string ContainerHex);
 
     private static readonly SharedVector Vector = JsonSerializer.Deserialize<SharedVector>(
@@ -54,6 +60,20 @@ public class AegisCryptoTests
         Assert.Equal(VectorPlaintext, Encoding.UTF8.GetString(plaintext));
         Assert.Null(result.Filename);
         Assert.False(result.LegacyV2);
+    }
+
+    [Fact]
+    public void DecryptsFrozenLegacyV2Vector()
+    {
+        var v2 = JsonSerializer.Deserialize<LegacyVector>(
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "v2-vector.json")),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        var (plaintext, result) = Decrypt(
+            FromHex(v2.ContainerHex),
+            v2.Password,
+            Convert.FromHexString(v2.KeyfileHex));
+        Assert.Equal(v2.PlaintextUtf8, Encoding.UTF8.GetString(plaintext));
+        Assert.True(result.LegacyV2);
     }
 
     [Fact]

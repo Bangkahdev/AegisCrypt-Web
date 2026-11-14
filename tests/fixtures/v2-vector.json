@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "description": "legacy v2 frozen vector: 2 records, password+keyfile, 100k PBKDF2 (independent encoder)",
+  "password": "legacy-vector-password",
+  "keyfileHex": "6c65676163792d766563746f722d6b657966696c65",
+  "saltHex": "0d141b222930373e454c535a61686f767d848b9299a0a7aeb5bcc3cad1d8dfe6",
+  "records": [
+    {
+      "ivHex": "05162738495a6b7c8d9eafc0",
+      "plaintextLength": 10
+    },
+    {
+      "ivHex": "0b2845627f9cb9d6f3102d4a",
+      "plaintextLength": 18
+    }
+  ],
+  "plaintextUtf8": "AegisCrypt legacy v2 vector\n",
+  "containerHex": "4145474953020d141b222930373e454c535a61686f767d848b9299a0a7aeb5bcc3cad1d8dfe62600000005162738495a6b7c8d9eafc08276e206bd19ebe29a7a3ae2a7656bdc830769d53aea41db4f4d2e0000000b2845627f9cb9d6f3102d4aa9d4105f60b1854bf26f98dd918a59d1fc33f4e37490fc18b99fa0a2ca70c55c7ed2"
+}

@@ -1,17 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { CRYPTO_CONSTANTS, HEADER_LENGTH, LEGACY_HEADER_LENGTH } from "../src/constants";
 import { processFileDecrypt, processFileEncrypt } from "../src/services/cryptoService";
+import v2 from "./fixtures/v2-vector.json";
 import vector from "./fixtures/v3-vector.json";
 import { fromHex, hex, makeRng, toBytes } from "./helpers";
 
 /**
- * Shared frozen container (tests/fixtures/v3-vector.json) consumed by web and
- * desktop tests. Any change to the on-disk format or authenticated AAD breaks it.
+ * Shared frozen containers consumed by web and desktop tests. Any change to the
+ * on-disk format, authenticated AAD, or key derivation breaks them.
  */
 const V3_VECTOR_HEX = vector.containerHex;
 const VECTOR_PLAINTEXT = vector.plaintext;
 const VECTOR_PASSWORD = vector.password;
 const VECTOR_KEYFILE = new TextEncoder().encode(vector.keyfile).buffer;
+
+const V2_VECTOR_HEX = v2.containerHex;
+const V2_PASSWORD = v2.password;
+const V2_KEYFILE = fromHex(v2.keyfileHex).buffer;
 
 const encrypted = () =>
   processFileEncrypt(
@@ -43,6 +48,17 @@ describe("format vectors", () => {
     expect(await out.text()).toBe(VECTOR_PLAINTEXT);
   });
 
+  it("decrypts the frozen legacy v2 vector", async () => {
+    const out = await processFileDecrypt(
+      new Blob([fromHex(V2_VECTOR_HEX)]),
+      V2_PASSWORD,
+      V2_KEYFILE,
+      new AbortController().signal,
+      () => {},
+    );
+    expect(await out.text()).toBe(v2.plaintextUtf8);
+  });
+
   it("is case-insensitive when parsing the hex fixture", () => {
     expect(hex(fromHex(V3_VECTOR_HEX.toLowerCase()))).toBe(V3_VECTOR_HEX);
   });
@@ -58,6 +74,10 @@ describe("format vectors", () => {
     const view = new DataView(bytes.buffer);
     expect(view.getUint32(8, false)).toBe(vector.iterations);
     expect(view.getUint32(12, false)).toBe(vector.chunkSize);
-    expect(LEGACY_HEADER_LENGTH).toBe(38);
+
+    const v2bytes = fromHex(V2_VECTOR_HEX);
+    expect(v2bytes[5]).toBe(2);
+    expect(v2bytes.byteLength).toBeGreaterThan(LEGACY_HEADER_LENGTH);
+    expect(v2.records).toHaveLength(2);
   });
 });
