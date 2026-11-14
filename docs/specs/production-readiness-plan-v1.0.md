@@ -105,6 +105,12 @@ Risiko utama bukan teknis: enkripsi dasar gratis, offline, dan terbuka, sementar
 
 Bila tidak ada segmen yang memenuhi kriteria, hasilnya adalah keputusan untuk menyesuaikan posisi produk, bukan membangun fitur lebih banyak.
 
+### 5.4 Perangkat Gate 1
+
+- Skrip wawancara, rubrik sinyal, dan ambang keputusan: [`docs/guides/gate1-interview-guide.md`](../guides/gate1-interview-guide.md).
+- Halaman pendaratan uji: `https://aegiscrypt.bangkah.tech/awal/` (statis, `noindex`, tanpa analitik).
+- Pendaftaran daftar tunggu memakai surel agar tidak memerlukan backend atau pelacakan pihak ketiga.
+
 ## 6. Gate 2 — Backend, Identitas, dan Entitlement
 
 ### 6.1 Arsitektur
