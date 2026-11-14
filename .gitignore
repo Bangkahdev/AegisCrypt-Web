@@ -13,6 +13,8 @@ dist-ssr
 *.local
 test-results
 playwright-report
+build
+.docusaurus
 
 # Editor directories and files
 .vscode/*
@@ -39,5 +41,5 @@ playwright-report
 .dotnet
 bin
 obj
-!desktop/AegisCrypt.sln
+!apps/desktop/AegisCrypt.sln
 
