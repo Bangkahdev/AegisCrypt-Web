@@ -1,51 +1,83 @@
 ---
 sidebar_position: 4
 slug: /arsitektur
+title: "Arsitektur"
+description: "Arsitektur klien AegisCrypt, alur data kriptografi, Web Worker, penyimpanan sementara, dan model offline."
 ---
 
 # Arsitektur
 
-AegisCrypt adalah aplikasi satu halaman (SPA) yang di-deploy sebagai aset statis melalui Cloudflare Workers. Tidak ada server aplikasi, basis data, atau endpoint unggah.
+AegisCrypt Fase 1 adalah aplikasi kriptografi **client-side**. Aplikasi web disajikan sebagai aset statis, sementara seluruh operasi enkripsi/dekripsi dijalankan di perangkat pengguna.
 
-## Alur data enkripsi
+## Gambaran komponen
 
-<div className="card">
+| Komponen | Teknologi / Lokasi | Peran |
+| --- | --- | --- |
+| UI | React 19, Vite (`apps/web/src`) | Input kredensial, antrean berkas, progres, log, dialog |
+| Mesin kripto Web | `apps/web/src/services/cryptoService.ts` | Parse/tulis header v3, KDF, wrap/unwrap DEK, record, metadata, rewrap, baca v2 |
+| Worker | `cryptoWorker.ts` / `cryptoWorkerClient.ts` | Menjalankan operasi berat di luar thread UI |
+| I/O berkas | `apps/web/src/lib/files.ts` | Baca sumber, sink keluaran, deteksi kuota/dukungan |
+| PWA | `apps/web/public/sw.js`, manifest | Cache app shell untuk muat offline |
+| Desktop | `apps/desktop/src/AegisCrypt.*` (.NET 8) | Implementasi Core/CLI/App dengan paritas format |
+| Distribusi | Cloudflare Workers (aset statis) | Menyajikan aplikasi dan dokumentasi |
 
-1. Pengguna memasukkan kata sandi dan (opsional) keyfile.
-2. `KeyMaterial = Password_Bytes || SHA-256(Keyfile_Bytes)` disiapkan; PBKDF2-HMAC-SHA256 (600.000 iterasi, garam 32 byte) menurunkan KEK AES-256.
-3. DEK acak 256-bit dibungkus oleh KEK dengan AES-256-GCM; header 128 byte mencatat salt, iterasi, ukuran chunk, file ID, dan prefix nonce.
-4. Berkas dipotong menjadi record (default 1 MiB, sesuai header), masing-masing dienkripsi dengan AES-256-GCM memakai nonce turunan `prefix || index` dan AAD 43 byte.
-5. Output disimpan sebagai kontainer `.aegis` v3 dan diunduh ke browser. Kontainer v2 lama tetap dapat dibaca.
+## Alur enkripsi (Web, ringkas)
 
-</div>
+1. Pengguna menyediakan kata sandi dan opsional keyfile.
+2. `KeyMaterial = UTF8(password) || SHA-256(keyfile bytes)` (keyfile opsional) disiapkan.
+3. KEK diturunkan dengan PBKDF2-HMAC-SHA256 (salt acak, iterasi dari parameter/header).
+4. DEK acak 256-bit dibungkus (AES-256-GCM) dengan AAD header.
+5. Metadata nama (opsional) dan payload dienkripsi per record dengan DEK; nonce/AAD mengikat konteks berkas dan indeks.
+6. Kontainer `.aegis` v3 dihasilkan dan diunduh ke perangkat pengguna.
 
-## Komponen utama
+## Alur dekripsi (Web, ringkas)
 
-| Komponen | Tanggung jawab |
-|----------|---------------|
-| **Web Crypto API** | Operasi kriptografi di browser (AES-GCM, PBKDF2, SHA-256) |
-| **Web Worker** | Menjalankan PBKDF2 dan enkripsi/dekripsi di luar thread UI agar antarmuka tetap responsif |
-| **Service Worker** | Cache app shell agar aplikasi dapat dibuka offline; tidak pernah menyimpan berkas pengguna |
-| **React 19** | Antarmuka pengguna dan manajemen status |
-| **Vite 8** | Build tool dan bundler |
-| **Cloudflare Workers** | Penyajian aset statis dan domain kustom |
+1. Parser memvalidasi magic, versi, KDF, flag, dan rentang parameter.
+2. DEK dibuka via kredensial (KEK) atau slot recovery (bila dipilih dan tersedia).
+3. Metadata nama (jika ada) didekripsi dan divalidasi.
+4. Record diproses berurutan; setiap tag GCM diverifikasi, record final wajib, dan byte sisa setelah final ditolak.
+5. Plaintext ditulis ke sink keluaran; pada kegagalan, output parsial dibatalkan/dibuang.
 
-## Model zero-knowledge
+## Envelope encryption & rewrap
 
-- Tidak ada endpoint unggah file.
-- Tidak ada sistem akun.
-- Tidak ada penanganan kunci di sisi server.
-- Semua data diproses di perangkat pengguna dan tidak pernah meninggalkan perangkat.
-- Dekripsi dapat memakai penyimpanan sementara OPFS untuk menjaga penggunaan memori; penghapusan berkas sementara dijadwalkan (saat halaman ditutup atau setelah timeout).
+- **DEK per berkas:** mengenkripsi payload/metadata.
+- **KEK dari kredensial:** membungkus DEK (disimpan di header).
+- **Rewrap:** mengganti pembungkusan DEK (dan parameter header terkait) tanpa mengenkripsi ulang payload; data setelah header disalin.
 
-## Web Worker dan offline
+## Web Worker dan responsivitas
 
-- Setiap operasi membuat satu Web Worker; worker menjalankan PBKDF2, enkripsi, dekripsi, dan rewrap, lalu dihentikan setelah selesai.
-- Progres dikirim ke thread UI sebagai pesan; pembatalan mengirim sinyal abort ke worker.
-- Bila lingkungan tidak mendukung Worker (misalnya pengujian), operasi yang sama dijalankan langsung di thread utama sebagai fallback.
-- Service worker menyimpan app shell (HTML, CSS, JavaScript, ikon, manifest) sehingga halaman dapat dibuka tanpa jaringan. Berkas pengguna, kata sandi, dan keyfile tidak pernah masuk cache.
-- Aplikasi tetap berfungsi penuh secara offline karena seluruh kriptografi bersifat lokal.
+- Operasi KDF dan enkripsi/dekripsi dijalankan di worker (dengan fallback ke thread utama bila worker tidak tersedia).
+- UI menerima pembaruan progres dan dapat membatalkan operasi.
+- Worker dihentikan setelah operasi selesai.
 
-## Sumber kode
+## Penyimpanan sementara dan model memori
 
-Kode sumber aplikasi tersedia di GitHub: https://github.com/Bangkahdev/AegisCrypt-Web
+Perilaku memori bergantung pada jenis operasi dan ketersediaan API browser:
+
+| Operasi / kondisi | Perilaku |
+| --- | --- |
+| **Dekripsi dengan OPFS** | Plaintext ditulis bertahap ke berkas sementara OPFS; penggunaan memori dapat dibatasi (tidak menampung seluruh hasil di RAM). |
+| **Dekripsi tanpa OPFS** | Fallback dapat menampung hasil di memori (Blob/buffer), sehingga penggunaan memori dapat sebanding ukuran keluaran. |
+| **Enkripsi (Web)** | Berkas dibaca per chunk, namun keluaran kontainer dirakit sebagai Blob; puncak memori dapat bergantung implementasi browser/ukuran berkas. |
+| **Desktop** | Pemrosesan berbasis stream; pemanggil bertanggung jawab menulis ke keluaran sementara dan mempublikasikan hanya setelah sukses. |
+
+Pembersihan berkas sementara adalah upaya terbaik; ini **bukan** jaminan penghapusan aman (*secure erase*) pada SSD/jurnal/snapshot.
+
+## Offline dan batas kepercayaan
+
+- **Offline:** setelah aset dimuat/ter-cache, kriptografi tidak memerlukan jaringan.
+- **Cache:** service worker menyimpan aset statis aplikasi, bukan data pengguna.
+- **Batas kepercayaan:** kerahasiaan bergantung pada integritas browser/OS/perangkat. Ancaman dan residual dibahas di [Model Keamanan](/keamanan).
+
+## Paritas Web dan Desktop
+
+- Kontrak byte format didefinisikan oleh spesifikasi `.aegis` v3 dan fixture/vektor uji.
+- Implementasi Web dan Desktop diuji untuk membaca/menulis kontainer yang kompatibel dan menangani error secara konsisten.
+- Perubahan format wajib disertai pembaruan spesifikasi, vektor uji, dan kedua implementasi.
+
+## Referensi
+
+- [Model Keamanan](/keamanan)
+- [Format .aegis v3](/format-file)
+- [Performa & Batasan](/performa)
+- [Spesifikasi v3 (repo)](https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/docs/specs/spec-aegis-v3.md)

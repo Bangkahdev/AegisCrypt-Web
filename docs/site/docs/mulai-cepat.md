@@ -1,65 +1,69 @@
 ---
 sidebar_position: 2
 slug: /mulai-cepat
+title: "Mulai Cepat"
+description: "Langkah cepat mengenkripsi dan mendekripsi berkas dengan AegisCrypt di browser."
 ---
 
 # Mulai Cepat
 
-Tidak perlu menginstal sesuatu secara lokal. AegisCrypt adalah aplikasi web yang sudah di-deploy. Buka langsung dan mulai sesi enkripsi.
+AegisCrypt berjalan sebagai aplikasi web statis. Anda tidak perlu menginstal dependensi atau membuat akun untuk menggunakan fitur enkripsi inti.
 
-## Langkah 1: Buka aplikasi
+## Prasyarat
 
-Buka [https://aegiscrypt.bangkah.tech](https://aegiscrypt.bangkah.tech) di browser Anda. Aplikasi akan dimuat sepenuhnya di browser — tidak ada unduhan atau instalasi yang diperlukan.
+- Browser modern dengan dukungan `crypto.subtle`, `File`, `Blob`, dan (disarankan) Web Worker.
+- Koneksi internet untuk memuat aplikasi pertama kali. Setelah aset tersimpan, operasi kriptografi dapat berjalan secara lokal/offline.
 
-<div className="card">
-  <img src="/screenshots/login.png" alt="Layar masuk AegisCrypt" style={{ width: "100%", height: "auto", borderRadius: "8px", marginBottom: "1rem" }} />
-  <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>Layar masuk: masukkan kata sandi dan (opsional) pilih keyfile.</p>
+## 1. Buka aplikasi
+
+Buka [aegiscrypt.bangkah.tech](https://aegiscrypt.bangkah.tech).
+
+<div className="screenshot-frame">
+  <img src="/screenshots/login.png" alt="Layar masuk AegisCrypt" />
 </div>
+<div className="screenshot-caption">Layar awal: pilih mode kredensial, masukkan kata sandi, dan opsional keyfile atau kunci pemulihan.</div>
 
-## Langkah 2: Mulai sesi
+## 2. Mulai sesi
 
-1. Masukkan **kata sandi kuat** di kolom `Master password`.
-2. (Opsional) Aktifkan **Use keyfile** dan pilih berkas acak (gambar, audio, dokumen, atau berkas apa pun) sebagai faktor kedua. Keyfile yang sama harus digunakan saat dekripsi.
-3. Klik tombol **Start Session**.
+1. Masukkan **kata sandi** yang kuat.
+2. (Opsional) Aktifkan **keyfile** dan pilih berkas apa pun sebagai faktor tambahan. Keyfile yang sama persis diperlukan saat dekripsi.
+3. Klik **Mulai sesi** / **Start Session**.
 
-## Langkah 3: Enkripsi berkas
+:::warning Simpan kredensial dengan aman
+Tanpa kata sandi dan keyfile yang benar (atau kunci pemulihan yang valid untuk berkas yang memiliki slot recovery), berkas terenkripsi tidak dapat dipulihkan. AegisCrypt tidak menyediakan reset kata sandi sisi server.
+:::
 
-Setelah sesi aktif, Anda akan melihat dasbor pemrosesan.
+## 3. Enkripsi berkas
 
-<div className="card">
-  <img src="/screenshots/dashboard.png" alt="Dasbor pemrosesan AegisCrypt" style={{ width: "100%", height: "auto", borderRadius: "8px", marginBottom: "1rem" }} />
-  <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>Dasbor: antrean berkas, tombol Enkripsi/Dekripsi, dan log operasi.</p>
+1. Tambahkan berkas atau folder ke antrean (seret/lepas atau pilih dari dialog berkas).
+2. Klik **Encrypt**.
+3. Pantau progres dan status operasi.
+4. Unduh berkas hasil dengan ekstensi `.aegis` (nama kontainer umumnya `nama-asli.ext.aegis`).
+
+<div className="screenshot-frame">
+  <img src="/screenshots/dashboard.png" alt="Dasbor pemrosesan AegisCrypt" />
 </div>
+<div className="screenshot-caption">Dasbor: antrean berkas, aksi enkripsi/dekripsi, progres, dan log.</div>
 
-1. Seret satu atau beberapa berkas/folder ke zona `Processing Queue`, atau klik `Click to browse`.
-2. Klik tombol **Encrypt** (gembok tertutup).
-3. Pantau progres, kecepatan (MB/s), dan Estimasi Waktu Selesai (ETA) di `Operation Status`.
-4. Setelah selesai, browser akan otomatis mengunduh kontainer berformat `original.ext.aegis`.
+## 4. Dekripsi berkas
 
-## Langkah 4: Dekripsi berkas
+1. Mulai sesi dengan **kata sandi dan keyfile yang sama** seperti saat enkripsi.
+2. Tambahkan berkas `.aegis`.
+3. Klik **Decrypt**.
+4. Unduh berkas hasil. Jika kontainer menyimpan metadata nama terenkripsi, nama asli dipulihkan dari metadata.
 
-1. Mulai sesi dengan **kata sandi dan keyfile yang sama persis** yang digunakan saat enkripsi.
-2. Seret berkas `.aegis` ke zona unggah.
-3. Klik tombol **Decrypt** (gembok terbuka).
-4. Unduh berkas asli yang berhasil dipulihkan.
+## 5. Opsi lanjutan (opsional)
 
-<div className="callout callout-danger">
-  <div className="callout-title">Peringatan penting</div>
-  Tanpa keyfile yang sama persis, dekripsi akan gagal. Simpan keyfile dengan aman dan jangan menghapusnya sebelum memverifikasi bahwa dekripsi berhasil. Tidak ada mekanisme pemulihan kunci di server.
-</div>
+| Fitur | Kapan digunakan | Catatan |
+| --- | --- | --- |
+| **Keyfile** | Menambah faktor kedua di luar kata sandi | Materi kunci memakai hash SHA-256 dari byte keyfile. |
+| **Kunci pemulihan** | Cadangan akses bila kata sandi/keyfile hilang | Harus dibuat dan disimpan sebelum/selama enkripsi berkas terkait; hanya berlaku untuk berkas yang memiliki slot recovery. |
+| **Rewrap** | Mengganti kata sandi/keyfile | Menulis ulang header tanpa mengenkripsi ulang payload. |
+| **PWA/offline** | Pemakaian berulang atau tanpa jaringan | Install dari browser; cache hanya menyimpan aset aplikasi, bukan berkas pengguna. |
 
-## Tampilan di perangkat seluler
+## Langkah berikutnya
 
-Aplikasi responsif dan dapat digunakan di layar seluler.
-
-<img src="/screenshots/login-mobile.png" alt="Layar masuk seluler" style={{ width: "100%", maxWidth: "400px", borderRadius: "8px", marginBottom: "0.5rem" }} />
-<img src="/screenshots/dashboard-mobile.png" alt="Dasbor seluler" style={{ width: "100%", maxWidth: "400px", borderRadius: "8px" }} />
-
-## Apa yang diperlukan
-
-- Browser modern dengan `crypto.subtle`, `File.slice`, dan `Blob`
-- Koneksi internet hanya untuk memuat aplikasi pertama kali; kriptografi tetap bekerja secara offline setelah halaman dimuat
-
-## Sumber kode
-
-Kode sumber aplikasi tersedia di GitHub: https://github.com/Bangkahdev/AegisCrypt-Web
+- Pelajari alur lengkap di [Panduan Pengguna](/panduan-pengguna).
+- Pahami jaminan dan batasan di [Model Keamanan](/keamanan).
+- Lihat struktur kontainer di [Format .aegis v3](/format-file).
+- Jika terjadi kendala, buka [Pemecahan Masalah](/troubleshooting).

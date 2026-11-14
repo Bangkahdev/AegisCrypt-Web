@@ -1,155 +1,132 @@
 ---
 sidebar_position: 5
 slug: /format-file
+title: "Format Berkas .aegis v3"
+description: "Referensi struktur kontainer .aegis v3: header, envelope encryption, record, metadata nama, slot recovery, dan kompatibilitas v2."
 ---
 
-# Format File (.aegis v3)
+# Format Berkas `.aegis` v3
 
-Kontainer `.aegis` v3 memakai **envelope encryption**. Setiap berkas memiliki
-Data Encryption Key (DEK) acak 256-bit yang dipakai untuk seluruh record, lalu
-DEK tersebut dibungkus (*wrapped*) oleh Key Encryption Key (KEK) yang diturunkan
-dari kata sandi dan keyfile opsional. Dengan cara ini, mengganti kata sandi
-hanya menulis ulang header, bukan seluruh isi berkas.
+Kontainer `.aegis` v3 menggunakan **envelope encryption**: payload dienkripsi dengan **DEK** acak per berkas, dan DEK dibungkus oleh **KEK** yang diturunkan dari kredensial pengguna. Format ini mendukung autentikasi integritas, pemrosesan per record, metadata nama terenkripsi, slot recovery opsional, dan rewrap kredensial.
 
-Kontainer v2 lama tetap dapat **dibaca**, tetapi aplikasi hanya menulis v3.
+:::info Status & sumber kebenaran
+Dokumen ini adalah ringkasan referensi untuk pengguna/pengembang. Sumber normatif implementasi adalah [spesifikasi v3](https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/docs/specs/spec-aegis-v3.md), konstanta kode, dan vektor uji beku di repositori. Status saat ini: *frozen-candidate* (D1/batas pemakaian DEK bersifat provisional).
+:::
+
+## Konvensi
+
+- Integer multi-byte: **big-endian** (kecuali format legacy v2 yang dinyatakan eksplisit).
+- Ukuran/offset dalam byte.
+- `UTF8(x)` tanpa BOM; `SHA256(x)` = 32 byte.
+
+## Primitif dan parameter
+
+| Fungsi | Detail |
+| --- | --- |
+| Cipher terautentikasi | AES-256-GCM, nonce 96-bit, tag 128-bit |
+| KDF kredensial | PBKDF2-HMAC-SHA256 (`kdf_id=0x01`), salt 32 byte, iterasi 600.000-5.000.000, output 32 byte |
+| KDF recovery | HKDF-SHA256, salt kosong, info `"AEGISRCV" \|\| fileId`, output 32 byte |
+| Hash keyfile | SHA-256 atas byte mentah keyfile |
+| `chunk_size` | 64 KiB - 16 MiB (default 1 MiB) |
+
+**Key material:** `PasswordBytes || KeyFilePart`, dengan `PasswordBytes = UTF8(password)` (tanpa normalisasi Unicode) dan `KeyFilePart = SHA256(keyfile bytes)` bila keyfile digunakan.
+
+## Tata letak kontainer
+
+```text
+[ Header tetap 128 B ]
+[ Recovery slot 60 B ]        (jika FLAG_RECOVERY)
+[ Metadata nama variabel ]    (jika FLAG_FILENAME_METADATA)
+[ Record 0 ][ Record 1 ] ...  [ Record N (final) ]
+```
+
+`metadataOffset = 128 + (recovery ? 60 : 0)`.
 
 ## Header tetap (128 byte)
 
-Semua bilangan bulat disimpan **big-endian**.
+| Offset | Ukuran | Field | Keterangan |
+| ---: | ---: | --- | --- |
+| 0 | 5 | `magic` | ASCII `AEGIS` (`41 45 47 49 53`) |
+| 5 | 1 | `version` | `0x03` |
+| 6 | 1 | `kdf_id` | `0x01` = PBKDF2-HMAC-SHA256 |
+| 7 | 1 | `flags` | bit0 keyfile, bit1 recovery, bit2 filename metadata; bit lain ditolak |
+| 8 | 4 | `iterations` | u32 BE |
+| 12 | 4 | `chunk_size` | u32 BE |
+| 16 | 32 | `salt` | salt KDF |
+| 48 | 16 | `file_id` | pengikat unik per berkas |
+| 64 | 4 | `nonce_prefix` | awalan nonce per berkas |
+| 68 | 12 | `wrap_nonce` | nonce pembungkusan DEK |
+| 80 | 32 | `wrapped_dek` | ciphertext DEK (32 byte) |
+| 112 | 16 | `wrap_tag` | tag GCM wrap (16 byte) |
 
-| Offset | Ukuran | Field | Nilai |
-|--------|--------|-------|-------|
-| 0 | 5 | Magic | `AEGIS` |
-| 5 | 1 | Versi | `0x03` |
-| 6 | 1 | ID KDF | `0x01` = PBKDF2-HMAC-SHA256 |
-| 7 | 1 | Flag | bit0 keyfile, bit1 recovery slot, bit2 metadata nama terenkripsi |
-| 8 | 4 | Iterasi PBKDF2 | uint32, 600.000–5.000.000 |
-| 12 | 4 | Ukuran chunk | uint32, 65.536–16.777.216 byte |
-| 16 | 32 | Salt | Acak per berkas |
-| 48 | 16 | File ID | Acak per berkas |
-| 64 | 4 | Prefix nonce | Acak per berkas |
-| 68 | 12 | Nonce wrap | Acak per berkas |
-| 80 | 32 | DEK terbungkus | Ciphertext AES-GCM |
-| 112 | 16 | Tag wrap | Tag autentikasi 128-bit |
+**AAD unwrap DEK (68 byte):** byte header `0..67` (mencakup magic, versi, kdf, flags, iterasi, chunk size, salt, file id, nonce prefix). Perubahan field terautentikasi menyebabkan unwrap gagal.
 
-Bit flag yang tidak dikenal, bit cadangan yang terisi, nilai KDF/iterasi/chunk
-di luar rentang, serta versi yang tidak didukung ditolak **sebelum** KDF
-dijalankan.
+## Metadata nama berkas (opsional)
 
-## Pembungkusan DEK
+Jika `FLAG_FILENAME_METADATA` aktif, blok metadata berada setelah header/slot recovery:
 
-KEK diturunkan dari `KeyMaterial` dengan PBKDF2 memakai salt dan jumlah iterasi
-dari header. DEK dibungkus dengan AES-256-GCM dan **AAD 68 byte** (header byte
-0–67), sehingga salt, iterasi, ukuran chunk, flag, file ID, dan prefix nonce
-turut terautentikasi. Mengubah salah satu field tersebut membuat unwrap gagal
-dan dilaporkan sebagai kata sandi/keyfile salah.
+| Field | Ukuran | Keterangan |
+| --- | ---: | --- |
+| `ct_len` | 2 | u16 BE, panjang ciphertext + tag |
+| `sealed` | `ct_len` | AES-256-GCM(DEK) atas nama UTF-8 |
 
-Jika keyfile dipakai, materi kunci menjadi:
+- **Nonce:** `nonce_prefix(4) || 0xFFFFFFFFFFFFFFFF` (indeks khusus, tidak dipakai record payload).
+- **AAD (36 byte):** `magic(5) || version(1) || file_id(16) || nonce_prefix(4) || "AEGISFNM"(8) || ct_len(2)`.
+- **Kebijakan:** nama UTF-8 valid, 1-1024 byte, tanpa NUL/`/`/`\`.
+- Kontainer tanpa flag ini tetap valid; nama hasil dekripsi diturunkan dari nama kontainer.
 
-```
-KeyMaterial = Password_Bytes || SHA-256(Keyfile_Bytes)
-```
+## Record payload
 
-## Record terenkripsi
-
-Setiap record terdiri dari header 5 byte dan ciphertext beserta tag:
+Setiap record: header 5 byte + `ct_len` byte data terenkripsi.
 
 | Bagian | Ukuran | Keterangan |
-|--------|--------|------------|
-| Flag record | 1 byte | bit0 = record final |
-| Panjang ciphertext | 4 byte | uint32, termasuk tag 16 byte |
-| Ciphertext + tag | N byte | AES-256-GCM |
+| --- | ---: | --- |
+| `flags` | 1 | bit0 = FINAL; bit lain ditolak |
+| `ct_len` | 4 | u32 BE, mencakup ciphertext + tag (>= 16) |
+| `sealed` | `ct_len` | ciphertext + tag AES-256-GCM |
 
-- **Nonce tidak disimpan.** Nonce 12 byte dihitung sebagai
-  `prefix(4 byte) || index(8 byte, uint64 big-endian)`.
-- **AAD 43 byte** mengikat magic, versi, ukuran chunk, file ID, prefix nonce,
-  header record 5 byte, dan indeks record. Karena itu record tidak dapat
-  dipindah, dipotong, atau dipalsukan tanpa gagal autentikasi.
-- Record non-final harus berisi tepat satu chunk penuh
-  (`ukuran chunk + 16` byte ciphertext). Record final boleh lebih pendek.
-- Berkas kosong diwakili **satu record final** yang hanya berisi tag (tanpa
-  plaintext).
-- Setelah record final tidak boleh ada byte tambahan.
+- **Nonce (tidak disimpan):** `nonce_prefix(4) || index(8, u64 BE)`, indeks mulai 0 dan naik per record.
+- **AAD (43 byte):** `magic(5) || version(1) || chunk_size(4) || file_id(16) || nonce_prefix(4) || recordHeader(5) || index(8)`.
+- **Record non-final:** harus tepat `chunk_size + 16` byte data terenkripsi.
+- **Record final:** `16 \<= ct_len \<= chunk_size + 16`.
+- **Berkas kosong:** satu record final dengan plaintext 0 byte (`ct_len == 16`).
+- **Kelengkapan:** harus ada tepat satu record final; tidak boleh ada byte setelah record final; stream tanpa final ditolak.
 
-## Metadata nama terenkripsi (flag bit2)
+## Slot recovery (opsional)
 
-Bila bit2 aktif, tepat setelah header tetap (dan slot recovery bila ada)
-terdapat satu blok metadata:
+Jika `FLAG_RECOVERY` aktif, slot 60 byte berada pada offset 128:
 
 | Bagian | Ukuran | Keterangan |
-|--------|--------|------------|
-| Panjang ciphertext | 2 byte | uint16 big-endian, termasuk tag 16 byte |
-| Ciphertext + tag | N byte | Nama UTF-8 dienkripsi dengan DEK berkas |
+| --- | ---: | --- |
+| `nonce` | 12 | nonce wrap recovery |
+| `wrapped_dek` | 32 | DEK terenkripsi |
+| `tag` | 16 | tag GCM |
 
-- **Nonce** memakai indeks khusus `2^64-1`, sehingga tidak mungkin bertabrakan
-  dengan record payload yang mulai dari indeks 0.
-- **AAD 36 byte**: magic(5) + versi(1) + file ID(16) + prefix nonce(4) +
-  domain `AEGISFNM`(8) + panjang ciphertext(2). Metadata terikat ke berkas dan
-  tidak dapat dipindah antar-kontainer.
-- Nama maksimum **1024 byte** UTF-8. Nama kosong, NUL, atau mengandung `/` dan
-  `\` ditolak saat enkripsi maupun dekripsi.
-- File v3 tanpa bit2 tetap sah; nama unduhan diturunkan dari nama kontainer.
+- **Recovery KEK:** `HKDF-SHA256(ikm=recoveryKey, salt=kosong, info="AEGISRCV"||fileId, L=32)`.
+- **AAD (30 byte):** `magic(5) || version(1) || "AEGISRCV"(8) || fileId(16)`.
+- AAD/info tidak mengikat salt/iterasi/wrap utama, sehingga slot dapat disalin saat rewrap dan kunci recovery tetap berlaku untuk berkas yang sama.
+- Kunci recovery (32 byte) dibuat acak, ditampilkan ke pengguna, dan **tidak disimpan** di kontainer/aplikasi.
 
-## Slot recovery (flag bit1)
+## Batas pemakaian DEK (provisional)
 
-Bila bit1 aktif, slot 60 byte berada tepat setelah header tetap:
+Spesifikasi saat ini menetapkan batas konservatif jumlah record per DEK/berkas (`MAX_RECORDS` provisional) untuk menjaga margin keamanan dan kompatibilitas; keputusan normatif final menunggu tinjauan kriptografi eksternal. Lihat [spec v3 §7](https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/docs/specs/spec-aegis-v3.md).
 
-| Bagian | Ukuran | Keterangan |
-|--------|--------|------------|
-| Nonce | 12 byte | Acak per slot |
-| DEK terbungkus | 32 byte | Dek berkas dienkripsi AES-256-GCM |
-| Tag | 16 byte | Tag autentikasi GCM |
+## Kompatibilitas v2 (baca saja)
 
-Slot dibuka dengan kunci pembungkus (KEK) yang diturunkan dari kunci recovery
-256-bit milik pengguna, bukan dari kata sandi:
+| Aspek | v2 (legacy) |
+| --- | --- |
+| Status | Dapat didekripsi, **tidak ditulis** |
+| Header | 38 byte: `magic(5) + version(0x02) + salt(32)` |
+| KDF | PBKDF2-HMAC-SHA256, 100.000 iterasi (tetap) |
+| Record | `chunkLen(4, int32 LE) + iv(12) + ciphertext+tag` |
+| AAD / envelope / recovery / metadata nama | Tidak ada |
 
-```
-KEK = HKDF-SHA256(ikm = RecoveryKey, salt = kosong,
-                  info = "AEGISRCV" || FileID, panjang = 32 byte)
-AAD = magic(5) || versi(1) || "AEGISRCV"(8) || FileID(16)   // 30 byte
-```
+## Validasi dan kegagalan
 
-Karena AAD dan info tidak memuat salt, iterasi, nonce wrap, maupun keyfile,
-slot tetap sah setelah rewrap: **Change password** menyalin slot apa adanya dan
-kunci recovery yang sama tetap dapat membuka berkas. DEK tetap satu-satunya
-kunci payload, sehingga kunci recovery tidak dapat dipakai untuk menulis berkas
-baru atau mengganti kata sandi.
+Parser menolak kontainer dengan magic/versi/KDF/flag/parameter di luar batas, struktur terpotong, panjang record tidak valid, urutan/final tidak sah, trailing data, metadata tidak valid, atau kegagalan autentikasi GCM. Pada kegagalan, dekripsi tidak boleh menghasilkan plaintext terautentikasi parsial.
 
-Kunci recovery dibuat acak oleh aplikasi dan tidak pernah disimpan di
-kontainer, browser, atau server. Pengguna wajib menyimpannya sendiri (aplikasi
-menyediakan salin dan unduh `.txt`). Dekripsi dengan kunci recovery pada berkas
-tanpa slot ditolak dengan pesan slot recovery tidak ada; kunci yang salah atau
-slot yang rusak ditolak oleh tag GCM. Berkas v3 tanpa bit1 tetap sah dan hanya
-dapat dibuka dengan kata sandi/keyfile.
+## Referensi
 
-## Kompatibilitas v2 (hanya baca)
-
-| Bagian | Ukuran | Keterangan |
-|--------|--------|------------|
-| Header | 38 byte | magic + versi `0x02` + salt 32 byte |
-| Iterasi | tetap | 100.000, tidak disimpan di header |
-| Record | bervariasi | panjang int32 little-endian, IV 12 byte, ciphertext + tag |
-| AAD | tidak ada | — |
-
-Kontainer v2 tidak memiliki AAD per record dan tidak mendukung rewrap. Aplikasi
-menolak menulis v2 baru.
-
-## Nama berkas
-
-Secara default nama asli disimpan **terenkripsi** di blok metadata (flag bit2)
-dan dipakai kembali saat dekripsi. Namun kontainer yang diunduh tetap dinamai
-`original.ext.aegis`, sehingga nama dan ekstensi asli masih terlihat pada nama
-berkas kontainer. Ubah nama kontainer jika nama berkas itu sendiri sensitif.
-
-## Validasi ketat
-
-<div className="callout callout-danger">
-  <div className="callout-title">Parsing ketat</div>
-  Magic, versi, ID KDF, flag, batas iterasi, batas chunk, panjang record, urutan
-  indeks, keberadaan record final, dan byte sisa divalidasi. Output parsial
-  dibuang jika autentikasi gagal di tengah proses.
-</div>
-
-## Sumber kode
-
-Kode sumber aplikasi tersedia di GitHub: https://github.com/Bangkahdev/AegisCrypt-Web
+- [Spesifikasi v3 (normatif)](https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/docs/specs/spec-aegis-v3.md)
+- [Model Keamanan](/keamanan)
+- [Referensi API Web](/referensi-api)

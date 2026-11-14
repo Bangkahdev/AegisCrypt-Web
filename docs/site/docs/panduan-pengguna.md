@@ -1,114 +1,118 @@
 ---
 sidebar_position: 3
 slug: /panduan-pengguna
+title: "Panduan Pengguna"
+description: "Panduan lengkap penggunaan AegisCrypt: sesi, enkripsi/dekripsi, keyfile, kunci pemulihan, rewrap, offline, dan praktik aman."
 ---
 
 # Panduan Pengguna
 
-Panduan ini menjelaskan alur enkripsi dan dekripsi langkah demi langkah, termasuk penggunaan keyfile sebagai faktor kedua.
+Halaman ini menjelaskan alur penggunaan AegisCrypt di aplikasi web, termasuk fitur keamanan tambahan dan batasan operasional.
 
-## Enkripsi berkas
+## Memulai sesi
 
-<div className="card">
+AegisCrypt memerlukan kredensial untuk menurunkan kunci enkripsi selama sesi aktif.
 
-1. **Mulai sesi** — Masukkan kata sandi dan (opsional) keyfile, lalu klik `Start Session`.
-2. **Tambah berkas** — Seret berkas atau folder ke zona `Processing Queue`, atau klik `Click to browse`.
-3. **Enkripsi** — Klik tombol **Encrypt** (gembok tertutup).
-4. **Pantau progres** — Lihat kecepatan (MB/s), ETA, dan status di `Operation Status`.
-5. **Unduh hasil** — Browser akan mengunduh kontainer `original.ext.aegis` setelah proses selesai.
+1. Buka aplikasi dan pilih mode masuk: **Password** atau **Recovery key** (untuk pemulihan/dekripsi berkas yang memiliki slot recovery).
+2. Masukkan kredensial:
+   - **Password:** kata sandi, opsional dengan keyfile.
+   - **Recovery key:** kunci 32 byte (format heksadesimal) untuk berkas yang menyertakan slot recovery.
+3. Mulai sesi. Kredensial dipakai untuk operasi kriptografi di klien.
 
-</div>
+:::info Keyfile
+Keyfile adalah berkas apa pun yang byte-nya di-hash (SHA-256) dan digabungkan ke materi kunci. Perubahan satu byte pada keyfile akan menghasilkan kunci berbeda. Gunakan salinan yang stabil dan simpan cadangannya.
+:::
 
-## Dekripsi berkas
+## Mengenkripsi berkas
 
-<div className="card">
+1. Pastikan sesi aktif dengan kata sandi (dan keyfile bila digunakan).
+2. Tambahkan berkas atau folder ke **Processing Queue**.
+3. Jalankan **Encrypt**.
+4. Setelah selesai, unduh keluaran `.aegis`.
 
-1. **Mulai sesi** — Gunakan kata sandi dan keyfile yang **sama persis** dengan saat enkripsi.
-2. **Tambah berkas** — Seret berkas `.aegis` ke zona unggah.
-3. **Dekripsi** — Klik tombol **Decrypt** (gembok terbuka).
-4. **Hasil** — Berkas asli berhasil dipulihkan dan siap diunduh.
+**Catatan perilaku:**
+- Enkripsi memproses data per chunk (default 1 MiB; sesuai parameter kontainer).
+- Nama berkas asli dapat disimpan sebagai metadata terenkripsi di dalam kontainer (sesuai implementasi saat ini), sementara nama kontainer unduhan tetap mengandung nama asli (`nama.ext.aegis`). Ganti nama kontainer jika nama file itu sendiri sensitif.
+- Operasi berat dijalankan di Web Worker agar UI tetap responsif.
 
-</div>
+## Mendekripsi berkas
 
-## Menggunakan keyfile (2FA)
+1. Mulai sesi dengan kredensial yang sesuai:
+   - Kata sandi + keyfile yang sama, atau
+   - Kunci pemulihan (hanya untuk berkas yang memiliki slot recovery).
+2. Tambahkan berkas `.aegis`.
+3. Jalankan **Decrypt**.
+4. Simpan berkas hasil.
 
-Keyfile berfungsi sebagai faktor kedua. Materi kunci yang digunakan adalah:
+Jika autentikasi atau integritas gagal, dekripsi dibatalkan dan hasil parsial tidak dipublikasikan.
 
-```
-KeyMaterial = Password_Bytes + SHA-256(Keyfile_Bytes)
-```
+## Pemrosesan banyak berkas / folder
 
-Artinya:
-- Tanpa keyfile: kunci hanya berasal dari kata sandi.
-- Dengan keyfile: kunci berasal dari gabungan kata sandi dan hash SHA-256 dari isi keyfile.
+- Anda dapat menambahkan beberapa berkas sekaligus atau menjatuhkan folder (jika browser mendukung) untuk diproses dalam antrean.
+- Proses berjalan per berkas; pantau status, progres, dan log.
+- Untuk berkas sangat besar atau perangkat dengan memori terbatas, proses satu per satu untuk mengurangi tekanan memori/penyimpanan.
 
-Keyfile dapat berupa berkas apa pun — gambar, audio, dokumen, atau berkas acak. Simpan keyfile dengan aman. Hilangnya keyfile berarti berkas tidak dapat didekripsi.
+## Kunci pemulihan (Recovery key)
 
-## Menggunakan kunci recovery
+Kunci pemulihan adalah kunci 256-bit terpisah yang dapat membuka **DEK** berkas melalui slot recovery.
 
-Kunci recovery adalah kunci 256-bit terpisah yang dapat membuka berkas tanpa
-kata sandi. Kunci ini berguna sebagai jalur pemulihan bila kata sandi atau
-keyfile hilang.
+### Membuat dan menyimpan
+1. Masuk dengan kata sandi.
+2. Buka menu/dialog **Recovery key**.
+3. Buat kunci, lalu salin atau unduh ke penyimpanan aman offline.
 
-1. Masuk dengan kata sandi, lalu klik **Recovery key** di header.
-2. Klik **Generate recovery key**, lalu salin atau unduh berkas `.txt`.
-3. Semua berkas yang dienkripsi selama kunci tersebut aktif akan menyertakan
-   slot recovery (flag bit1).
-4. Untuk memulihkan, pilih tab **Recovery key** di layar masuk dan tempel
-   kuncinya.
+### Kapan berlaku
+- Berkas yang dienkripsi saat/ketika slot recovery disertakan akan memiliki flag recovery.
+- Berkas lama tanpa slot recovery **tidak** dapat dibuka dengan kunci pemulihan.
 
-Catatan:
+### Batasan sesi recovery
+- Sesi berbasis kunci pemulihan ditujukan untuk **dekripsi/pemulihan**.
+- Tidak digunakan untuk mengenkripsi berkas baru atau mengganti kata sandi.
 
-- Sesi recovery bersifat **hanya-dekripsi**; tombol Encrypt dan Change password
-  dinonaktifkan.
-- AegisCrypt tidak menyimpan kunci recovery. Jika kunci hilang, tidak ada cara
-  memulihkannya.
-- Rewrap tidak membatalkan kunci recovery, tetapi berkas lama yang dienkripsi
-  sebelum fitur ini aktif tidak memiliki slot dan tetap memerlukan kata sandi
-  atau keyfile aslinya.
+:::warning
+AegisCrypt tidak menyimpan kunci pemulihan. Jika kunci hilang dan kata sandi/keyfile juga tidak tersedia, data tidak dapat dipulihkan.
+:::
 
-## Pemrosesan batch (banyak berkas)
+## Mengganti kata sandi / keyfile (Rewrap)
 
-AegisCrypt mendukung pemrosesan banyak berkas dalam satu antrean. Anda dapat menyeret seluruh folder ke zona unggah atau memakai tombol **Add a folder**; aplikasi menelusuri isi folder secara rekursif dan memprosesnya satu per satu melalui mesin streaming per chunk (default 1 MiB).
+**Rewrap** membungkus ulang DEK dengan kredensial baru tanpa mengenkripsi ulang payload.
 
-## Mengganti kata sandi (rewrap)
+1. Tambahkan berkas `.aegis` yang valid.
+2. Buka **Change password** / rewrap.
+3. Masukkan kredensial lama (untuk membuka DEK) dan kredensial baru.
+4. (Opsional) Sesuaikan iterasi PBKDF2 dalam rentang yang didukung.
+5. Unduh berkas hasil rewrap dan simpan sebagai salinan baru.
 
-<div className="card">
+Rewrap memerlukan kredensial lama yang benar. Slot recovery (bila ada) disalin apa adanya dan tetap terikat ke `fileId`, sehingga kunci pemulihan yang sama tetap berlaku untuk berkas tersebut.
 
-1. Tambahkan berkas `.aegis` ke antrean.
-2. Klik **Change password** di header.
-3. Masukkan kata sandi baru dua kali; opsional tambahkan keyfile baru dan pilih jumlah iterasi PBKDF2 (600k, 1M, atau 2M).
-4. Klik **Re-wrap files**. Setiap kontainer diunduh ulang dengan header baru; payload tidak dienkripsi ulang.
+## Kunci sesi, auto-lock, dan pembersihan
 
-</div>
-
-Rewrap hanya sah jika kata sandi/keyfile lama masih diketahui. Simpan hasil unduhan dan gunakan kata sandi baru untuk dekripsi berikutnya.
-
-## Auto-lock dan zeroisasi
-
-Sesi terkunci otomatis setelah 10 menit tanpa aktivitas, atau segera lewat tombol **Lock**. Saat terkunci/logout, byte kata sandi dan buffer keyfile di memori diisi nol dan antrean dibersihkan. Proses yang sedang berjalan menunda auto-lock hingga selesai.
+- Sesi dapat dikunci manual atau otomatis setelah periode tidak aktif (sesuai pengaturan aplikasi).
+- Saat sesi dikunci/berakhir, aplikasi membersihkan antrean dan berupaya men-zeroisasi material sensitif di sisi UI (mis. buffer kata sandi/keyfile yang dikelola sebagai byte).
+- Tutup tab/peramban pada perangkat bersama untuk mengurangi risiko paparan.
 
 ## Bahasa antarmuka
 
-AegisCrypt tersedia dalam bahasa Inggris dan Indonesia. Gunakan tombol bahasa (**EN** / **ID**) di header untuk berganti; pilihan disimpan di `localStorage` sehingga bertahan setelah muat ulang. Bila belum pernah memilih, aplikasi mengikuti bahasa browser (`id` ? Indonesia, lainnya ? Inggris).
+Aplikasi mendukung bahasa Inggris dan Indonesia. Pilihan bahasa dapat diganti dari header dan disimpan untuk kunjungan berikutnya (bila penyimpanan browser tersedia).
 
-## Memasang aplikasi dan mode offline
+## Mode offline dan instalasi PWA
 
-AegisCrypt dapat dipasang sebagai aplikasi (PWA):
+- **Instalasi:** gunakan opsi *Install* dari browser yang mendukung PWA.
+- **Offline:** setelah kunjungan pertama berhasil, service worker dapat menyajikan app shell dari cache.
+- **Pembaruan:** muat ulang saat online untuk mengambil versi baru.
+- **Privasi cache:** service worker tidak menyimpan berkas pengguna, kata sandi, keyfile, atau plaintext.
 
-1. Buka situs di Chrome atau Edge, lalu pilih ikon **Install** di bilah alamat.
-2. Setelah kunjungan pertama, service worker menyimpan app shell sehingga halaman tetap terbuka tanpa jaringan.
-3. Enkripsi dan dekripsi tetap berjalan penuh secara offline karena semua kriptografi lokal.
+## Praktik yang disarankan
 
-Berkas pengguna, kata sandi, dan keyfile tidak pernah disimpan di cache. Untuk memperbarui versi aplikasi setelah deploy baru, muat ulang halaman saat online.
+- Gunakan kata sandi panjang/unik dan simpan di pengelola kata sandi tepercaya.
+- Simpan keyfile dan kunci pemulihan di lokasi terpisah dan aman (offline/terenkripsi).
+- Verifikasi dekripsi berkas penting sebelum menghapus sumber asli.
+- Cadangkan berkas `.aegis` dan kredensial secara terpisah.
+- Perbarui browser untuk dukungan Web Crypto/OPFS dan perbaikan keamanan.
 
-## Peringatan keamanan
+## Terkait
 
-- File, kata sandi, dan keyfile **tidak pernah ditransmisikan** ke server.
-- Setelah sesi berakhir, aplikasi tidak dapat membaca berkas Anda lagi.
-- Simpan kata sandi dan keyfile dengan aman. Tidak ada opsi "lupa kata sandi".
-
-## Sumber kode
-
-Kode sumber aplikasi tersedia di GitHub: https://github.com/Bangkahdev/AegisCrypt-Web
-
+- [Model Keamanan](/keamanan)
+- [Format .aegis v3](/format-file)
+- [Pemecahan Masalah](/troubleshooting)
+- [FAQ](/faq)
