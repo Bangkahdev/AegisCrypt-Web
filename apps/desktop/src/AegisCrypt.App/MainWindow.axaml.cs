@@ -1,3 +1,5 @@
+using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -8,6 +10,8 @@ namespace AegisCrypt.App;
 
 public partial class MainWindow : Window
 {
+    private const string FeedbackUrl = "https://tally.so/r/Ar2XOk";
+
     public MainWindow()
     {
         InitializeComponent();
@@ -15,6 +19,18 @@ public partial class MainWindow : Window
     }
 
     private MainWindowViewModel ViewModel => (MainWindowViewModel)DataContext!;
+
+    private void OpenFeedback_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(FeedbackUrl) { UseShellExecute = true });
+        }
+        catch
+        {
+            // best-effort: opening browser may be unavailable in some environments
+        }
+    }
 
     private async void BrowseInput_Click(object? sender, RoutedEventArgs e)
     {

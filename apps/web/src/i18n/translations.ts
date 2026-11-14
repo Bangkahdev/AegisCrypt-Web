@@ -39,6 +39,7 @@ export const en = {
   "common.skipToContent": "Skip to main content",
   "common.documentation": "Documentation",
   "common.readDocs": "Read the docs",
+  "common.feedback": "Give feedback",
   "errors.storageQuota":
     "The browser does not have enough storage to process this file. Free up space and try again.",
   "errors.format": "This is not a valid .aegis container.",
@@ -233,6 +234,7 @@ export const id: Record<TranslationKey, string> = {
   "common.skipToContent": "Lewati ke konten utama",
   "common.documentation": "Dokumentasi",
   "common.readDocs": "Baca dokumentasi",
+  "common.feedback": "Beri masukan",
   "errors.storageQuota":
     "Penyimpanan browser tidak cukup untuk memproses berkas ini. Kosongkan ruang penyimpanan lalu coba lagi.",
   "errors.format": "Berkas .aegis tidak valid.",

@@ -1,167 +1,119 @@
-<!DOCTYPE html>
-<html lang="id">
+﻿<!DOCTYPE html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Enkripsi berkas sensitif langsung di browser dengan AES-256-GCM. Kata sandi dan kunci tidak pernah meninggalkan perangkat Anda."
-    />
+    <meta name="description" content="Encrypt sensitive files locally in your browser with AES-256-GCM. Passwords and keys never leave your device." />
     <meta name="robots" content="noindex" />
-    <meta name="theme-color" content="#f4f0e6" />
-    <title>AegisCrypt - Enkripsi Berkas Tanpa Unggah</title>
+    <meta name="theme-color" content="#f3f5f9" />
+    <title>AegisCrypt - Encrypt Files Without Uploads</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/awal/landing.css" />
+    <link rel="alternate" hreflang="en" href="https://aegiscrypt.bangkah.tech/awal/" />
+    <link rel="alternate" hreflang="id" href="https://aegiscrypt.bangkah.tech/awal/id/" />
+    <link rel="alternate" hreflang="x-default" href="https://aegiscrypt.bangkah.tech/awal/" />
   </head>
   <body>
-    <a class="skip" href="#konten">Lompat ke konten</a>
-
+    <a class="skip" href="#content">Skip to content</a>
     <header class="site-header">
-      <a class="brand" href="/awal/">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span>AegisCrypt</span>
-      </a>
-      <nav aria-label="Navigasi utama">
-        <a href="#cara-kerja">Cara kerja</a>
-        <a href="#bukti">Bukti teknis</a>
-        <a href="#daftar">Daftar tunggu</a>
-      </nav>
+      <a class="brand" href="/awal/"><span class="brand-mark" aria-hidden="true"></span><span>AegisCrypt</span></a>
+      <div class="header-right">
+        <nav aria-label="Main navigation">
+          <a href="#how-it-works">How it works</a>
+          <a href="#proof">Technical proof</a>
+          <a href="#feedback">Feedback</a>
+        </nav>
+        <div class="lang-switch" aria-label="Language">
+          <a class="lang-link" href="/awal/" aria-current="page">EN</a>
+          <a class="lang-link" href="/awal/id/">ID</a>
+        </div>
+      </div>
     </header>
 
-    <main id="konten">
-      <section class="hero" aria-labelledby="judul">
-        <p class="eyebrow">Versi gratis — kami butuh masukan Anda</p>
-        <h1 id="judul">
-          Enkripsi berkas sensitif di browser.
-          <span>Kuncinya tidak pernah pergi.</span>
-        </h1>
-        <p class="lede">
-          Mengirim laporan, kontrak, atau arsip pribadi lewat email dan aplikasi
-          pesan berarti menyerahkan salinan ke pihak lain. AegisCrypt mengenkripsi
-          berkas di perangkat Anda sebelum ada yang diunggah.
-        </p>
+    <main id="content">
+      <section class="hero" aria-labelledby="title">
+        <p class="eyebrow">Free version — we need your feedback</p>
+        <h1 id="title">Encrypt sensitive files in your browser. <span>Your keys never leave.</span></h1>
+        <p class="lede">Sending reports, contracts, or personal archives over email and messaging apps means handing copies to others. AegisCrypt encrypts files on your device before anything is uploaded anywhere.</p>
         <div class="cta-row">
-          <a class="button primary" href="https://tally.so/r/Ar2XOk">
-            Isi form masukan
-          </a>
-          <a class="button" href="/">Coba versi sekarang</a>
+          <a class="button primary" href="https://tally.so/r/Ar2XOk" target="_blank" rel="noopener noreferrer">Give feedback</a>
+          <a class="button" href="/">Try the app now</a>
         </div>
-        <p class="fine-print">
-          Gratis. Tanpa akun, tanpa unggahan, tanpa pelacakan. AegisCrypt belum diaudit pihak independen.
-        </p>
+        <p class="fine-print">Free. No account, no uploads, no tracking. AegisCrypt has not been independently audited.</p>
       </section>
 
-      <section class="problem" aria-labelledby="masalah">
-        <h2 id="masalah">Masalahnya bukan enkripsi. Masalahnya langkahnya.</h2>
+      <section class="problem" aria-labelledby="problem-title">
+        <h2 id="problem-title">The problem isn’t encryption. It’s the steps.</h2>
         <div class="grid two">
           <article class="card">
-            <p class="card-label">Cara lama</p>
+            <p class="card-label">The old way</p>
             <ul>
-              <li>Berkas diunggah ke penyimpanan awan pihak ketiga.</li>
-              <li>Kata sandi arsip dikirim di kanal yang sama.</li>
-              <li>Tidak ada yang tahu siapa memegang salinan.</li>
-              <li>Alat enkripsi desktop butuh pemasangan dan kebiasaan baru.</li>
+              <li>Files are uploaded to third-party cloud storage.</li>
+              <li>Archive passwords are sent in the same channel.</li>
+              <li>No one knows who holds copies.</li>
+              <li>Desktop encryption tools require installs and new habits.</li>
             </ul>
           </article>
           <article class="card accent">
-            <p class="card-label">Dengan AegisCrypt</p>
+            <p class="card-label">With AegisCrypt</p>
             <ul>
-              <li>Enkripsi berjalan lokal memakai Web Crypto API.</li>
-              <li>Berkas hasil enkripsi yang Anda bagikan, bukan aslinya.</li>
-              <li>Format terbuka, dapat dibaca versi web dan desktop.</li>
-              <li>Tidak perlu memasang aplikasi.</li>
+              <li>Encryption runs locally using the Web Crypto API.</li>
+              <li>You share the encrypted file, not the original.</li>
+              <li>Open format, readable by web and desktop versions.</li>
+              <li>No installation required.</li>
             </ul>
           </article>
         </div>
       </section>
 
-      <section id="cara-kerja" aria-labelledby="cara-kerja-judul">
-        <h2 id="cara-kerja-judul">Tiga langkah, tanpa unggahan</h2>
+      <section id="how-it-works" aria-labelledby="how-title">
+        <h2 id="how-title">Three steps, no upload</h2>
         <ol class="steps">
-          <li>
-            <span class="step-number" aria-hidden="true">01</span>
-            <h3>Pilih berkas</h3>
-            <p>Tentukan berkas yang ingin dienkripsi. Berkas tetap di perangkat Anda.</p>
-          </li>
-          <li>
-            <span class="step-number" aria-hidden="true">02</span>
-            <h3>Buat kata sandi</h3>
-            <p>
-              Kunci diturunkan dengan PBKDF2-HMAC-SHA256 dan dipakai untuk
-              AES-256-GCM. Keyfile opsional dapat ditambahkan.
-            </p>
-          </li>
-          <li>
-            <span class="step-number" aria-hidden="true">03</span>
-            <h3>Bagikan berkas .aegis</h3>
-            <p>
-              Berkas terenkripsi siap dikirim. Penerima membukanya dengan kata
-              sandi yang Anda berikan lewat kanal terpisah.
-            </p>
-          </li>
+          <li><span class="step-number" aria-hidden="true">01</span><h3>Choose files</h3><p>Select the files you want to encrypt. They stay on your device.</p></li>
+          <li><span class="step-number" aria-hidden="true">02</span><h3>Set a password</h3><p>Keys are derived with PBKDF2-HMAC-SHA256 and used for AES-256-GCM. An optional keyfile can be added.</p></li>
+          <li><span class="step-number" aria-hidden="true">03</span><h3>Share the .aegis file</h3><p>The encrypted file is ready to send. The recipient opens it with the password you share over a separate channel.</p></li>
         </ol>
       </section>
 
-      <section id="bukti" aria-labelledby="bukti-judul">
-        <h2 id="bukti-judul">Yang bisa Anda periksa sendiri</h2>
+      <section id="proof" aria-labelledby="proof-title">
+        <h2 id="proof-title">What you can verify yourself</h2>
         <div class="grid three">
           <article class="card">
-            <h3>Spesifikasi terbuka</h3>
-            <p>
-              Header 128 byte, tata letak record, dan AAD didokumentasikan dan
-              dibekukan sebagai kontrak.
-            </p>
-            <a href="https://docs.aegiscrypt.bangkah.tech/format-file">Baca format v3</a>
+            <h3>Open specification</h3>
+            <p>128-byte header, record layout, and AAD are documented and frozen as a contract.</p>
+            <a href="https://docs.aegiscrypt.bangkah.tech/format-file">Read the v3 format</a>
           </article>
           <article class="card">
-            <h3>Dua implementasi</h3>
-            <p>
-              Versi web (TypeScript) dan desktop (.NET 8) diuji terhadap vektor
-              beku yang sama, termasuk vektor kata sandi Unicode.
-            </p>
-            <a href="https://docs.aegiscrypt.bangkah.tech/arsitektur">Lihat arsitektur</a>
+            <h3>Two implementations</h3>
+            <p>Web (TypeScript) and desktop (.NET 8) are tested against the same frozen vectors, including Unicode password vectors.</p>
+            <a href="https://docs.aegiscrypt.bangkah.tech/arsitektur">See architecture</a>
           </article>
           <article class="card">
-            <h3>Gagal tertutup</h3>
-            <p>
-              Setiap kegagalan autentikasi membatalkan operasi dan membuang
-              keluaran parsial. Header produksi memakai CSP ketat dan HSTS.
-            </p>
-            <a href="https://docs.aegiscrypt.bangkah.tech/keamanan">Catatan keamanan</a>
+            <h3>Fail closed</h3>
+            <p>Every authentication failure aborts and discards partial output. Production headers use strict CSP and HSTS.</p>
+            <a href="https://docs.aegiscrypt.bangkah.tech/keamanan">Security notes</a>
           </article>
         </div>
-        <p class="fine-print">
-          AegisCrypt belum diaudit pihak independen. Jangan gunakan sebagai satu-satunya
-          salinan berkas penting.
-        </p>
+        <p class="fine-print">AegisCrypt has not been independently audited. Do not rely on it as the only copy of important files.</p>
       </section>
 
-      <section id="masukan" class="waitlist" aria-labelledby="masukan-judul">
-        <h2 id="masukan-judul">Bantu kami menyempurnakan AegisCrypt</h2>
-        <p>
-          Isi form masukan (sekitar 3 menit) agar kami mengetahui fitur mana yang
-          paling bernilai bagi Anda. Jawaban tidak dipakai untuk promosi.
-        </p>
+      <section id="feedback" class="waitlist" aria-labelledby="feedback-title">
+        <h2 id="feedback-title">Help us improve AegisCrypt</h2>
+        <p>Fill out a short feedback form (about 3 minutes) so we know which features matter most and what is still confusing. Responses are used to improve AegisCrypt, not for promotion.</p>
         <div class="cta-row">
-          <a class="button primary" href="https://tally.so/r/Ar2XOk">
-            Isi form masukan
-          </a>
-          <a class="button" href="/">Langsung coba</a>
+          <a class="button primary" href="https://tally.so/r/Ar2XOk" target="_blank" rel="noopener noreferrer">Give feedback</a>
+          <a class="button" href="/">Open the app</a>
         </div>
-        <p class="fine-print">
-          Form dikelola oleh layanan pihak ketiga (Tally). Aplikasi enkripsi AegisCrypt
-          tetap tanpa akun, tanpa unggahan, dan tanpa pelacakan. AegisCrypt belum diaudit
-          pihak independen.
-        </p>
+        <p class="fine-print">The form is managed by a third-party service (Tally). The AegisCrypt encryption app remains without accounts, uploads, or tracking. AegisCrypt has not been independently audited.</p>
       </section>
     </main>
 
     <footer class="site-footer">
-      <p>AegisCrypt. Format v3, Apache-2.0.</p>
-      <nav aria-label="Tautan footer">
-        <a href="https://docs.aegiscrypt.bangkah.tech/">Dokumentasi</a>
-        <a href="https://github.com/Bangkahdev/AegisCrypt-Web">Kode sumber</a>
-        <a href="https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/SECURITY.md">Keamanan</a>
+      <p>AegisCrypt. v3 format, Apache-2.0.</p>
+      <nav aria-label="Footer links">
+        <a href="https://docs.aegiscrypt.bangkah.tech/">Documentation</a>
+        <a href="https://github.com/Bangkahdev/AegisCrypt-Web">Source code</a>
+        <a href="https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/SECURITY.md">Security</a>
       </nav>
     </footer>
   </body>

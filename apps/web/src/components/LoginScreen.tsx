@@ -36,7 +36,8 @@ const FACTS = [
 ] as const;
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const feedbackHref = locale === "id" ? "/awal/id/feedback/" : "/awal/feedback/";
   const [mode, setMode] = useState<"password" | "recovery">("password");
   const [password, setPassword] = useState("");
   const [keyFile, setKeyFile] = useState<File | null>(null);
@@ -111,6 +112,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <a
+              href={feedbackHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"
+            >
+              {t("common.feedback")}
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </a>
             <a
               href="https://docs.aegiscrypt.bangkah.tech"
               className="hidden items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"
@@ -310,13 +320,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
       <footer className="border-t border-border bg-card">
         <div className="mx-auto flex w-full max-w-6xl flex-col justify-between gap-2 px-4 py-4 text-[11px] text-muted-foreground sm:flex-row sm:px-6 lg:px-8">
           <p>{t("login.footer")}</p>
-          <a
-            href="https://docs.aegiscrypt.bangkah.tech"
-            className="inline-flex items-center gap-1 font-medium hover:text-foreground"
-          >
-            {t("common.readDocs")}
-            <ArrowUpRight className="h-3 w-3" />
-          </a>
+          <div className="flex items-center gap-4">
+            <a
+              href={feedbackHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium hover:text-foreground"
+            >
+              {t("common.feedback")}
+              <ArrowUpRight className="h-3 w-3" />
+            </a>
+            <a
+              href="https://docs.aegiscrypt.bangkah.tech"
+              className="inline-flex items-center gap-1 font-medium hover:text-foreground"
+            >
+              {t("common.readDocs")}
+              <ArrowUpRight className="h-3 w-3" />
+            </a>
+          </div>
         </div>
       </footer>
     </div>

@@ -6,6 +6,10 @@ test.describe('AegisCrypt user journey', () => {
     await page.goto('/');
 
     await expect(page.getByRole('heading', { name: 'AegisCrypt' })).toBeVisible();
+    const loginFeedback = page.locator('a[href="/awal/feedback/"]').first();
+    await expect(loginFeedback).toBeVisible();
+    await expect(loginFeedback).toHaveAttribute('target', '_blank');
+
     await page.getByPlaceholder('Enter encryption password').fill('BlackboxPassword123!');
     await page.getByRole('button', { name: 'Start Session' }).click();
 
@@ -13,6 +17,8 @@ test.describe('AegisCrypt user journey', () => {
     await expect(page.getByText('Encrypt')).toBeVisible();
     await expect(page.getByText('Decrypt')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible();
+    const appFeedback = page.locator('a[href="/awal/feedback/"]').first();
+    await expect(appFeedback).toBeVisible();
   });
 
   test('requires a password before starting a session', async ({ page }) => {

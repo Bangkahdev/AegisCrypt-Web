@@ -59,7 +59,8 @@ function formatBytes(bytes: number) {
 }
 
 export default function App() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const feedbackHref = locale === "id" ? "/awal/id/feedback/" : "/awal/feedback/";
   const [session, setSession] = useState<AuthSession | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -462,6 +463,14 @@ export default function App() {
               <span className="hidden lg:inline">{t("app.lock")}</span>
             </Button>
 
+            <a
+              href={feedbackHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground md:inline-flex"
+            >
+              {t("common.feedback")}
+            </a>
             <LanguageToggle />
             <ThemeToggle />
 
