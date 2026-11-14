@@ -52,10 +52,12 @@ public static class AegisConstants
     public const int RecordAadLength = 43;
 
     /// <summary>
-    /// Maximum payload records per file/DEK (D1 provisional). Derived from the
-    /// NIST SP 800-38D invocation limit for 96-bit deterministic IVs (2^32),
-    /// minus 2 for margin and the reserved filename-metadata index.
-    /// See docs/spec-aegis-v3.md section 7.
+    /// Maximum payload records per file/DEK (D1 provisional). Conservative
+    /// product policy, not a direct SP 800-38D section 8.3 mandate: the nonce is
+    /// a 96-bit deterministic construction (section 8.2.1, prefix + index), which
+    /// section 8.3 explicitly exempts from its 2^32 invocation cap. The cap keeps
+    /// invocations far below the 2^64 invocation field and reserves the final
+    /// index for filename metadata. See docs/spec-aegis-v3.md sections 7 and 7.2.
     /// </summary>
     public const ulong MaxRecords = 4_294_967_294UL;
 
