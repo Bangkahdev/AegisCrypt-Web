@@ -475,13 +475,19 @@ public static class AegisCrypto
         }
     }
 
-    private static void AssertFilename(string filename)
+    private static byte[] AssertFilename(string filename)
     {
         var bytes = Encoding.UTF8.GetBytes(filename);
-        if (bytes.Length == 0 || bytes.Length > AegisConstants.FilenameMaxLength)
+        if (bytes.Length == 0 ||
+            bytes.Length > AegisConstants.FilenameMaxLength ||
+            filename.Contains('\0') ||
+            filename.Contains('/') ||
+            filename.Contains('\\'))
         {
             throw new AegisFormatException(AegisErrors.FilenameMetadata);
         }
+
+        return bytes;
     }
 
     private static byte[] MakeNonce(byte[] prefix, ulong index)
@@ -652,11 +658,7 @@ public static class AegisCrypto
         byte[] noncePrefix,
         string filename)
     {
-        var plaintext = Encoding.UTF8.GetBytes(filename);
-        if (plaintext.Length == 0 || plaintext.Length > AegisConstants.FilenameMaxLength)
-        {
-            throw new AegisFormatException(AegisErrors.FilenameMetadata);
-        }
+        var plaintext = AssertFilename(filename);
 
         var ciphertextLength = plaintext.Length + AegisConstants.TagLength;
         var sealedData = EncryptGcm(

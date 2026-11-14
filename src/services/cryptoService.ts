@@ -304,7 +304,13 @@ const makeFilenameAad = (
 const assertFilename = (filename: string): Bytes => {
   if (typeof filename !== "string") throw new Error(AegisError.filenameMetadata);
   const bytes = new TextEncoder().encode(filename);
-  if (bytes.byteLength === 0 || bytes.byteLength > FILENAME_METADATA_MAX_LENGTH) {
+  if (
+    bytes.byteLength === 0 ||
+    bytes.byteLength > FILENAME_METADATA_MAX_LENGTH ||
+    filename.includes("\u0000") ||
+    filename.includes("/") ||
+    filename.includes("\\")
+  ) {
     throw new Error(AegisError.filenameMetadata);
   }
   return bytes;
