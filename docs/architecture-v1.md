@@ -96,7 +96,19 @@ Batas kepercayaan, ancaman, dan risiko residual ada di `docs/threat-model-v1.md`
 - `_headers` menetapkan CSP ketat tanpa inline script; `theme-init.js` dimuat sebagai berkas terpisah.
 - Tidak ada permintaan jaringan setelah muat awal; aplikasi tetap berfungsi saat offline.
 
-## 5. Cara Menjalankan dan Memverifikasi
+## 5. Model Memori dan Output Sementara
+
+Klaim "streaming" hanya berlaku untuk pembacaan dan pemrosesan record, **bukan** jaminan memori konstan di semua jalur:
+
+- **Enkripsi Web (`processFileEncrypt`)** membaca berkas per chunk, tetapi menampung seluruh record ciphertext di dalam `BlobPart[]` lalu membuat satu `Blob`. Browser dapat memindahkan bagian besar ke disk, namun itu bukan jaminan; peak memory dapat tumbuh sebanding ukuran keluaran.
+- **Dekripsi Web** menulis plaintext ke *sink*. Bila OPFS tersedia (`navigator.storage.getDirectory`), sink berupa berkas sementara `.aegis-tmp-<uuid>` sehingga memori terbatas. Bila OPFS tidak tersedia, `createBlobSink()` menampung semua plaintext di memori; pada kondisi ini penggunaan memori tumbuh sebanding ukuran keluaran.
+- **Rumusan yang akurat:** *Decryption processes records incrementally. Memory usage is bounded when OPFS is available; otherwise the application may use an in-memory fallback.*
+- **Pembersihan output sementara (Web):** `sink.abort()` dipanggil pada setiap kegagalan (header, KDF, kredensial, tamper) dan pada pembatalan; setelah sukses, berkas OPFS dijadwalkan dihapus pada `pagehide` atau setelah 60 detik. Uji `tests/cryptoService.test.ts` memverifikasi `abort()` dipanggil saat kata sandi salah dan saat payload tamper.
+- **Desktop (`AegisCrypto.Decrypt`)** menulis plaintext secara bertahap ke `Stream` keluaran pemanggil; tidak ada penampungan seluruh hasil di memori.
+- **CLI Desktop** menulis ke berkas sementara `.aegiscrypt-<guid>.tmp` di direktori tujuan, lalu `File.Move(..., overwrite: true)` hanya setelah dekripsi/rewrap berhasil; berkas sementara dihapus pada kegagalan. Pemanggil API Desktop **wajib** mengikuti pola yang sama: tulis ke berkas/stream sementara dan publikasikan hasil hanya setelah operasi sukses.
+- **Penghapusan bukan secure erasure.** Menghapus berkas sementara tidak menjamin pemadaman fisik salinan plaintext pada SSD, flash, filesystem copy-on-write, jurnal, atau snapshot. `SecureDeleteService` hanya menimpa isi berkas dan CLI mencetak peringatan bahwa overwrite tidak menjamin pemadaman pada media tersebut.
+
+## 6. Cara Menjalankan dan Memverifikasi
 
 ```powershell
 # Web
@@ -120,7 +132,7 @@ Menambah atau mengubah vektor beku:
 3. Pastikan `tests/vectors.test.ts` dan `AegisCryptoTests` sama-sama membacanya.
 4. Perbarui `docs/spec-aegis-v3.md` §10 dan riwayat dokumen.
 
-## 6. Keputusan Terbuka
+## 7. Keputusan Terbuka
 
 | Item | Status | Rujukan |
 |---|---|---|

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CRYPTO_CONSTANTS } from "../src/constants";
+import { CRYPTO_CONSTANTS, HEADER_LENGTH, RECORD_HEADER_LENGTH } from "../src/constants";
 import { AegisError, processFileDecrypt, processFileEncrypt } from "../src/services/cryptoService";
 import { concat, makeRng, patternBytes, toBytes, type Bytes } from "./helpers";
 
@@ -135,6 +135,59 @@ describe("fuzzing: malformed containers", () => {
       for (const extra of [1, 2, 3, 8, 33, 64]) {
         await expectRejected(concat(original, randomBytes(extra, rng)));
       }
+    },
+    60_000,
+  );
+
+  it(
+    "rejects a flip of every header byte",
+    async () => {
+      const original = await validContainer();
+      for (let position = 0; position < HEADER_LENGTH; position++) {
+        const mutated = original.slice();
+        mutated[position] ^= 0xff;
+        await expectRejected(mutated);
+      }
+    },
+    180_000,
+  );
+
+  it(
+    "rejects a flip of every record-header byte",
+    async () => {
+      const original = await validContainer();
+      for (let position = 0; position < RECORD_HEADER_LENGTH; position++) {
+        const mutated = original.slice();
+        mutated[HEADER_LENGTH + position] ^= 0xff;
+        await expectRejected(mutated);
+      }
+    },
+    120_000,
+  );
+
+  it(
+    "rejects structured lengths around the header boundary",
+    async () => {
+      const magic = new Uint8Array([0x41, 0x45, 0x47, 0x49, 0x53, 3]);
+      const rng = mulberry32(0x5eed1234);
+      for (let length = 0; length <= HEADER_LENGTH + 8; length++) {
+        await expectRejected(concat(magic, randomBytes(length, rng)));
+      }
+    },
+    120_000,
+  );
+
+  it(
+    "accepts the unmodified baseline container",
+    async () => {
+      const out = await processFileDecrypt(
+        new Blob([await validContainer()]),
+        PASSWORD,
+        null,
+        new AbortController().signal,
+        () => {},
+      );
+      expect((await toBytes(out)).byteLength).toBe(300);
     },
     60_000,
   );
