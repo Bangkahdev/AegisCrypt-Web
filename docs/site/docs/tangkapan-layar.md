@@ -1,43 +1,49 @@
 ---
 sidebar_position: 12
 slug: /tangkapan-layar
+title: "Tangkapan Layar"
+description: "Cuplikan antarmuka AegisCrypt pada tampilan desktop dan seluler."
 ---
 
 # Tangkapan Layar
 
-Berikut adalah tampilan antarmuka aplikasi dan dokumentasi, diambil langsung dari situs live.
+Cuplikan berikut menunjukkan alur utama antarmuka AegisCrypt. Tampilan aktual dapat berubah seiring pembaruan UI.
 
-## Layar masuk
+## Desktop
 
-<div className="card">
-  <img src="/screenshots/login.png" alt="Layar masuk AegisCrypt" style={{ width: "100%", height: "auto", borderRadius: "8px" }} />
-  <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>Layar masuk dengan sandi dan keyfile opsional (2FA).</p>
+### Layar masuk / mulai sesi
+
+<div className="screenshot-frame">
+  <img src="/screenshots/login.png" alt="Layar masuk AegisCrypt pada desktop" />
 </div>
+<div className="screenshot-caption">Pengguna memilih mode kredensial dan memulai sesi lokal sebelum memproses berkas.</div>
 
-## Dasbor pemrosesan
+### Dasbor pemrosesan
 
-<div className="card">
-  <img src="/screenshots/dashboard.png" alt="Dasbor pemrosesan AegisCrypt" style={{ width: "100%", height: "auto", borderRadius: "8px" }} />
-  <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>Antrean berkas, tombol Enkripsi/Dekripsi, dan log operasi.</p>
+<div className="screenshot-frame">
+  <img src="/screenshots/dashboard.png" alt="Dasbor pemrosesan berkas AegisCrypt" />
 </div>
+<div className="screenshot-caption">Antrean berkas, aksi enkripsi/dekripsi, progres, dan log operasi ditampilkan di satu layar.</div>
 
-## Tampilan seluler
+## Seluler
 
-<div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-  <div style={{ flex: 1, minWidth: "200px" }}>
-    <img src="/screenshots/login-mobile.png" alt="Layar masuk seluler" style={{ width: "100%", borderRadius: "8px" }} />
-    <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>Layar masuk pada layar lebar 390px.</p>
+<div className="doc-grid">
+  <div>
+    <div className="screenshot-frame">
+      <img src="/screenshots/login-mobile.png" alt="Layar masuk AegisCrypt pada perangkat seluler" />
+    </div>
+    <div className="screenshot-caption">Layar masuk pada lebar perangkat seluler.</div>
   </div>
-  <div style={{ flex: 1, minWidth: "200px" }}>
-    <img src="/screenshots/dashboard-mobile.png" alt="Dasbor seluler" style={{ width: "100%", borderRadius: "8px" }} />
-    <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>Dasbor pemrosesan pada perangkat seluler.</p>
+  <div>
+    <div className="screenshot-frame">
+      <img src="/screenshots/dashboard-mobile.png" alt="Dasbor AegisCrypt pada perangkat seluler" />
+    </div>
+    <div className="screenshot-caption">Dasbor pemrosesan pada perangkat seluler.</div>
   </div>
 </div>
 
-## Buka aplikasi langsung
+## Tautan
 
-[Buka Aplikasi AegisCrypt](https://aegiscrypt.bangkah.tech)
-
-## Kode sumber
-
-[Lihat di GitHub](https://github.com/Bangkahdev/AegisCrypt-Web)
+- [Buka Aplikasi](https://aegiscrypt.bangkah.tech)
+- [Mulai Cepat](/mulai-cepat)
+- [Panduan Pengguna](/panduan-pengguna)

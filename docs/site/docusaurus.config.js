@@ -8,14 +8,12 @@ const darkCodeTheme = themes.dracula;
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "AegisCrypt Docs",
-  tagline: "Referensi teknis enkripsi berkas berbasis browser (Bahasa Indonesia)",
+  tagline: "Dokumentasi resmi AegisCrypt untuk enkripsi berkas lokal di browser",
   favicon: "img/favicon.svg",
 
-  // Set production URL for deployment
   url: "https://docs.aegiscrypt.bangkah.tech",
   baseUrl: "/",
 
-  // GitHub deployment (not used, using cf deploy)
   organizationName: "Bangkahdev",
   projectName: "AegisCrypt-Web",
 
@@ -29,7 +27,6 @@ const config = {
     },
   },
 
-  // Indonesian language
   i18n: {
     defaultLocale: "id",
     locales: ["id"],
@@ -58,89 +55,73 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     {
+      image: "screenshots/dashboard.png",
+      colorMode: {
+        defaultMode: "light",
+        respectPrefersColorScheme: true,
+      },
       navbar: {
-        title: "AegisCrypt Docs",
+        title: "AegisCrypt",
         logo: {
-          alt: "AegisCrypt Logo",
+          alt: "Logo AegisCrypt",
           src: "img/logo.svg",
         },
         items: [
-          {
-            type: "doc",
-            docId: "ringkasan",
-            position: "left",
-            label: "Dokumentasi",
-          },
-          {
-            href: "https://aegiscrypt.bangkah.tech",
-            label: "Buka Aplikasi",
-            position: "right",
-            className: "navbar-app-link",
-          },
-          {
-            href: "https://github.com/Bangkahdev/AegisCrypt-Web",
-            label: "GitHub",
-            position: "right",
-          },
+          { type: "doc", docId: "ringkasan", position: "left", label: "Dokumentasi" },
+          { type: "doc", docId: "mulai-cepat", position: "left", label: "Mulai Cepat" },
+          { type: "doc", docId: "referensi-api", position: "left", label: "Referensi" },
+          { href: "https://aegiscrypt.bangkah.tech", label: "Buka Aplikasi", position: "right", className: "navbar-app-link" },
+          { href: "https://github.com/Bangkahdev/AegisCrypt-Web", label: "GitHub", position: "right" },
         ],
       },
       footer: {
         style: "dark",
         links: [
           {
-            title: "Dokumentasi",
+            title: "Pengantar",
             items: [
-              {
-                label: "Ringkasan",
-                to: "/",
-              },
-              {
-                label: "Mulai Cepat",
-                to: "/mulai-cepat",
-              },
-              {
-                label: "Panduan Pengguna",
-                to: "/panduan-pengguna",
-              },
+              { label: "Ringkasan", to: "/" },
+              { label: "Mulai Cepat", to: "/mulai-cepat" },
+              { label: "Panduan Pengguna", to: "/panduan-pengguna" },
             ],
           },
           {
-            title: "Referensi",
+            title: "Konsep & Referensi",
             items: [
-              {
-                label: "Arsitektur",
-                to: "/arsitektur",
-              },
-              {
-                label: "Format File (.aegis v3)",
-                to: "/format-file",
-              },
-              {
-                label: "Referensi API",
-                to: "/referensi-api",
-              },
+              { label: "Arsitektur", to: "/arsitektur" },
+              { label: "Model Keamanan", to: "/keamanan" },
+              { label: "Format .aegis v3", to: "/format-file" },
+              { label: "Referensi API Web", to: "/referensi-api" },
             ],
           },
           {
-            title: "Sumber",
+            title: "Operasional",
             items: [
-              {
-                label: "Aplikasi Web",
-                href: "https://aegiscrypt.bangkah.tech",
-              },
-              {
-                label: "Kode Sumber (GitHub)",
-                href: "https://github.com/Bangkahdev/AegisCrypt-Web",
-              },
+              { label: "Performa & Batasan", to: "/performa" },
+              { label: "Deployment", to: "/deployment" },
+              { label: "Pemecahan Masalah", to: "/troubleshooting" },
+              { label: "FAQ", to: "/faq" },
+            ],
+          },
+          {
+            title: "Proyek",
+            items: [
+              { label: "Aplikasi Web", href: "https://aegiscrypt.bangkah.tech" },
+              { label: "Kode Sumber", href: "https://github.com/Bangkahdev/AegisCrypt-Web" },
+              { label: "Kebijakan Keamanan", href: "https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/SECURITY.md" },
             ],
           },
         ],
-        copyright: `© ${new Date().getFullYear()} AegisCrypt. Dibangun dengan Docusaurus.`,
+        copyright: `Hak cipta © ${new Date().getFullYear()} AegisCrypt. Dibangun dengan Docusaurus.`,
       },
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
-        additionalLanguages: ["bash", "json", "typescript"],
+        additionalLanguages: ["bash", "json", "typescript", "csharp", "powershell"],
+      },
+      tableOfContents: {
+        minHeadingLevel: 2,
+        maxHeadingLevel: 3,
       },
     },
 };

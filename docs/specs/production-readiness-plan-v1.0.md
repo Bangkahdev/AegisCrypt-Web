@@ -236,7 +236,7 @@ KEK diturunkan dari KeyMaterial = Password ‖ SHA-256(Keyfile) (keyfile opsiona
 M
 1
 FR-CRY-04
-Enkripsi dan dekripsi berjalan streaming per chunk; penggunaan memori tidak bergantung pada ukuran berkas.
+Enkripsi dan dekripsi memproses data secara streaming per record/chunk. Penggunaan memori dibatasi (orde ukuran chunk/buffer) bila keluaran ditulis ke sink streaming/OPFS; pada Web tanpa OPFS, fallback in-memory dapat membuat penggunaan memori sebanding ukuran keluaran.
 M
 1
 FR-CRY-05
@@ -624,7 +624,7 @@ Klaim "zero-knowledge" dan sejenisnya hanya dipublikasikan bila didukung hasil a
 ID
 Kebutuhan
 NFR-PER-01
-Penggunaan memori enkripsi dan dekripsi tidak bergantung pada ukuran berkas (batas atas ≈ beberapa kali ukuran chunk).
+Penggunaan memori enkripsi dan dekripsi dibatasi (orde ukuran chunk/buffer) bila jalur I/O streaming/OPFS tersedia; pada Web tanpa OPFS dapat ada fallback in-memory sebanding ukuran keluaran.
 NFR-PER-02
 Berkas 1 GiB dapat diproses tanpa kegagalan pada perangkat dengan RAM 4 GB.
 NFR-PER-03
