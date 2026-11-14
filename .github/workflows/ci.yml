@@ -175,6 +175,53 @@ jobs:
           path: apps/web/playwright-report/
           if-no-files-found: ignore
 
+  docs:
+    name: Docs build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs/site
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docs/site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build docs (all locales)
+        run: npm run build
+
+  security-txt:
+    name: security.txt expiry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check security.txt expiry
+        shell: bash
+        run: |
+          expires=$(grep -i '^Expires:' apps/web/public/.well-known/security.txt | cut -d: -f2- | xargs)
+          exp_epoch=$(date -d "$expires" +%s)
+          now_epoch=$(date +%s)
+          warn_epoch=$((now_epoch + 30*24*60*60))
+          if [ "$exp_epoch" -le "$now_epoch" ]; then
+            echo "security.txt has expired ($expires)" >&2
+            exit 1
+          fi
+          if [ "$exp_epoch" -le "$warn_epoch" ]; then
+            echo "security.txt expires within 30 days ($expires)" >&2
+            exit 1
+          fi
+          echo "security.txt expires $expires"
+
   build:
     name: Production build
     runs-on: ubuntu-latest

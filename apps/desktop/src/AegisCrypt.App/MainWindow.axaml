@@ -163,6 +163,15 @@
                       IsVisible="{Binding IsBusy}"
                       Command="{Binding CancelCommand}" />
             </Grid>
+
+            <Border BorderBrush="#D7D0C2" BorderThickness="1" Padding="10" Background="#FFFBF0">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="status" Text="Catatan: AegisCrypt belum diaudit pihak independen. Jangan jadikan satu-satunya salinan data penting." />
+                <TextBlock Classes="status" TextWrapping="Wrap"
+                           Text="Penghapusan aman: overwrite berkas tidak menjamin penghapusan permanen pada SSD/flash (wear leveling). Gunakan enkripsi disk penuh bila perlu." />
+                <Button Content="Beri masukan / Give feedback" Click="OpenFeedback_Click" HorizontalAlignment="Left" />
+              </StackPanel>
+            </Border>
           </StackPanel>
         </Border>
       </StackPanel>
