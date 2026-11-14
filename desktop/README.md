@@ -112,7 +112,10 @@ kata sandi secara tersembunyi.
   pemadaman fisik; enkripsi penuh berkas tetap menjadi perlindungan utama.
 - Dekripsi menulis ke berkas sementara dan menghapusnya bila verifikasi gagal.
   Pustaka tetap menyerahkan tanggung jawab pembuangan keluaran parsial kepada
-  pemanggil.
+  pemanggil: tulis ke berkas/stream sementara dan pindahkan ke lokasi final
+  hanya setelah `AegisCrypto.Decrypt` selesai tanpa error.
+- Penghapusan berkas sementara **bukan** secure erasure: pada SSD, filesystem
+  copy-on-write, jurnal, atau snapshot, salinan plaintext dapat tetap ada.
 
 ## Batasan dan Rencana
 
