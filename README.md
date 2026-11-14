@@ -182,6 +182,14 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) lalu cip
 - Kontak pelaporan: **atha@bangkah.tech** (harap jangan membuka issue publik untuk kerentanan)
 - `/.well-known/security.txt` disertakan pada build web untuk penemuan otomatis
 
+## Dokumentasi Teknis
+
+- Spesifikasi format `.aegis` v3 (beku, FROZEN-CANDIDATE): [`docs/spec-aegis-v3.md`](docs/spec-aegis-v3.md)
+- Model ancaman dan risiko residual: [`docs/threat-model-v1.md`](docs/threat-model-v1.md)
+- Arsitektur dan alur data: [`docs/architecture-v1.md`](docs/architecture-v1.md)
+- Rencana kesiapan produksi (Gate 0-5): [`docs/production-readiness-plan-v1.0.md`](docs/production-readiness-plan-v1.0.md)
+- Implementasi desktop (.NET 8): [`desktop/README.md`](desktop/README.md)
+
 ## FAQ & Pemecahan Masalah
 
 **T: Saya kehilangan kata sandi/keyfile saya. Apakah data saya bisa dipulihkan?**
