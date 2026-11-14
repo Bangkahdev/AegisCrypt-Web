@@ -8,7 +8,7 @@ const darkCodeTheme = themes.dracula;
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "AegisCrypt Docs",
-  tagline: "Dokumentasi resmi AegisCrypt untuk enkripsi berkas lokal di browser",
+  tagline: "Official documentation for local, browser-based file encryption with AegisCrypt",
   favicon: "img/favicon.svg",
 
   url: "https://docs.aegiscrypt.bangkah.tech",
@@ -28,8 +28,12 @@ const config = {
   },
 
   i18n: {
-    defaultLocale: "id",
-    locales: ["id"],
+    defaultLocale: "en",
+    locales: ["en", "id"],
+    localeConfigs: {
+      en: { label: "English", htmlLang: "en" },
+      id: { label: "Bahasa Indonesia", htmlLang: "id" },
+    },
   },
 
   presets: [
@@ -62,64 +66,65 @@ const config = {
       navbar: {
         title: "AegisCrypt",
         logo: {
-          alt: "Logo AegisCrypt",
+          alt: "AegisCrypt logo",
           src: "img/logo.svg",
         },
         items: [
-          { type: "doc", docId: "ringkasan", position: "left", label: "Dokumentasi" },
-          { type: "doc", docId: "mulai-cepat", position: "left", label: "Mulai Cepat" },
-          { type: "doc", docId: "referensi-api", position: "left", label: "Referensi" },
-          { href: "https://aegiscrypt.bangkah.tech", label: "Buka Aplikasi", position: "right", className: "navbar-app-link" },
+          { type: "doc", docId: "ringkasan", position: "left", label: "Documentation" },
+          { type: "doc", docId: "mulai-cepat", position: "left", label: "Quick Start" },
+          { type: "doc", docId: "referensi-api", position: "left", label: "Reference" },
+          { href: "https://aegiscrypt.bangkah.tech", label: "Open App", position: "right", className: "navbar-app-link" },
           { href: "https://github.com/Bangkahdev/AegisCrypt-Web", label: "GitHub", position: "right" },
+          { type: "localeDropdown", position: "right" },
         ],
       },
       footer: {
         style: "dark",
         links: [
           {
-            title: "Pengantar",
+            title: "Introduction",
             items: [
-              { label: "Ringkasan", to: "/" },
-              { label: "Mulai Cepat", to: "/mulai-cepat" },
-              { label: "Panduan Pengguna", to: "/panduan-pengguna" },
+              { label: "Overview", to: "/" },
+              { label: "Quick Start", to: "/mulai-cepat" },
+              { label: "User Guide", to: "/panduan-pengguna" },
             ],
           },
           {
-            title: "Konsep & Referensi",
+            title: "Concepts & Reference",
             items: [
-              { label: "Arsitektur", to: "/arsitektur" },
-              { label: "Model Keamanan", to: "/keamanan" },
-              { label: "Format .aegis v3", to: "/format-file" },
-              { label: "Referensi API Web", to: "/referensi-api" },
+              { label: "Architecture", to: "/arsitektur" },
+              { label: "Security Model", to: "/keamanan" },
+              { label: ".aegis v3 Format", to: "/format-file" },
+              { label: "Web API Reference", to: "/referensi-api" },
             ],
           },
           {
-            title: "Operasional",
+            title: "Operations",
             items: [
-              { label: "Performa & Batasan", to: "/performa" },
+              { label: "Performance & Limits", to: "/performa" },
               { label: "Deployment", to: "/deployment" },
-              { label: "Pemecahan Masalah", to: "/troubleshooting" },
+              { label: "Troubleshooting", to: "/troubleshooting" },
               { label: "FAQ", to: "/faq" },
             ],
           },
           {
-            title: "Masukan",
+            title: "Feedback",
             items: [
-              { label: "Isi Form Masukan", href: "https://tally.so/r/Ar2XOk" },
-              { label: "Halaman Masukan", href: "https://aegiscrypt.bangkah.tech/awal/masukan/" },
-              { label: "Info Program Awal", href: "https://aegiscrypt.bangkah.tech/awal/" },
+              { label: "Feedback Form", href: "https://tally.so/r/Ar2XOk" },
+              { label: "Feedback Page", href: "https://aegiscrypt.bangkah.tech/awal/masukan/" },
+              { label: "Early Program Info", href: "https://aegiscrypt.bangkah.tech/awal/" },
             ],
           },
           {
-            title: "Proyek",
+            title: "Project",
             items: [
-              { label: "Aplikasi Web", href: "https://aegiscrypt.bangkah.tech" },
-              { label: "Kode Sumber", href: "https://github.com/Bangkahdev/AegisCrypt-Web" },
-              { label: "Kebijakan Keamanan", href: "https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/SECURITY.md" },
+              { label: "Web App", href: "https://aegiscrypt.bangkah.tech" },
+              { label: "Source Code", href: "https://github.com/Bangkahdev/AegisCrypt-Web" },
+              { label: "Security Policy", href: "https://github.com/Bangkahdev/AegisCrypt-Web/blob/main/SECURITY.md" },
             ],
           },
         ],
-        copyright: `Hak cipta (c) ${new Date().getFullYear()} AegisCrypt. Seluruh hak cipta dilindungi.`,
+        copyright: `Copyright (c) ${new Date().getFullYear()} AegisCrypt. All rights reserved.`,
       },
       prism: {
         theme: lightCodeTheme,

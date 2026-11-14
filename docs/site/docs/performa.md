@@ -1,85 +1,85 @@
 ---
 sidebar_position: 8
 slug: /performa
-title: "Performa & Batasan"
-description: "Karakteristik performa, penggunaan memori, dukungan browser, batas format, dan catatan benchmark AegisCrypt."
+title: "Performance & Limits"
+description: "Performance characteristics, memory usage, browser support, format limits, and benchmark notes for AegisCrypt."
 ---
 
-# Performa & Batasan
+# Performance & Limits
 
-Halaman ini menjelaskan karakteristik performa dan batasan praktis AegisCrypt. Angka aktual bergantung pada perangkat, browser, ukuran berkas, dan ketersediaan OPFS.
+This page describes AegisCrypt's performance characteristics and practical limits. Actual numbers depend on the device, browser, file size, and OPFS availability.
 
-## Ringkasan teknis
+## Technical summary
 
-| Aspek | Nilai |
+| Aspect | Value |
 | --- | --- |
-| Cipher | AES-256-GCM (tag 128-bit) |
+| Cipher | AES-256-GCM (128-bit tag) |
 | KDF | PBKDF2-HMAC-SHA256 |
-| Iterasi PBKDF2 | Default 600.000, rentang 600.000-5.000.000 |
-| Salt / fileId / nonce prefix | 32 / 16 / 4 byte (acak per berkas) |
-| Ukuran chunk | Default 1 MiB, rentang 64 KiB-16 MiB |
-| Header v3 | 128 byte (tetap) + metadata/slot opsional |
-| Overhead per record | 5 byte header record + 16 byte tag |
-| Metadata nama | 2 byte panjang + ciphertext+tag (nama UTF-8 \<= 1024 byte) |
-| Recovery slot | 60 byte (opsional) |
-| Kompatibilitas baca | v3 dan legacy v2 |
+| PBKDF2 iterations | Default 600,000, range 600,000-5,000,000 |
+| Salt / fileId / nonce prefix | 32 / 16 / 4 bytes (random per file) |
+| Chunk size | Default 1 MiB, range 64 KiB-16 MiB |
+| v3 header | 128 bytes (fixed) + optional metadata/slot |
+| Overhead per record | 5-byte record header + 16-byte tag |
+| Filename metadata | 2-byte length + ciphertext+tag (UTF-8 name \<= 1024 bytes) |
+| Recovery slot | 60 bytes (optional) |
+| Read compatibility | v3 and legacy v2 |
 
-## Responsivitas UI
+## UI responsiveness
 
-- Derivasi kunci (PBKDF2) dan enkripsi/dekripsi dijalankan di **Web Worker** untuk menjaga UI tetap responsif.
-- Progres dan pembatalan ditangani melalui pesan worker/sinyal pembatalan.
-- Pada lingkungan tanpa Worker, operasi dapat berjalan di thread utama (fallback).
+- Key derivation (PBKDF2) and encryption/decryption run in a **Web Worker** to keep the UI responsive.
+- Progress and cancellation are handled via worker messages/abort signals.
+- In environments without Workers, operations may fall back to the main thread.
 
-## Model memori dan penyimpanan sementara
+## Memory and temporary storage model
 
-| Skenario | Perilaku | Implikasi |
+| Scenario | Behavior | Implication |
 | --- | --- | --- |
-| **Dekripsi + OPFS tersedia** | Plaintext ditulis bertahap ke berkas sementara OPFS | Penggunaan RAM lebih terkendali; membutuhkan kuota penyimpanan asal (origin storage) |
-| **Dekripsi tanpa OPFS** | Fallback sink memori (Blob/buffer) | RAM dapat sebanding ukuran hasil dekripsi |
-| **Enkripsi (Web)** | Input dibaca per chunk, keluaran dirakit sebagai Blob | Puncak memori dapat meningkat pada berkas sangat besar (tergantung browser) |
-| **Desktop** | I/O stream seekable | Pemanggil menulis ke output sementara dan mempublikasikan setelah sukses |
+| **Decryption + OPFS available** | Plaintext is written incrementally to a temporary OPFS file | RAM usage is more controlled; requires origin storage quota |
+| **Decryption without OPFS** | In-memory sink fallback (Blob/buffer) | RAM can scale with decrypted output size |
+| **Encryption (Web)** | Input is read in chunks, output assembled as a Blob | Peak memory can increase for very large files (browser-dependent) |
+| **Desktop** | Seekable stream I/O | Caller writes to a temporary output and publishes on success |
 
-:::warning Kuota dan pembersihan
-Dekripsi via OPFS dapat memerlukan ruang sementara tambahan (mis. saat unduhan/pembersihan tertunda). Pembersihan sementara bersifat upaya terbaik dan bukan jaminan *secure erase*. Jika kuota tidak cukup, gunakan berkas lebih kecil, kosongkan ruang/kuota situs, atau proses secara terpisah.
+:::warning Quota and cleanup
+OPFS-based decryption may require additional temporary space (e.g. during download/deferred cleanup). Cleanup is best-effort and not a guaranteed secure erase. If quota is insufficient, use smaller files, free site/origin storage, or process separately.
 :::
 
-## Dukungan browser
+## Browser support
 
-Diperlukan (atau sangat disarankan):
-- **Web Crypto API** (`crypto.subtle`) pada konteks aman (HTTPS/localhost)
-- **File/Blob/File.slice** untuk pembacaan berkas
-- **Web Worker** untuk responsivitas
-- **OPFS** (`navigator.storage.getDirectory`) opsional untuk dekripsi dengan jejak memori lebih baik
-- **Service Worker + Cache Storage** untuk PWA/offline
+Required or strongly recommended:
+- **Web Crypto API** (`crypto.subtle`) in a secure context (HTTPS/localhost)
+- **File/Blob/File.slice** for file reading
+- **Web Worker** for responsiveness
+- **OPFS** (`navigator.storage.getDirectory`) optional for lower-memory decryption
+- **Service Worker + Cache Storage** for PWA/offline
 
-Kompatibilitas diuji pada mesin modern utama (Chromium/Firefox/WebKit) melalui pengujian proyek; perilaku OPFS/kuota dapat berbeda antar browser dan profil.
+Compatibility is tested on major modern engines (Chromium/Firefox/WebKit) in project testing; OPFS/quota behavior can vary by browser and profile.
 
-## Batas format dan operasional
+## Format and operational limits
 
-- Parameter di luar rentang (iterasi, chunk, flag, ukuran metadata/record) ditolak.
-- Setiap DEK/berkas memiliki batas jumlah record sesuai kebijakan spesifikasi saat ini (`MAX_RECORDS`, *provisional*).
-- Berkas `.aegis` yang rusak/tamper/terpotong/trailing ditolak (fail closed).
-- v2 hanya didukung untuk **baca/dekripsi**; penulisan baru selalu v3.
-- Nama berkas hasil dekripsi mengikuti metadata terenkripsi (jika ada) atau turunan nama kontainer; karakter berbahaya tidak diterima.
+- Out-of-range parameters (iterations, chunk, flags, metadata/record sizes) are rejected.
+- Each DEK/file has a record count limit per the current specification policy (`MAX_RECORDS`, *provisional*).
+- Corrupted/tampered/truncated/trailing `.aegis` files are rejected (fail closed).
+- v2 is supported for **read/decrypt** only; new writes are always v3.
+- Decrypted filenames follow encrypted metadata (if present) or are derived from the container name; unsafe characters are not accepted.
 
-## Tips performa
+## Performance tips
 
-- Gunakan browser desktop terbaru untuk berkas besar.
-- Tutup tab/aplikasi berat lain saat memproses berkas berukuran besar.
-- Proses berkas besar satu per satu untuk mengurangi tekanan memori/kuota.
-- Pastikan ruang penyimpanan perangkat dan kuota origin browser mencukupi (terutama dekripsi besar via OPFS).
-- Untuk perubahan kata sandi pada berkas besar, gunakan **rewrap** (lebih efisien daripada enkripsi ulang payload).
+- Use an up-to-date desktop browser for large files.
+- Close other heavy tabs/apps when processing very large files.
+- Process large files one at a time to reduce memory/quota pressure.
+- Ensure sufficient device space and browser origin quota (especially for large OPFS decryption).
+- To change credentials on large files, use **rewrap** (more efficient than re-encrypting the payload).
 
-## Benchmark lokal (pengembangan)
+## Local benchmarks (development)
 
-Repositori Web menyediakan benchmark throughput (Playwright/Chromium) dari `apps/web`:
+The Web repo provides a throughput benchmark (Playwright/Chromium) from `apps/web`:
 
 ```bash
 npm run build
 npm run test:bench
 ```
 
-Variasi ukuran (contoh):
+Size variation (example):
 
 ```bash
 BENCH_SIZE_MB=256 npm run test:bench
@@ -89,13 +89,13 @@ BENCH_SIZE_MB=256 npm run test:bench
 $env:BENCH_SIZE_MB=256; npm run test:bench
 ```
 
-Catatan:
-- Hasil mencakup overhead KDF, pipeline browser, dan unduhan/penyimpanan uji; ini **bukan** throughput AES murni.
-- Gunakan untuk perbandingan relatif antar perubahan pada mesin yang sama.
-- Berkas uji sangat besar dapat dipengaruhi kuota browser/profil pengujian.
+Notes:
+- Results include KDF overhead, browser pipeline, and test download/storage overhead; this is **not** pure AES throughput.
+- Use for relative comparisons between changes on the same machine.
+- Very large test files can be affected by browser/test-profile quota.
 
-## Referensi
+## References
 
-- [Arsitektur](/arsitektur)
-- [Format .aegis v3](/format-file)
-- [Pemecahan Masalah](/troubleshooting)
+- [Architecture](/arsitektur)
+- [.aegis v3 Format](/format-file)
+- [Troubleshooting](/troubleshooting)

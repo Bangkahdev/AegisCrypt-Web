@@ -1,0 +1,40 @@
+﻿{
+  "link.title.Introduction": {
+    "message": "Pengantar",
+    "description": "The title of the footer links column with title=Introduction in the footer"
+  },
+  "link.title.Concepts & Reference": {
+    "message": "Konsep & Referensi",
+    "description": "The title of the footer links column with title=Concepts & Reference in the footer"
+  },
+  "link.title.Operations": {
+    "message": "Operasional",
+    "description": "The title of the footer links column with title=Operations in the footer"
+  },
+  "link.title.Feedback": {
+    "message": "Masukan",
+    "description": "The title of the footer links column with title=Feedback in the footer"
+  },
+  "link.title.Project": {
+    "message": "Proyek",
+    "description": "The title of the footer links column with title=Project in the footer"
+  },
+  "link.item.label.Overview": { "message": "Ringkasan", "description": "Footer link" },
+  "link.item.label.Quick Start": { "message": "Mulai Cepat", "description": "Footer link" },
+  "link.item.label.User Guide": { "message": "Panduan Pengguna", "description": "Footer link" },
+  "link.item.label.Architecture": { "message": "Arsitektur", "description": "Footer link" },
+  "link.item.label.Security Model": { "message": "Model Keamanan", "description": "Footer link" },
+  "link.item.label..aegis v3 Format": { "message": "Format .aegis v3", "description": "Footer link" },
+  "link.item.label.Web API Reference": { "message": "Referensi API Web", "description": "Footer link" },
+  "link.item.label.Performance & Limits": { "message": "Performa & Batasan", "description": "Footer link" },
+  "link.item.label.Deployment": { "message": "Deployment", "description": "Footer link" },
+  "link.item.label.Troubleshooting": { "message": "Pemecahan Masalah", "description": "Footer link" },
+  "link.item.label.FAQ": { "message": "FAQ", "description": "Footer link" },
+  "link.item.label.Feedback Form": { "message": "Isi Form Masukan", "description": "Footer link" },
+  "link.item.label.Feedback Page": { "message": "Halaman Masukan", "description": "Footer link" },
+  "link.item.label.Early Program Info": { "message": "Info Program Awal", "description": "Footer link" },
+  "link.item.label.Web App": { "message": "Aplikasi Web", "description": "Footer link" },
+  "link.item.label.Source Code": { "message": "Kode Sumber", "description": "Footer link" },
+  "link.item.label.Security Policy": { "message": "Kebijakan Keamanan", "description": "Footer link" },
+  "copyright": { "message": "Hak cipta (c) 2026 AegisCrypt. Seluruh hak cipta dilindungi.", "description": "The footer copyright" }
+}
