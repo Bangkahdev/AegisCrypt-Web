@@ -147,6 +147,57 @@ public class AegisCryptoTests
         Assert.Equal(AegisConstants.FlagFilename, container[7]);
     }
 
+    [Theory]
+    [InlineData("a/b")]
+    [InlineData("a\\b")]
+    [InlineData("a\0b")]
+    public void UnsafeFilenameIsRejectedOnEncrypt(string filename)
+    {
+        var error = Assert.Throws<AegisFormatException>(() => Encrypt(
+            PatternBytes(16, 1),
+            "sandi",
+            null,
+            new EncryptOptions
+            {
+                Iterations = AegisConstants.IterationsMin,
+                ChunkSize = AegisConstants.ChunkSizeMin,
+                Filename = filename,
+            }));
+
+        Assert.Equal(AegisErrors.FilenameMetadata, error.Message);
+    }
+
+    [Fact]
+    public void RecordLengthAboveLimitIsRejected()
+    {
+        var container = Encrypt(PatternBytes(16, 1), "sandi", null, FastOptions());
+        var mutated = (byte[])container.Clone();
+        BinaryPrimitives.WriteUInt32BigEndian(
+            mutated.AsSpan(AegisConstants.HeaderLength + 1),
+            uint.MaxValue);
+
+        var error = Assert.Throws<AegisFormatException>(() => Decrypt(mutated, "sandi"));
+        Assert.Equal(AegisErrors.Record, error.Message);
+    }
+
+    [Fact]
+    public void ZeroLengthNonFinalRecordIsRejected()
+    {
+        var container = Encrypt(
+            PatternBytes(AegisConstants.ChunkSizeMin, 1),
+            "sandi",
+            null,
+            FastOptions());
+        var mutated = (byte[])container.Clone();
+        mutated[AegisConstants.HeaderLength] &= 0xfe;
+        BinaryPrimitives.WriteUInt32BigEndian(
+            mutated.AsSpan(AegisConstants.HeaderLength + 1),
+            0);
+
+        var error = Assert.Throws<AegisFormatException>(() => Decrypt(mutated, "sandi"));
+        Assert.Equal(AegisErrors.Record, error.Message);
+    }
+
     [Fact]
     public void RoundTripsRecoveryKeyInsteadOfPassword()
     {
