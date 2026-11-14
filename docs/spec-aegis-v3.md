@@ -246,8 +246,9 @@ Menambah error baru **wajib** memperbarui katalog, kedua implementasi, dan uji p
 
 - **v3 beku (kanonis):** `tests/fixtures/v3-vector.json` (plaintext, password, keyfile, iterasi 600000, chunk 65536, rngSeed 1) — **dikonsumsi oleh tes Web (`tests/vectors.test.ts`) dan Desktop (`AegisCryptoTests.cs`)**; hasil enkripsi harus identik byte-per-byte dan dapat didekripsi silang.
 - **v2 beku (kanonis):** `tests/fixtures/v2-vector.json` — dikonsumsi Web dan Desktop; perubahan pada pembacaan v2 memecahkannya.
-- **Kebutuhan lanjutan:** vektor kasus batas/negatif tambahan sesuai pembekuan parameter (lihat Issue Fase 1).
+- **v3 password Unicode (kanonis):** `tests/fixtures/v3-unicode-vector.json` — password NFC (`kata-sandi-café`) dan NFD (`cafe\u0301`) harus menghasilkan key material berbeda; container beku dienkripsi dengan bentuk NFC dan **dikonsumsi Web + Desktop**. Bukti bahwa tidak ada normalisasi Unicode dan bahwa kedua platform sepakat.
 - RNG deterministik untuk vektor: byte `(counter*31 + 7) & 0xFF` dari seed (lihat helper tes).
+- **Kebutuhan lanjutan:** vektor batas record dan korpus fuzz tambahan sesuai pembekuan parameter (lihat Issue Fase 1).
 
 ## 11. Daftar Keputusan Pembekuan (Checklist)
 
