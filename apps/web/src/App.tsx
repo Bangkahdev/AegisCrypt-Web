@@ -392,8 +392,8 @@ export default function App() {
         {t("common.skipToContent")}
       </a>
 
-      <header className="sticky top-0 z-30 border-b border-border/80 bg-card/90 backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-8">
+      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Shield className="h-5 w-5" />
@@ -482,7 +482,7 @@ export default function App() {
         id="main-content"
         tabIndex={-1}
         aria-busy={isProcessing || isRewrapping}
-        className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-8 lg:py-8"
+        className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
       >
         <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
           <Card className="flex min-h-[500px] flex-col overflow-hidden">
@@ -729,7 +729,7 @@ export default function App() {
                   <div className="rounded-lg border border-border bg-secondary/40 p-2.5">
                     <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("status.current")}</div>
                     <p className="mt-1 truncate font-mono text-[11px] font-medium">
-                      {progress ? progress.currentFile : "—"}
+                      {progress ? progress.currentFile : "-"}
                     </p>
                   </div>
                 </div>
