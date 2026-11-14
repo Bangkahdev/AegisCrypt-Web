@@ -1,7 +1,7 @@
 # Threat Model AegisCrypt v1
 
-**Versi:** 1.0 (draft untuk ditinjau)  
-**Tanggal:** 2026-11-13  
+**Versi:** 1.1 (draft untuk ditinjau)  
+**Tanggal:** 2026-11-14  
 **Cakupan:** Crypto Core v3 (format `.aegis`), implementasi Web dan Desktop (.NET 8) pada Fase 1  
 **Dokumen terkait:** `docs/spec-aegis-v3.md`, `SECURITY.md`, `docs/production-readiness-plan-v1.0.md`
 
@@ -109,6 +109,21 @@ Model produk: **offline-first, tanpa akun wajib untuk enkripsi/dekripsi**, dan l
 **Mitigasi:** menggunakan implementasi kripto platform (WebCrypto/OS), bukan implementasi buatan sendiri.  
 **Residual:** kanal sisi platform tidak dianalisis; di luar cakupan v1.
 
+### T13 — Kehabisan kuota penyimpanan / DoS klien
+**Ancaman:** berkas besar atau banyak operasi menghabiskan kuota OPFS/indexedDB atau memori, membuat aplikasi gagal atau tidak dapat menyimpan hasil.  
+**Mitigasi (ada):** parameter dibatasi (chunk ≤ 16 MiB, iterasi ≤ 5 juta, metadata ≤ 1024 B); dekripsi streaming per record; kegagalan kuota dideteksi (`isStorageQuotaMessage`) dan ditampilkan sebagai pesan terlokalisasi; output parsial dibuang saat gagal.  
+**Residual:** pengguna dapat memenuhi kuota peramban secara sengaja; batas ditentukan platform.
+
+### T14 — Kebocoran nama berkas setelah dekripsi
+**Ancaman:** nama berkas asli tersimpan dalam metadata terenkripsi, tetapi setelah dekripsi nama itu muncul di nama unduhan, riwayat berkas OS, atau clipboard.  
+**Mitigasi (ada):** metadata nama bersifat opsional dan terenkripsi; tidak ada nama yang dikirim ke server; `assertFilename` menolak NUL dan pemisah path agar nama tidak dapat dipakai untuk traversal.  
+**Residual:** setelah dekripsi, OS/unduhan menyimpan nama plaintext; pengguna yang membutuhkan nama tersembunyi harus mengenkripsi tanpa metadata nama.
+
+### T15 — Ekstensi peramban/DOM berbahaya
+**Ancaman:** ekstensi atau skrip pihak ketiga membaca input berkas, password, atau hasil dekripsi melalui DOM.  
+**Mitigasi (ada):** CSP ketat tanpa skrip eksternal; kripto berjalan di Web Worker; tidak ada dependensi runtime eksternal; password dapat diberikan sebagai byte agar dapat dinolkan.  
+**Residual:** ekstensi dengan izin penuh berada di luar kendali aplikasi (lihat §7).
+
 ## 7. Di Luar Cakupan
 
 - Perangkat/OS yang sepenuhnya dikompromikan (malware dengan akses memori/input).
@@ -124,7 +139,7 @@ Model produk: **offline-first, tanpa akun wajib untuk enkripsi/dekripsi**, dan l
 | R1 | Batas pemakaian DEK/AES-GCM (D1) belum divalidasi kriptografer independen | Provisional di spec §7 |
 | R2 | Password lemah dapat di-brute-force offline | Diterima; perlu panduan pengguna |
 | R3 | Distribusi kode belum ditandatangani | Terbuka (Gate lanjutan) |
-| R4 | Katalog error lintas implementasi (D5) belum dibekukan | Terbuka |
+| R4 | Katalog error lintas implementasi (D5) | **Selesai** — `tests/fixtures/error-catalog.json` + uji paritas |
 | R5 | Penghapusan aman (`shred`) tidak menjamin pemadaman fisik di SSD/flash | Didokumentasikan; enkripsi tetap perlindungan utama |
 | R6 | Belum ada audit kriptografi independen | Gate 4 |
 
@@ -137,7 +152,10 @@ Model produk: **offline-first, tanpa akun wajib untuk enkripsi/dekripsi**, dan l
 | Manipulasi/penukaran/truncation | `tests/formatV3.test.ts`, `tests/metadataRewrap.test.ts`, `tests/recoverySlot.test.ts` |
 | Pembatalan & output parsial | Unit test web/desktop + CLI temp-file |
 | Pemindaian rahasia & SBOM | `.github/workflows/ci.yml` |
-| Katalog error stabil | `AegisError`/`AegisErrors` + tes i18n |
+| Katalog error stabil | `tests/fixtures/error-catalog.json`, `tests/errorCatalog.test.ts`, `ErrorCatalogMatchesDesktopMessages` |
+| Paritas v2 | `tests/legacyV2.test.ts` dan fakta `LegacyV2*` di Desktop |
+| Header produksi | CSP/HSTS/nosniff/frame/referrer/Permissions-Policy/COOP di app dan docs (diverifikasi 2026-11-14) |
+| Nama berkas aman | `assertFilename`/`AssertFilename` menolak NUL, `/`, `\` |
 
 ## 10. Tinjauan
 
