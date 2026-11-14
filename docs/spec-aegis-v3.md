@@ -174,13 +174,30 @@ Untuk interoperabilitas baca mundur, parser dapat mendekripsi v2:
 
 - **Header:** 38 byte = `magic(5) || version(0x02) || salt(32)`.
 - **KDF:** PBKDF2-HMAC-SHA256, **100.000** iterasi (tetap, tidak disimpan), keluaran 32 byte.
-- **Key material:** konstruksi sama (`UTF8(password) || SHA256(keyfile)` bila ada) — *perlu diperlakukan konsisten dengan keputusan encoding v3*.
+- **Key material:** konstruksi sama (`UTF8(password) || SHA256(keyfile)` bila ada) — mengikuti keputusan D2 (byte-exact, tanpa normalisasi).
 - **Record:** berulang sampai EOF: `chunkLen(4, int32 **little-endian**) || iv(12) || ciphertext+tag(chunkLen - 12)`, AES-256-GCM tanpa AAD.
 - **Tanpa:** envelope DEK/KEK terpisah, fileId, nonce terikat indeks, AAD, metadata nama berkas terenkripsi, slot recovery, rewrap v3.
 - **Status test vector v2 (D4 - SELESAI):** `tests/fixtures/v2-vector.json` (2 record, password+keyfile, encoder independen) dibaca oleh tes Web (`tests/vectors.test.ts`) dan Desktop (`AegisCryptoTests.DecryptsFrozenLegacyV2Vector`).
 
 ### 8.3 Penolakan
 - Magic tidak cocok / versi tidak didukung / KDF tidak didukung / flag tak dikenal / parameter di luar rentang / struktur rusak-terpotong-trailing-tamper → ditolak dengan error terkontrol (katalog pesan distabilkan di implementasi).
+
+### 8.4 Matriks paritas perilaku v2 (Web = Desktop)
+
+| Kondisi | Error kanonis | Web | Desktop |
+|---|---|---|---|
+| Magic salah (byte 0-4) | `Format file tidak valid (.aegis tidak dikenali).` | `AegisError.format` | `AegisErrors.Format` |
+| Versi selain 2/3 (mis. byte 5 = 1) | `Versi file tidak didukung (v1). Perbarui aplikasi.` | `AegisError.version(1)` | `AegisErrors.Version(1)` |
+| Header < 38 byte | `Berkas terpotong atau tidak lengkap.` | `truncated` | `Truncated` |
+| Kontainer kosong (header saja) | — (hasil kosong) | kosong | kosong, `LegacyV2 = true` |
+| `chunkLen` ≤ 0 | `Berkas corrupt: struktur v2 tidak valid.` | `legacyCorrupt` | `LegacyCorrupt` |
+| `chunkLen` > sisa data | `Berkas corrupt: struktur v2 tidak valid.` | `legacyCorrupt` | `LegacyCorrupt` |
+| Prefiks panjang terpotong | `Berkas corrupt: struktur v2 tidak valid.` | `legacyCorrupt` | `LegacyCorrupt` |
+| Byte setelah record terakhir | `Berkas corrupt: struktur v2 tidak valid.` | `legacyCorrupt` | `LegacyCorrupt` |
+| Tag GCM rusak / password salah | `Kata sandi atau keyfile salah.` | `credentials` | `Credentials` |
+| Recovery key pada v2 | `Berkas ini tidak memiliki slot recovery.` | `recoveryMissing` | `RecoveryMissing` |
+
+Matriks ini ditegakkan oleh `tests/legacyV2.test.ts` dan `desktop/tests/AegisCrypt.Core.Tests/AegisCryptoTests.cs` (fakta `LegacyV2*`).
 
 ## 9. Penanganan Error dan Ketahanan Parser
 

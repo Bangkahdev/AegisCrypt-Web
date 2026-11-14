@@ -1,4 +1,4 @@
-﻿using System.Buffers.Binary;
+using System.Buffers.Binary;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -409,6 +409,90 @@ public class AegisCryptoTests
     }
 
     [Fact]
+    public void LegacyV2RejectsUnknownMagic()
+    {
+        var container = BuildLegacyV2(PatternBytes(10, 1), "warisan");
+        var mutated = (byte[])container.Clone();
+        mutated[0] = 0x42;
+
+        var error = Assert.Throws<AegisFormatException>(() => Decrypt(mutated, "warisan"));
+        Assert.Equal(AegisErrors.Format, error.Message);
+    }
+
+    [Fact]
+    public void LegacyV2RejectsUnsupportedVersion()
+    {
+        var container = BuildLegacyV2(PatternBytes(10, 1), "warisan");
+        var mutated = (byte[])container.Clone();
+        mutated[5] = 1;
+
+        var error = Assert.Throws<AegisFormatException>(() => Decrypt(mutated, "warisan"));
+        Assert.Equal(AegisErrors.Version(1), error.Message);
+    }
+
+    [Fact]
+    public void LegacyV2ReadsEmptyContainer()
+    {
+        var container = BuildLegacyV2([], "warisan");
+
+        var (output, result) = Decrypt(container, "warisan");
+
+        Assert.Empty(output);
+        Assert.True(result.LegacyV2);
+    }
+
+    [Fact]
+    public void LegacyV2RejectsTrailingBytes()
+    {
+        var container = BuildLegacyV2(PatternBytes(100, 2), "warisan");
+        var withTrailing = new byte[container.Length + 1];
+        container.CopyTo(withTrailing, 0);
+
+        var error = Assert.Throws<AegisFormatException>(() => Decrypt(withTrailing, "warisan"));
+        Assert.Equal(AegisErrors.LegacyCorrupt, error.Message);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void LegacyV2RejectsInvalidChunkLength(int chunkLength)
+    {
+        var container = BuildLegacyV2(PatternBytes(100, 2), "warisan");
+        BinaryPrimitives.WriteInt32LittleEndian(
+            container.AsSpan(AegisConstants.LegacyHeaderLength),
+            chunkLength);
+
+        var error = Assert.Throws<AegisFormatException>(() => Decrypt(container, "warisan"));
+        Assert.Equal(AegisErrors.LegacyCorrupt, error.Message);
+    }
+
+    [Fact]
+    public void LegacyV2RejectsChunkLongerThanPayload()
+    {
+        var container = BuildLegacyV2(PatternBytes(100, 2), "warisan");
+        BinaryPrimitives.WriteInt32LittleEndian(
+            container.AsSpan(AegisConstants.LegacyHeaderLength),
+            5_000);
+
+        var error = Assert.Throws<AegisFormatException>(() => Decrypt(container, "warisan"));
+        Assert.Equal(AegisErrors.LegacyCorrupt, error.Message);
+    }
+
+    [Fact]
+    public void LegacyV2SupportsKeyFile()
+    {
+        var keyFile = Encoding.UTF8.GetBytes("legacy keyfile");
+        var plaintext = PatternBytes(500, 3);
+        var container = BuildLegacyV2(plaintext, "warisan", keyFile: keyFile);
+
+        var (output, _) = Decrypt(container, "warisan", keyFile);
+        Assert.Equal(plaintext, output);
+
+        var error = Assert.Throws<AegisFormatException>(() => Decrypt(container, "warisan"));
+        Assert.Equal(AegisErrors.Credentials, error.Message);
+    }
+
+    [Fact]
     public void WrongPasswordIsRejected()
     {
         var container = Encrypt(PatternBytes(32, 4), "benar", null, FastOptions());
@@ -566,11 +650,25 @@ public class AegisCryptoTests
         return output.ToArray();
     }
 
-    private static byte[] BuildLegacyV2(byte[] plaintext, string password, int chunkSize = 4_096)
+    private static byte[] BuildLegacyV2(
+        byte[] plaintext,
+        string password,
+        int chunkSize = 4_096,
+        byte[]? keyFile = null)
     {
         var salt = PatternBytes(AegisConstants.SaltLength, 5);
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
+        if (keyFile is not null)
+        {
+            var hash = SHA256.HashData(keyFile);
+            var material = new byte[passwordBytes.Length + hash.Length];
+            passwordBytes.CopyTo(material, 0);
+            hash.CopyTo(material, passwordBytes.Length);
+            passwordBytes = material;
+        }
+
         var key = Rfc2898DeriveBytes.Pbkdf2(
-            Encoding.UTF8.GetBytes(password),
+            passwordBytes,
             salt,
             AegisConstants.LegacyIterations,
             HashAlgorithmName.SHA256,
