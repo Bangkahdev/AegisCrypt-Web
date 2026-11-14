@@ -3,53 +3,53 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f7f8fa;
-  --foreground: #1f2937;
+  --background: #f3f5f9;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #1f2937;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #1f2937;
-  --primary: #4f7cff;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
-  --secondary: #eef2f7;
+  --secondary: #e9eef6;
   --secondary-foreground: #334155;
-  --muted: #f1f5f9;
+  --muted: #edf2f8;
   --muted-foreground: #64748b;
-  --accent: #e8f0ff;
+  --accent: #e6efff;
   --accent-foreground: #1e3a8a;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --success: #16a34a;
   --warning: #d97706;
-  --border: #e2e8f0;
+  --border: #dfe6f0;
   --input: #d7deea;
   --ring: #93b4ff;
-  --radius: 12px;
+  --radius: 14px;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .dark {
-  --background: #0f172a;
-  --foreground: #e5edf8;
-  --card: #172235;
-  --card-foreground: #e5edf8;
-  --popover: #172235;
-  --popover-foreground: #e5edf8;
-  --primary: #7aa2ff;
-  --primary-foreground: #0b1220;
-  --secondary: #1e293b;
+  --background: #0b1220;
+  --foreground: #e6edf7;
+  --card: #121d31;
+  --card-foreground: #e6edf7;
+  --popover: #121d31;
+  --popover-foreground: #e6edf7;
+  --primary: #6ea0ff;
+  --primary-foreground: #081120;
+  --secondary: #1a2740;
   --secondary-foreground: #d7e3f4;
-  --muted: #1b2638;
+  --muted: #162136;
   --muted-foreground: #94a3b8;
-  --accent: #243b63;
+  --accent: #1e3358;
   --accent-foreground: #dbeafe;
   --destructive: #f87171;
   --destructive-foreground: #1f2937;
   --success: #4ade80;
   --warning: #fbbf24;
-  --border: #2a3850;
-  --input: #33465f;
+  --border: #24324a;
+  --input: #2f425f;
   --ring: #7aa2ff;
 }
 
