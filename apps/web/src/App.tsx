@@ -117,7 +117,6 @@ export default function App() {
     const arm = () => {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
-        // Never interrupt an in-flight operation; re-arm instead.
         if (abortControllerRef.current) {
           arm();
           return;
@@ -388,56 +387,47 @@ export default function App() {
   const canEncrypt = canProcess && session.passwordBytes.length > 0;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <a href="#main-content" tabIndex={0} className="skip-link">
         {t("common.skipToContent")}
       </a>
-      <header className="sticky top-0 z-30 border-b-2 border-border bg-card">
-        <div className="flex h-16 w-full items-center justify-between gap-3 px-4 sm:px-8">
+
+      <header className="sticky top-0 z-30 border-b border-border/80 bg-card/90 backdrop-blur">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Shield className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-base font-bold tracking-tight">AegisCrypt</h1>
-                <Badge variant="outline" className="hidden font-mono text-[9px] sm:inline-flex">
+                <h1 className="truncate text-base font-semibold tracking-tight">AegisCrypt</h1>
+                <Badge variant="outline" className="hidden sm:inline-flex">
                   {t("app.badge")}
                 </Badge>
                 {session.recoveryKey && (
-                  <Badge
-                    variant="outline"
-                    className="hidden border-2 font-mono text-[9px] sm:inline-flex"
-                  >
+                  <Badge variant="secondary" className="hidden sm:inline-flex">
                     {t("app.recoveryActive")}
                   </Badge>
                 )}
               </div>
-              <p className="truncate text-[11px] text-muted-foreground">
-                {t("app.workspaceActive")}
-              </p>
+              <p className="truncate text-xs text-muted-foreground">{t("app.workspaceActive")}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-2 border-2 border-border bg-secondary px-3 py-1.5 text-[11px] md:flex">
-              <span className="h-2 w-2 bg-success" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="hidden items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-1.5 text-xs md:flex">
+              <span className="h-2 w-2 rounded-full bg-success" />
               <span className="text-muted-foreground">{t("app.auth")}</span>
-              <span className="font-semibold">
+              <span className="font-medium text-foreground">
                 {session.passwordBytes.length === 0 ? t("app.recoveryKey") : t("app.password")}
               </span>
-              {session.keyFile && (
-                <>
-                  <span className="text-muted-foreground">+</span>
-                  <Key className="h-3 w-3" />
-                </>
-              )}
+              {session.keyFile && <Key className="h-3 w-3 text-muted-foreground" />}
             </div>
 
             {session.passwordBytes.length > 0 && (
               <Button
                 ref={recoveryButtonRef}
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => setRecoveryOpen(true)}
                 disabled={isProcessing || isRewrapping}
@@ -451,7 +441,7 @@ export default function App() {
 
             <Button
               ref={changePasswordRef}
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => setRewrapOpen(true)}
               disabled={session.passwordBytes.length === 0 || isProcessing || isRewrapping}
@@ -462,7 +452,7 @@ export default function App() {
             </Button>
 
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={lockNow}
               disabled={isProcessing || isRewrapping}
@@ -492,23 +482,19 @@ export default function App() {
         id="main-content"
         tabIndex={-1}
         aria-busy={isProcessing || isRewrapping}
-        className="flex w-full flex-1 flex-col px-4 py-6 sm:px-8 lg:py-8"
+        className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-8 lg:py-8"
       >
-        <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <Card className="flex min-h-[480px] flex-col overflow-hidden">
-            <CardHeader className="flex-row items-start justify-between space-y-0 border-b-2 border-border bg-secondary py-4">
+        <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+          <Card className="flex min-h-[500px] flex-col overflow-hidden">
+            <CardHeader className="flex-row items-start justify-between space-y-0 border-b border-border bg-secondary/30 py-4">
               <div className="space-y-1">
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-base">
                   <FilePlus className="h-4 w-4 text-muted-foreground" />
                   {t("queue.title")}
-                  <Badge variant="secondary" className="font-mono text-[10px]">
-                    {files.length}
-                  </Badge>
+                  <Badge variant="secondary">{files.length}</Badge>
                 </CardTitle>
                 <CardDescription>
-                  {files.length
-                    ? t("queue.queued", { size: formatBytes(totalSize) })
-                    : t("queue.empty")}
+                  {files.length ? t("queue.queued", { size: formatBytes(totalSize) }) : t("queue.empty")}
                 </CardDescription>
               </div>
               {files.length > 0 && (
@@ -534,44 +520,44 @@ export default function App() {
             >
               <div
                 className={cn(
-                  "relative flex flex-1 flex-col overflow-hidden border-2 border-dashed transition-colors",
-                  isDragging ? "border-border bg-accent" : "border-border bg-card"
+                  "relative flex flex-1 flex-col overflow-hidden rounded-xl border-2 border-dashed transition-colors",
+                  isDragging ? "border-primary/40 bg-primary/5" : "border-border bg-card"
                 )}
               >
                 {isDragging && (
-                  <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-start justify-center gap-2 bg-accent p-8">
-                    <FilePlus className="h-9 w-9 text-accent-foreground" />
-                    <p className="text-sm font-semibold text-accent-foreground">{t("queue.dropTitle")}</p>
-                    <p className="text-[11px] text-accent-foreground">
-                      {t("queue.dropRelease")}
-                    </p>
+                  <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-primary/5 p-8 text-center backdrop-blur-[1px]">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <FilePlus className="h-7 w-7" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{t("queue.dropTitle")}</p>
+                    <p className="text-xs text-muted-foreground">{t("queue.dropRelease")}</p>
                   </div>
                 )}
 
                 {files.length === 0 ? (
-                  <div className="flex flex-1 flex-col items-start justify-center gap-4 p-8">
+                  <div className="flex flex-1 flex-col items-center justify-center gap-5 p-8 text-center">
                     <button
                       type="button"
                       onClick={() => !isProcessing && fileInputRef.current?.click()}
-                      className="group flex w-full flex-col items-start text-left"
+                      className="group flex w-full flex-col items-center"
                     >
-                      <div className="mb-5 flex h-16 w-16 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
                         <FilePlus className="h-7 w-7" />
                       </div>
-                      <h3 className="text-lg font-bold tracking-tight">{t("queue.dropTitle")}</h3>
+                      <h3 className="text-lg font-semibold tracking-tight">{t("queue.dropTitle")}</h3>
                       <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
                         {t("queue.dropDescription")}
                       </p>
-                      <span className="mt-5 inline-flex items-center gap-2 border-2 border-border bg-card px-3 py-1.5 text-xs font-semibold">
+                      <span className="mt-5 inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium shadow-sm">
                         {t("queue.browse")}
                       </span>
                     </button>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       onClick={() => !isProcessing && folderInputRef.current?.click()}
                       disabled={isProcessing}
-                      className="border-dashed text-muted-foreground"
+                      className="text-muted-foreground"
                     >
                       <FilePlus className="h-4 w-4" />
                       {t("queue.addFolder")}
@@ -585,7 +571,7 @@ export default function App() {
                         variant="outline"
                         onClick={() => !isProcessing && fileInputRef.current?.click()}
                         disabled={isProcessing}
-                        className="w-full border-dashed text-muted-foreground"
+                        className="w-full"
                       >
                         <FilePlus className="h-4 w-4" />
                         {t("queue.addMoreFiles")}
@@ -594,7 +580,7 @@ export default function App() {
                         variant="outline"
                         onClick={() => !isProcessing && folderInputRef.current?.click()}
                         disabled={isProcessing}
-                        className="w-full border-dashed text-muted-foreground"
+                        className="w-full"
                       >
                         <FilePlus className="h-4 w-4" />
                         {t("queue.addFolder")}
@@ -628,25 +614,23 @@ export default function App() {
                 onClick={() => runCrypto("ENCRYPT")}
                 disabled={!canEncrypt}
                 className={cn(
-                  "flex flex-col items-start gap-3 border-2 border-border p-4 text-left",
+                  "group flex flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all",
                   canEncrypt
-                    ? "bg-accent text-accent-foreground hover:bg-primary hover:text-primary-foreground"
-                    : "cursor-not-allowed bg-muted text-muted-foreground"
+                    ? "border-primary/20 bg-primary/5 hover:border-primary/30 hover:bg-primary/10"
+                    : "cursor-not-allowed border-border bg-muted/40 text-muted-foreground"
                 )}
               >
                 <span
                   className={cn(
-                    "flex h-9 w-9 items-center justify-center border-2 border-border",
-                    canEncrypt ? "bg-card text-foreground" : "bg-background"
+                    "flex h-10 w-10 items-center justify-center rounded-lg",
+                    canEncrypt ? "bg-primary text-primary-foreground" : "bg-secondary"
                   )}
                 >
                   <Lock className="h-4 w-4" />
                 </span>
                 <span>
-                  <span className="block text-sm font-bold">{t("actions.encrypt")}</span>
-                  <span className="mt-0.5 block text-[11px]">
-                    {t("actions.encryptHint")}
-                  </span>
+                  <span className="block text-sm font-semibold text-foreground">{t("actions.encrypt")}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">{t("actions.encryptHint")}</span>
                 </span>
               </button>
 
@@ -655,33 +639,26 @@ export default function App() {
                 onClick={() => runCrypto("DECRYPT")}
                 disabled={!canProcess}
                 className={cn(
-                  "flex flex-col items-start gap-3 border-2 border-border p-4 text-left",
+                  "group flex flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all",
                   canProcess
-                    ? "bg-card text-foreground hover:bg-secondary"
-                    : "cursor-not-allowed bg-muted text-muted-foreground"
+                    ? "border-border bg-card hover:border-primary/20 hover:bg-secondary/50"
+                    : "cursor-not-allowed border-border bg-muted/40 text-muted-foreground"
                 )}
               >
-                <span className="flex h-9 w-9 items-center justify-center border-2 border-border bg-secondary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-foreground">
                   <Unlock className="h-4 w-4" />
                 </span>
                 <span>
-                  <span className="block text-sm font-bold">{t("actions.decrypt")}</span>
-                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                    {t("actions.decryptHint")}
-                  </span>
+                  <span className="block text-sm font-semibold text-foreground">{t("actions.decrypt")}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">{t("actions.decryptHint")}</span>
                 </span>
               </button>
             </div>
 
             <Card>
-              <CardHeader className="flex-row items-center justify-between space-y-0 border-b-2 border-border bg-secondary py-3.5">
-                <CardTitle className="flex items-center gap-2">
-                  <RefreshCw
-                    className={cn(
-                      "h-4 w-4 text-muted-foreground",
-                      isProcessing && "text-primary"
-                    )}
-                  />
+              <CardHeader className="flex-row items-center justify-between space-y-0 border-b border-border bg-secondary/30 py-3.5">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <RefreshCw className={cn("h-4 w-4 text-muted-foreground", isProcessing && "animate-spin text-primary")} />
                   {t("status.title")}
                 </CardTitle>
                 {isProcessing ? (
@@ -689,28 +666,23 @@ export default function App() {
                     variant="ghost"
                     size="sm"
                     onClick={cancelOperation}
-                    className="h-7 px-2 text-[11px] text-muted-foreground"
+                    className="h-7 px-2 text-xs text-muted-foreground"
                   >
                     <StopCircle className="h-3.5 w-3.5" />
                     {t("status.cancel")}
                   </Button>
                 ) : (
-                  <Badge variant="outline" className="font-mono text-[10px]">
-                    {t("status.idleBadge")}
-                  </Badge>
+                  <Badge variant="outline">{t("status.idleBadge")}</Badge>
                 )}
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px]">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">{t("status.progress")}</span>
-                    <span className="font-mono font-medium">
-                      {Math.round(progress?.percent ?? 0)}%
-                    </span>
+                    <span className="font-mono font-medium">{Math.round(progress?.percent ?? 0)}%</span>
                   </div>
                   <Progress
                     value={progress?.percent ?? 0}
-                    indicatorClassName="bg-primary"
                     aria-label={t("status.batchProgress")}
                     aria-valuetext={
                       progress
@@ -734,41 +706,35 @@ export default function App() {
                 </p>
 
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="border-2 border-border bg-secondary p-2.5">
-                    <div className="flex items-center gap-1 text-[9px] uppercase tracking-wide text-muted-foreground">
+                  <div className="rounded-lg border border-border bg-secondary/40 p-2.5">
+                    <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
                       <Gauge className="h-3 w-3" />
                       {t("status.speed")}
                     </div>
                     <p className="mt-1 font-mono text-sm font-semibold">
                       {progress ? progress.speed.toFixed(1) : "0.0"}
-                      <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">
-                        MB/s
-                      </span>
+                      <span className="ml-0.5 text-[10px] font-normal text-muted-foreground">MB/s</span>
                     </p>
                   </div>
-                  <div className="border-2 border-border bg-secondary p-2.5">
-                    <div className="flex items-center gap-1 text-[9px] uppercase tracking-wide text-muted-foreground">
+                  <div className="rounded-lg border border-border bg-secondary/40 p-2.5">
+                    <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
                       <Clock3 className="h-3 w-3" />
                       {t("status.eta")}
                     </div>
                     <p className="mt-1 font-mono text-sm font-semibold">
                       {progress ? progress.eta.toFixed(0) : "0"}
-                      <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">
-                        s
-                      </span>
+                      <span className="ml-0.5 text-[10px] font-normal text-muted-foreground">s</span>
                     </p>
                   </div>
-                  <div className="border-2 border-border bg-secondary p-2.5">
-                    <div className="text-[9px] uppercase tracking-wide text-muted-foreground">
-                      {t("status.current")}
-                    </div>
+                  <div className="rounded-lg border border-border bg-secondary/40 p-2.5">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("status.current")}</div>
                     <p className="mt-1 truncate font-mono text-[11px] font-medium">
                       {progress ? progress.currentFile : "—"}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span>{t("status.aesLine")}</span>
                   <span className="font-mono">{t("status.iterations")}</span>
                 </div>
@@ -779,11 +745,9 @@ export default function App() {
               <LogBox logs={logs} onClear={() => setLogs([])} />
             </div>
 
-            <div className="flex items-start gap-2 border-2 border-dashed border-border bg-card p-3 text-[11px] leading-relaxed text-muted-foreground">
-              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground" />
-              <span>
-                {t("app.zeroKnowledgeFooter")}
-              </span>
+            <div className="flex items-start gap-2 rounded-xl border border-dashed border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span>{t("app.zeroKnowledgeFooter")}</span>
             </div>
           </div>
         </div>

@@ -96,33 +96,33 @@ export const RecoveryDialog: React.FC<RecoveryDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground/20 p-4 backdrop-blur-sm sm:items-center">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="recovery-title"
         aria-describedby="recovery-description"
-        className="w-full max-w-md border-2 border-border bg-card p-5 sm:p-6"
+        className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg sm:p-6"
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-border bg-accent text-accent-foreground">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <KeyRound className="h-5 w-5" />
             </div>
             <div>
-              <h2 id="recovery-title" className="text-lg font-bold tracking-tight">
+              <h2 id="recovery-title" className="text-lg font-semibold tracking-tight">
                 {t("recovery.title")}
               </h2>
-              <p id="recovery-description" className="mt-0.5 text-[11px] text-muted-foreground">
+              <p id="recovery-description" className="mt-0.5 text-sm text-muted-foreground">
                 {encoded ? t("recovery.activeDescription") : t("recovery.description")}
               </p>
             </div>
           </div>
           <Button
             variant="ghost"
-            size="sm"
-            className="h-8 w-8 shrink-0 p-0"
+            size="icon"
+            className="h-8 w-8 shrink-0"
             onClick={onClose}
             aria-label={t("recovery.close")}
           >
@@ -134,7 +134,7 @@ export const RecoveryDialog: React.FC<RecoveryDialogProps> = ({
           <div className="space-y-4">
             <p
               data-testid="recovery-key-value"
-              className="select-all break-all border-2 border-border bg-secondary p-3 font-mono text-sm font-bold leading-relaxed"
+              className="select-all break-all rounded-lg border border-border bg-secondary/50 p-3 font-mono text-sm font-medium leading-relaxed"
             >
               {encoded}
             </p>
@@ -150,12 +150,12 @@ export const RecoveryDialog: React.FC<RecoveryDialogProps> = ({
               </Button>
             </div>
 
-            <div className="flex items-start gap-2 border-2 border-border bg-accent px-3 py-2 text-[11px] font-semibold leading-relaxed text-accent-foreground">
-              <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div className="flex items-start gap-2 rounded-lg border border-warning/20 bg-warning/10 px-3 py-2.5 text-sm text-foreground">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <span>{t("recovery.warning")}</span>
             </div>
 
-            <Button type="button" variant="ghost" onClick={onRemove} className="w-full text-xs">
+            <Button type="button" variant="ghost" onClick={onRemove} className="w-full text-sm text-muted-foreground">
               {t("recovery.remove")}
             </Button>
           </div>
@@ -168,8 +168,8 @@ export const RecoveryDialog: React.FC<RecoveryDialogProps> = ({
               <KeyRound className="h-4 w-4" />
               {t("recovery.generate")}
             </Button>
-            <div className="flex items-start gap-2 border-2 border-border bg-accent px-3 py-2 text-[11px] font-semibold leading-relaxed text-accent-foreground">
-              <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div className="flex items-start gap-2 rounded-lg border border-warning/20 bg-warning/10 px-3 py-2.5 text-sm text-foreground">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <span>{t("recovery.generateWarning")}</span>
             </div>
           </div>

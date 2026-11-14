@@ -60,7 +60,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <label htmlFor={id} className="text-sm font-semibold">
+        <label htmlFor={id} className="text-sm font-medium">
           {label ?? t("password.label")}
         </label>
         <span className="font-mono text-[11px] text-muted-foreground">
@@ -85,7 +85,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
           onClick={() => setShow(!show)}
           disabled={disabled}
           aria-label={show ? t("password.hide") : t("password.show")}
-          className="absolute right-2 top-1/2 -translate-y-1/2 border-2 border-transparent p-1.5 text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         >
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
@@ -93,12 +93,12 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
 
       <div className="flex gap-1.5" aria-hidden="true">
         {[0, 1, 2, 3].map((index) => (
-          <div key={index} className={cn("h-2 flex-1", barColor(index))} />
+          <div key={index} className={cn("h-1.5 flex-1 rounded-full", barColor(index))} />
         ))}
       </div>
 
       <div className="flex items-center justify-between text-[11px]">
-        <span className={cn("font-semibold", value ? strengthColor() : "text-muted-foreground")}>
+        <span className={cn("font-medium", value ? strengthColor() : "text-muted-foreground")}>
           {value ? t(strengthKey()) : t("password.required")}
         </span>
         <span className="text-muted-foreground">{t("password.iterations")}</span>
@@ -106,4 +106,3 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
     </div>
   );
 };
-

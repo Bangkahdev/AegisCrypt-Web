@@ -44,8 +44,8 @@ export const LogBox: React.FC<LogBoxProps> = ({ logs, onClear }) => {
   };
 
   return (
-    <div className="flex h-full min-h-[220px] flex-col overflow-hidden border-2 border-border bg-card">
-      <div className="flex items-center justify-between border-b-2 border-border bg-secondary px-4 py-2.5">
+    <div className="flex h-full min-h-[220px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="flex items-center justify-between border-b border-border bg-secondary/50 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
@@ -67,7 +67,7 @@ export const LogBox: React.FC<LogBoxProps> = ({ logs, onClear }) => {
         ) : (
           <div className="space-y-1.5">
             {logs.map((log) => (
-              <div key={log.id} className="flex items-start gap-2 px-1 py-0.5 hover:bg-secondary">
+              <div key={log.id} className="flex items-start gap-2 rounded-md px-1.5 py-1 hover:bg-secondary/60">
                 <span className="mt-0.5 min-w-[54px] text-[10px] text-muted-foreground">
                   {log.timestamp}
                 </span>
@@ -82,5 +82,3 @@ export const LogBox: React.FC<LogBoxProps> = ({ logs, onClear }) => {
     </div>
   );
 };
-
-
