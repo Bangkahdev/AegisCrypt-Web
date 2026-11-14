@@ -11,10 +11,17 @@ const walk = (dir, visit) => {
   }
 };
 
-let assetsDir = null;
+const appShellCandidates = [];
 walk(outputRoot, (file) => {
-  if (!assetsDir && file.endsWith(`${sep}index.html`)) assetsDir = join(file, "..");
+  if (file.endsWith(`${sep}index.html`)) appShellCandidates.push(join(file, ".."));
 });
+
+// Static sub-pages (for example /awal/) also ship an index.html. The app shell
+// is always the shallowest one relative to the worker output root.
+const depth = (dir) => relative(outputRoot, dir).split(sep).length;
+appShellCandidates.sort((a, b) => depth(a) - depth(b) || a.localeCompare(b));
+
+const assetsDir = appShellCandidates[0] ?? null;
 
 if (!assetsDir) {
   console.error("precache-manifest: index.html not found under .cloudflare/output");
