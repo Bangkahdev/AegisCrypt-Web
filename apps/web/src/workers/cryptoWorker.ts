@@ -3,6 +3,7 @@ import {
   processFileDecrypt,
   processFileEncrypt,
   rewrapFile,
+  type DecryptSink,
 } from "../services/cryptoService";
 import type {
   CryptoAbortMessage,
@@ -51,6 +52,8 @@ scope.onmessage = async (event) => {
     recoveryKeys.push(job.options.recoveryKey);
   }
 
+  let sinkRef: DecryptSink | null = null;
+
   try {
     let blob: Blob;
     let tempName: string | undefined;
@@ -70,6 +73,10 @@ scope.onmessage = async (event) => {
       passwords.push(job.password);
       if (job.keyFile) keyFiles.push(job.keyFile);
       const sink = await createDefaultSink();
+      sinkRef = sink;
+      if (sink.tempName) {
+        post({ id: job.id, type: "temp", tempName: sink.tempName });
+      }
       blob = await processFileDecrypt(
         job.source,
         job.password,
@@ -99,7 +106,15 @@ scope.onmessage = async (event) => {
 
     post({ id: job.id, type: "done", blob, tempName });
   } catch (error) {
-    post({ id: job.id, type: "error", message: errorMessage(error) });
+    if (controller.signal.aborted) {
+      // processFileDecrypt aborts its own sink, but it can also reject before
+      // it takes ownership of the sink we created (abort observed at entry).
+      // Aborting twice is safe and keeps no `.aegis-tmp-*` file behind.
+      await sinkRef?.abort?.();
+      post({ id: job.id, type: "aborted" });
+    } else {
+      post({ id: job.id, type: "error", message: errorMessage(error) });
+    }
   } finally {
     active = null;
     for (const password of passwords) password.fill(0);

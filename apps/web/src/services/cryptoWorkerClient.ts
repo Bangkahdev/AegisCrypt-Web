@@ -32,6 +32,22 @@ const cancelledError = () => new Error(AegisError.cancelled);
 const supportsWorker = (): boolean =>
   typeof Worker !== "undefined" && typeof URL !== "undefined";
 
+/** How long the main thread waits for the worker to confirm cleanup abort. */
+const ABORT_CLEANUP_TIMEOUT_MS = 5_000;
+
+/** Best-effort removal of an OPFS temp file owned by the worker. */
+const removeTempEntry = async (name: string): Promise<void> => {
+  if (typeof navigator === "undefined") return;
+  const storage = navigator.storage;
+  if (!storage || typeof storage.getDirectory !== "function") return;
+  try {
+    const root = await storage.getDirectory();
+    await root.removeEntry(name);
+  } catch {
+    /* best effort */
+  }
+};
+
 /**
  * OPFS temp files created by the worker cannot be removed by the worker after
  * it is terminated, so the main thread schedules the cleanup instead.
@@ -64,8 +80,13 @@ const runJob = (body: JobBody, callbacks: TaskCallbacks): Promise<Blob> => {
     const id = 1;
     const worker = new CryptoWorker();
     let settled = false;
+    let jobPosted = false;
+    let aborting = false;
+    let tempName: string | undefined;
+    let abortTimer: ReturnType<typeof setTimeout> | undefined;
 
     const cleanup = () => {
+      if (abortTimer !== undefined) clearTimeout(abortTimer);
       worker.terminate();
       callbacks.signal?.removeEventListener("abort", onAbort);
     };
@@ -77,9 +98,27 @@ const runJob = (body: JobBody, callbacks: TaskCallbacks): Promise<Blob> => {
       settle(value);
     };
 
+    const discardTemp = async (): Promise<void> => {
+      if (!tempName) return;
+      const name = tempName;
+      tempName = undefined;
+      await removeTempEntry(name);
+    };
+
     function onAbort() {
+      if (settled || aborting) return;
+      aborting = true;
+      if (!jobPosted) {
+        finish(reject, cancelledError());
+        return;
+      }
+      // Do not terminate here: the worker still has to abort its sink, which
+      // closes the writable stream and deletes the OPFS temp file. Wait for its
+      // acknowledgment (bounded by a fallback in case it never arrives).
       worker.postMessage({ type: "abort", id });
-      finish(reject, cancelledError());
+      abortTimer = setTimeout(() => {
+        void discardTemp().finally(() => finish(reject, cancelledError()));
+      }, ABORT_CLEANUP_TIMEOUT_MS);
     }
 
     if (callbacks.signal?.aborted) {
@@ -97,20 +136,35 @@ const runJob = (body: JobBody, callbacks: TaskCallbacks): Promise<Blob> => {
         case "filename":
           callbacks.onFilename?.(message.filename);
           break;
+        case "temp":
+          tempName = message.tempName;
+          break;
+        case "aborted":
+          void discardTemp().finally(() => finish(reject, cancelledError()));
+          break;
         case "done":
+          if (aborting) {
+            if (message.tempName) void removeTempEntry(message.tempName);
+            finish(reject, cancelledError());
+            break;
+          }
+          tempName = undefined;
           if (message.tempName) scheduleTempCleanup(message.tempName);
           finish(resolve, message.blob);
           break;
         case "error":
-          finish(reject, new Error(message.message));
+          void discardTemp().finally(() => finish(reject, new Error(message.message)));
           break;
       }
     };
 
     worker.onerror = (event) => {
-      finish(reject, new Error(event.message || "Crypto worker failed."));
+      void discardTemp().finally(() =>
+        finish(reject, new Error(event.message || "Crypto worker failed.")),
+      );
     };
 
+    jobPosted = true;
     worker.postMessage({ ...body, id });
   });
 };

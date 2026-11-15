@@ -248,6 +248,39 @@ describe("v3 roundtrip", () => {
     ).rejects.toThrow(AegisError.cancelled);
   });
 
+  it("cancels an empty-file encryption when the final progress callback aborts", async () => {
+    const controller = new AbortController();
+    await expect(
+      processFileEncrypt(
+        new Blob([]),
+        "pw",
+        null,
+        controller.signal,
+        () => controller.abort(),
+      ),
+    ).rejects.toThrow(AegisError.cancelled);
+  });
+
+  it("cancels a non-empty encryption when the final progress callback aborts", async () => {
+    const controller = new AbortController();
+    const plaintext = patternBytes(CHUNK * 2, 1);
+    const reported: number[] = [];
+    await expect(
+      processFileEncrypt(
+        new Blob([plaintext]),
+        "pw",
+        null,
+        controller.signal,
+        (bytes) => {
+          reported.push(bytes);
+          if (bytes === plaintext.byteLength) controller.abort();
+        },
+        { chunkSize: CHUNK },
+      ),
+    ).rejects.toThrow(AegisError.cancelled);
+    expect(reported.at(-1)).toBe(plaintext.byteLength);
+  });
+
   it("encrypts an empty file as a single final record", async () => {
     const container = await processFileEncrypt(
       new Blob([]),

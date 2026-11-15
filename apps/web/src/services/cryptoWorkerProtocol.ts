@@ -49,6 +49,8 @@ export type CryptoJobRequest =
 export type CryptoJobMessage =
   | { id: number; type: "progress"; bytes: number }
   | { id: number; type: "filename"; filename: string }
+  | { id: number; type: "temp"; tempName: string }
+  | { id: number; type: "aborted" }
   | { id: number; type: "done"; blob: Blob; tempName?: string }
   | { id: number; type: "error"; message: string };
 

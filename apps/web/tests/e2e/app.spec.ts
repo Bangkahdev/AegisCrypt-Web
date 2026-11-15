@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
+import { processFileEncrypt } from '../../src/services/cryptoService';
 
 test.describe('AegisCrypt user journey', () => {
   test('starts a password session and exposes the processing workspace', async ({ page }) => {
@@ -61,6 +62,50 @@ test.describe('AegisCrypt user journey', () => {
 
     expect(await readFile(encryptedPath)).not.toEqual(Buffer.from(original, 'utf8'));
     expect((await readFile(decryptedPath)).toString('utf8')).toBe(original);
+  });
+
+  test('cancelling a decryption through the worker leaves no OPFS temp file', async (
+    { page, browserName },
+    testInfo,
+  ) => {
+    test.skip(browserName !== 'chromium', 'OPFS temp sinks are exercised on Chromium');
+    test.setTimeout(120_000);
+
+    const plaintext = Buffer.alloc(64 * 1024 * 1024, 9);
+    const container = await processFileEncrypt(
+      new Blob([plaintext]),
+      'CancelPassword123!',
+      null,
+      new AbortController().signal,
+      () => {},
+    );
+    const encryptedPath = testInfo.outputPath('cancel.aegis');
+    await writeFile(encryptedPath, Buffer.from(await container.arrayBuffer()));
+
+    const tempNames = () =>
+      page.evaluate(async () => {
+        const root = await navigator.storage.getDirectory();
+        const names: string[] = [];
+        for await (const name of root.keys()) {
+          if (name.startsWith('.aegis-tmp-')) names.push(name);
+        }
+        return names;
+      });
+
+    await page.goto('/');
+    await page.getByPlaceholder('Enter encryption password').fill('CancelPassword123!');
+    await page.getByRole('button', { name: 'Start Session' }).click();
+    await page.locator('input[type=file]').first().setInputFiles(encryptedPath);
+
+    await page.getByText('Decrypt', { exact: true }).click();
+    await expect.poll(tempNames, { timeout: 60_000 }).not.toEqual([]);
+
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+
+    await expect(page.getByText('Operation cancelled by user.')).toBeVisible();
+    await expect.poll(tempNames, { timeout: 30_000 }).toEqual([]);
+    await expect(page.getByText('DECRYPT Success: cancel.aegis')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
   });
 
   test('changes the password without re-encrypting the payload', async ({ page }, testInfo) => {

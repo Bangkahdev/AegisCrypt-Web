@@ -111,6 +111,7 @@ public static class AegisCrypto
             {
                 WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), true);
                 opts.Progress?.Invoke(input.Position);
+                ThrowIfCancelled(cancellationToken);
                 break;
             }
 
@@ -119,15 +120,19 @@ public static class AegisCrypto
             {
                 WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), true);
                 opts.Progress?.Invoke(input.Position);
+                ThrowIfCancelled(cancellationToken);
                 break;
             }
 
             WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), false);
             opts.Progress?.Invoke(input.Position);
+            ThrowIfCancelled(cancellationToken);
             index++;
             buffer[0] = (byte)extra;
             filled = 1 + ReadUpTo(input, buffer.AsSpan(1));
         }
+
+        ThrowIfCancelled(cancellationToken);
     }
 
     public static DecryptResult Decrypt(
