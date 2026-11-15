@@ -1,4 +1,2 @@
-﻿User-agent: *
+User-agent: *
 Allow: /
-
-Sitemap: https://aegiscrypt.bangkah.tech/sitemap.xml
