@@ -2,14 +2,14 @@
 sidebar_position: 1
 slug: /
 title: "Overview"
-description: "Introduction to AegisCrypt, its zero-knowledge model, key capabilities, and documentation map."
+description: "Introduction to AegisCrypt, its on-device encryption model, key capabilities, and documentation map."
 ---
 
 <div className="doc-hero">
   <div className="doc-hero__eyebrow">Official Documentation</div>
   <h1>AegisCrypt Documentation</h1>
   <p className="lead">
-    AegisCrypt is a browser-based file encryption tool built on a <strong>zero-knowledge</strong> principle.
+    AegisCrypt is a browser-based file encryption tool that runs <strong>entirely on your device</strong>.
     Encryption, decryption, and key handling run locally on the user's device through the Web Crypto API.
     Files, passwords, keyfiles, and keys are never sent to a server.
   </p>

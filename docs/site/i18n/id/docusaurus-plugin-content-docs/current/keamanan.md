@@ -2,7 +2,7 @@
 sidebar_position: 7
 slug: /keamanan
 title: "Model Keamanan"
-description: "Prinsip zero-knowledge, properti kriptografi, ancaman yang dimitigasi, keterbatasan, dan tanggung jawab pengguna."
+description: "Prinsip enkripsi di perangkat, properti kriptografi, ancaman yang dimitigasi, keterbatasan, dan tanggung jawab pengguna."
 ---
 
 # Model Keamanan
@@ -13,7 +13,9 @@ Dokumen ini merangkum model keamanan AegisCrypt untuk implementasi saat ini (Web
 AegisCrypt melindungi kerahasiaan dan integritas **kontainer berkas** dengan asumsi perangkat, browser/OS, dan kredensial pengguna aman. Aplikasi ini tidak dapat mencegah kompromi pada endpoint, malware, ekstensi berbahaya, atau akses fisik ke perangkat yang tidak terkunci.
 :::
 
-## Prinsip zero-knowledge (Fase 1)
+## Prinsip enkripsi di perangkat (Fase 1)
+
+AegisCrypt tidak memiliki server yang menyimpan data pengguna, sehingga jaminan di bawah ini berlaku pada klien, bukan pada server yang berjanji tidak melihat. Istilah "zero-knowledge" yang lebih ketat tidak dipakai di sini sampai ada audit independen yang mendukungnya.
 
 - Enkripsi dan dekripsi dilakukan **secara lokal** di perangkat pengguna.
 - Berkas plaintext/ciphertext, kata sandi, keyfile, kunci pemulihan, dan kunci turunan **tidak dikirim** ke server aplikasi.

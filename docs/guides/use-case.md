@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-AegisCrypt-Web is a client-side, zero-knowledge encryption suite designed to provide military-grade file security directly within the web browser. Utilizing the Web Crypto API, all cryptographic operations occur locally in the user's device RAM, ensuring that raw data, passwords, and keys are never transmitted to any external server.
+AegisCrypt-Web is a client-side, on-device encryption suite designed to provide military-grade file security directly within the web browser. Utilizing the Web Crypto API, all cryptographic operations occur locally in the user's device memory, ensuring that raw data, passwords, and keys are never transmitted to any external server.
 
 ---
 

@@ -756,7 +756,7 @@ export default function App() {
 
             <div className="flex items-start gap-2 rounded-xl border border-dashed border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <span>{t("app.zeroKnowledgeFooter")}</span>
+              <span>{t("app.privacyFooter")}</span>
             </div>
           </div>
         </div>

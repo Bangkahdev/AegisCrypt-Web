@@ -4,7 +4,7 @@
 
 ## 1. Ringkasan
 
-AegisCrypt-Web adalah suite enkripsi berbasis klien (*client-side*) dengan arsitektur *zero-knowledge* yang dirancang untuk memberikan keamanan file tingkat militer langsung di dalam browser web. Memanfaatkan Web Crypto API, seluruh operasi kriptografi berjalan secara lokal di dalam RAM perangkat pengguna, memastikan bahwa data mentah, kata sandi, dan kunci tidak pernah dikirimkan ke server eksternal mana pun.
+AegisCrypt-Web adalah suite enkripsi berbasis klien (*client-side*) yang berjalan di perangkat (*on-device*), dirancang untuk memberikan keamanan file tingkat militer langsung di dalam browser web. Memanfaatkan Web Crypto API, seluruh operasi kriptografi berjalan secara lokal di memori perangkat pengguna, memastikan bahwa data mentah, kata sandi, dan kunci tidak pernah dikirimkan ke server eksternal mana pun.
 
 ---
 
