@@ -1,5 +1,5 @@
 {
-  "name": "AegisCrypt — Zero-Knowledge File Encryption",
+  "name": "AegisCrypt — On-Device File Encryption",
   "short_name": "AegisCrypt",
   "description": "Browser-based AES-256-GCM file encryption. Files never leave your device.",
   "start_url": "/",

@@ -15,8 +15,8 @@ test.describe('AegisCrypt user journey', () => {
     await page.getByRole('button', { name: 'Start Session' }).click();
 
     await expect(page.getByText('Processing Queue')).toBeVisible();
-    await expect(page.getByText('Encrypt')).toBeVisible();
-    await expect(page.getByText('Decrypt')).toBeVisible();
+    await expect(page.getByText('Encrypt', { exact: true })).toBeVisible();
+    await expect(page.getByText('Decrypt', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible();
     const appFeedback = page.locator('a[href="/awal/feedback/"]').first();
     await expect(appFeedback).toBeVisible();

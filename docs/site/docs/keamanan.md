@@ -2,7 +2,7 @@
 sidebar_position: 7
 slug: /keamanan
 title: "Security Model"
-description: "Zero-knowledge principles, cryptographic properties, mitigated threats, limitations, and user responsibilities."
+description: "On-device encryption principles, cryptographic properties, mitigated threats, limitations, and user responsibilities."
 ---
 
 # Security Model
@@ -13,7 +13,9 @@ This document summarizes AegisCrypt's security model for the current implementat
 AegisCrypt protects the confidentiality and integrity of **file containers** assuming the device, browser/OS, and user credentials are secure. It cannot prevent compromise of the endpoint, malware, malicious extensions, or physical access to an unlocked device.
 :::
 
-## Zero-knowledge principle (Phase 1)
+## On-device encryption principle (Phase 1)
+
+AegisCrypt has no server that stores user data, so the guarantees below are about the client, not about a server that promises not to look. The stricter industry term "zero-knowledge" is not used here until an independent audit supports it.
 
 - Encryption and decryption are performed **locally** on the user's device.
 - Plaintext/ciphertext files, passwords, keyfiles, recovery keys, and derived keys are **not sent** to the app server.

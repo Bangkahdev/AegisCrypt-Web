@@ -4,9 +4,9 @@
 
 **Live:** [Aplikasi](https://aegiscrypt.bangkah.tech) · [Dokumentasi](https://docs.aegiscrypt.bangkah.tech)
 
-AegisCrypt Web adalah alat enkripsi berbasis browser dengan pendekatan **zero-knowledge**: file dan kata sandi diproses sepenuhnya di browser (Web Crypto API, alur memori/terbatas OPFS) dan tidak pernah dikirim ke server mana pun.
+AegisCrypt Web mengenkripsi file di browser: file dan kata sandi diproses sepenuhnya di perangkat Anda (Web Crypto API, alur memori/terbatas OPFS) dan tidak pernah dikirim ke server mana pun.
 
-> Status: dalam pengerjaan kesiapan produksi (Gate 1/umpan balik). Belum diaudit pihak independen.
+> Status: dalam pengerjaan kesiapan produksi (Gate 1/umpan balik). Belum diaudit pihak independen. Pratinjau publik pertama: [0.1.0](CHANGELOG.md).
 
 ---
 
@@ -125,7 +125,7 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) + cipher
 ## FAQ
 
 **Lupa kata sandi/keyfile?**  
-Tanpa kunci recovery, tidak. AegisCrypt bersifat zero-knowledge tanpa pintu belakang. Aktifkan dan simpan kunci recovery secara offline jika butuh jalur pemulihan.
+Tanpa kunci recovery, tidak. AegisCrypt tidak memiliki mekanisme pemulihan bawaan: satu-satunya jalan masuk adalah kata sandi/keyfile yang Anda pilih dan kunci recovery yang Anda buat sendiri. Aktifkan dan simpan kunci recovery secara offline jika butuh jalur pemulihan.
 
 **Browser meminta izin mengunduh banyak file?**  
 Pemrosesan batch memicu satu unduhan per file; izinkan unduhan ganda saat diminta.

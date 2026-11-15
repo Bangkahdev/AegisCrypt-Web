@@ -108,7 +108,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, notice }) => 
             </div>
             <div className="leading-tight">
               <p className="text-sm font-semibold tracking-tight">AegisCrypt</p>
-              <p className="text-[11px] text-muted-foreground">{t("login.zeroKnowledgeSuite")}</p>
+              <p className="text-[11px] text-muted-foreground">{t("login.onDeviceSuite")}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">

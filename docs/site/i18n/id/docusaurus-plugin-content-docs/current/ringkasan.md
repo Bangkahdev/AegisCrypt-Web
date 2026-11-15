@@ -2,14 +2,14 @@
 sidebar_position: 1
 slug: /
 title: "Ringkasan"
-description: "Pengantar AegisCrypt, model zero-knowledge, kemampuan utama, dan peta dokumentasi."
+description: "Pengantar AegisCrypt, model enkripsi di perangkat, kemampuan utama, dan peta dokumentasi."
 ---
 
 <div className="doc-hero">
   <div className="doc-hero__eyebrow">Dokumentasi Resmi</div>
   <h1>AegisCrypt Documentation</h1>
   <p className="lead">
-    AegisCrypt adalah alat enkripsi berkas berbasis browser dengan prinsip <strong>zero-knowledge</strong>.
+    AegisCrypt adalah alat enkripsi berkas berbasis browser yang berjalan <strong>sepenuhnya di perangkat Anda</strong>.
     Enkripsi, dekripsi, dan pengelolaan kunci berjalan secara lokal di perangkat pengguna melalui Web Crypto API.
     Berkas, kata sandi, keyfile, dan kunci tidak dikirim ke server.
   </p>

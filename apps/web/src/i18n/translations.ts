@@ -4,9 +4,9 @@
  */
 
 export const en = {
-  "meta.title": "AegisCrypt — Zero-Knowledge File Encryption",
+  "meta.title": "AegisCrypt — On-Device File Encryption",
   "meta.description":
-    "AegisCrypt is a zero-knowledge, browser-based AES-256-GCM file encryption suite. Your files never leave your device.",
+    "AegisCrypt encrypts files in your browser with AES-256-GCM. Files and passwords are processed on your device and never uploaded.",
 
   "recovery.title": "Recovery key",
   "recovery.description":
@@ -64,7 +64,7 @@ export const en = {
   "common.themeLight": "Switch to light mode",
   "common.themeDark": "Switch to dark mode",
 
-  "login.zeroKnowledgeSuite": "Zero-knowledge suite",
+  "login.onDeviceSuite": "On-device encryption",
   "login.badge": "RUNS ENTIRELY IN YOUR BROWSER",
   "login.headline1": "Private by default.",
   "login.headline2": "Encrypted by you.",
@@ -89,11 +89,11 @@ export const en = {
   "login.startSession": "Start Session",
   "login.initializing": "Initializing...",
   "login.filesNeverLeave": "Files never leave your device",
-  "login.footer": "AegisCrypt Web / Zero-knowledge encryption workspace",
+  "login.footer": "AegisCrypt Web / On-device encryption workspace",
   "login.noticeLockedInactivity": "Session locked after 10 minutes of inactivity.",
   "login.noticeLockedManual": "Session locked. Enter your password to continue.",
 
-  "app.badge": "ZERO-KNOWLEDGE",
+  "app.badge": "ON-DEVICE",
   "app.workspaceActive": "Secure workspace / session active",
   "app.auth": "Auth",
   "app.password": "Password",
@@ -104,8 +104,8 @@ export const en = {
   "app.lock": "Lock",
   "app.lockTitle": "Lock the session and clear credentials",
   "app.logout": "Logout",
-  "app.zeroKnowledgeFooter":
-    "Zero-knowledge by design. Files are sealed in browser memory and never uploaded to a server.",
+  "app.privacyFooter":
+    "Encryption runs on your device. Files are sealed in browser memory and never uploaded to a server.",
 
   "queue.title": "Processing Queue",
   "queue.queued": "{size} queued for processing",
@@ -199,9 +199,9 @@ export const en = {
 export type TranslationKey = keyof typeof en;
 
 export const id: Record<TranslationKey, string> = {
-  "meta.title": "AegisCrypt — Enkripsi Berkas Zero-Knowledge",
+  "meta.title": "AegisCrypt — Enkripsi Berkas di Perangkat",
   "meta.description":
-    "AegisCrypt adalah aplikasi enkripsi berkas AES-256-GCM berbasis browser dengan model zero-knowledge. Berkas Anda tidak pernah meninggalkan perangkat.",
+    "AegisCrypt mengenkripsi berkas di browser dengan AES-256-GCM. Berkas dan kata sandi diproses di perangkat Anda dan tidak pernah diunggah.",
 
   "recovery.title": "Kunci recovery",
   "recovery.description":
@@ -259,7 +259,7 @@ export const id: Record<TranslationKey, string> = {
   "common.themeLight": "Ganti ke mode terang",
   "common.themeDark": "Ganti ke mode gelap",
 
-  "login.zeroKnowledgeSuite": "Suite zero-knowledge",
+  "login.onDeviceSuite": "Enkripsi di perangkat",
   "login.badge": "BERJALAN SEPENUHNYA DI BROWSER ANDA",
   "login.headline1": "Privat secara bawaan.",
   "login.headline2": "Terenkripsi oleh Anda.",
@@ -284,11 +284,11 @@ export const id: Record<TranslationKey, string> = {
   "login.startSession": "Mulai Sesi",
   "login.initializing": "Menginisialisasi...",
   "login.filesNeverLeave": "Berkas tidak pernah meninggalkan perangkat Anda",
-  "login.footer": "AegisCrypt Web / Ruang kerja enkripsi zero-knowledge",
+  "login.footer": "AegisCrypt Web / Ruang kerja enkripsi di perangkat",
   "login.noticeLockedInactivity": "Sesi terkunci setelah 10 menit tanpa aktivitas.",
   "login.noticeLockedManual": "Sesi terkunci. Masukkan kata sandi untuk melanjutkan.",
 
-  "app.badge": "ZERO-KNOWLEDGE",
+  "app.badge": "DI PERANGKAT",
   "app.workspaceActive": "Ruang kerja aman / sesi aktif",
   "app.auth": "Autentikasi",
   "app.password": "Kata sandi",
@@ -299,8 +299,8 @@ export const id: Record<TranslationKey, string> = {
   "app.lock": "Kunci",
   "app.lockTitle": "Kunci sesi dan hapus kredensial",
   "app.logout": "Keluar",
-  "app.zeroKnowledgeFooter":
-    "Zero-knowledge sejak desain. Berkas dikunci di memori browser dan tidak pernah diunggah ke server.",
+  "app.privacyFooter":
+    "Enkripsi berjalan di perangkat Anda. Berkas dikunci di memori browser dan tidak pernah diunggah ke server.",
 
   "queue.title": "Antrean Pemrosesan",
   "queue.queued": "{size} dalam antrean pemrosesan",

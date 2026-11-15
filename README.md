@@ -4,9 +4,9 @@
 
 **Live:** [App](https://aegiscrypt.bangkah.tech) · [Documentation](https://docs.aegiscrypt.bangkah.tech)
 
-AegisCrypt Web is a browser-based encryption tool designed with a **zero-knowledge** approach: files and passwords are processed entirely in the browser (Web Crypto API, in-memory/OPFS-bounded flows) and are never sent to any server.
+AegisCrypt Web encrypts files in your browser: files and passwords are processed entirely on your device (Web Crypto API, in-memory/OPFS-bounded flows) and are never sent to any server.
 
-> Status: production-readiness work in progress (Gate 1 feedback). Not independently audited yet.
+> Status: production-readiness work in progress (Gate 1 feedback). Not independently audited yet. First public preview: [0.1.0](CHANGELOG.md).
 
 ---
 
@@ -125,7 +125,7 @@ Each record: 5-byte header (`final flag` + uint32 ciphertext length) + ciphertex
 ## FAQ
 
 **Lost password/keyfile?**  
-Without a recovery key, no. AegisCrypt is zero-knowledge with no backdoor. Enable and store a recovery key offline if you need a recovery path.
+Without a recovery key, no. AegisCrypt has no built-in recovery mechanism: the only ways into a file are the password/keyfile you chose and a recovery key you created yourself. Enable and store a recovery key offline if you need a recovery path.
 
 **Browser asks to download multiple files?**  
 Batch operations trigger one download per file; allow multiple downloads when prompted.
