@@ -952,24 +952,28 @@ const decryptLegacyV2 = async (
       const iv = payload.subarray(0, CRYPTO_CONSTANTS.IV_LENGTH);
       const ciphertext = payload.subarray(CRYPTO_CONSTANTS.IV_LENGTH);
 
+      let plaintext: Bytes;
       try {
-        const plaintext = new Uint8Array(
+        plaintext = new Uint8Array(
           await webcrypto.subtle.decrypt(
             { name: CRYPTO_CONSTANTS.ALGORITHM_AES, iv },
             key,
             ciphertext,
           ),
         );
-        await sink.write(plaintext);
       } catch {
         throw new Error(AegisError.credentials);
       }
 
+      await sink.write(plaintext);
+
       offset += 4 + chunkLength;
       onProgress(offset);
+      if (signal.aborted) throw new Error(AegisError.cancelled);
       await yieldToEventLoop();
     }
 
+    if (signal.aborted) throw new Error(AegisError.cancelled);
     return await sink.finalize();
   } catch (error) {
     await sink.abort?.();
@@ -980,9 +984,12 @@ const decryptLegacyV2 = async (
 /**
  * Decrypts a v3 (or legacy v2) container.
  *
- * `source` may be a Blob/File (streamed, constant memory) or an ArrayBuffer.
- * Output is written to a sink and only finalized after the final record has
- * been authenticated; on any failure the partial output is discarded.
+ * `source` may be a Blob/File (read one record at a time) or an ArrayBuffer.
+ * Plaintext goes to a sink: the OPFS sink keeps heap use bounded, while the
+ * in-memory fallback accumulates Blob parts, so peak memory follows the output
+ * size. Output is finalized only after the final record has been authenticated
+ * and cancellation has been re-checked; on any failure the partial output is
+ * discarded.
  */
 export const processFileDecrypt = async (
   source: Blob | ArrayBuffer,
@@ -1098,6 +1105,7 @@ export const processFileDecrypt = async (
       offset += RECORD_HEADER_LENGTH + ciphertextLength;
       index += 1;
       onProgress(offset);
+      if (signal.aborted) throw new Error(AegisError.cancelled);
 
       if (isFinal) {
         sawFinal = true;
@@ -1109,6 +1117,7 @@ export const processFileDecrypt = async (
 
     if (!sawFinal) throw new Error(AegisError.missingFinal);
     if (offset !== reader.size) throw new Error(AegisError.trailing);
+    if (signal.aborted) throw new Error(AegisError.cancelled);
 
     return await sink.finalize();
   } catch (error) {

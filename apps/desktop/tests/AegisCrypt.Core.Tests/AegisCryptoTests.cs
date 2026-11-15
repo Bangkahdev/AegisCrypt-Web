@@ -393,6 +393,57 @@ public class AegisCryptoTests
     }
 
     [Fact]
+    public void DecryptHonorsCancellationRequestedOnFinalRecord()
+    {
+        var plaintext = PatternBytes(AegisConstants.ChunkSizeMin * 2 + 100, 6);
+        var container = Encrypt(plaintext, "sandi", null, FastOptions());
+        var cts = new CancellationTokenSource();
+        long lastReported = 0;
+
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            Decrypt(
+                container,
+                "sandi",
+                progress: position =>
+                {
+                    lastReported = position;
+                    if (position == container.Length)
+                    {
+                        cts.Cancel();
+                    }
+                },
+                cancellationToken: cts.Token));
+
+        Assert.Equal(container.Length, lastReported);
+        Assert.Equal(AegisErrors.Cancelled, error.Message);
+    }
+
+    [Fact]
+    public void LegacyV2DecryptHonorsCancellationRequestedOnFinalRecord()
+    {
+        var container = BuildLegacyV2(PatternBytes(300, 7), "warisan", chunkSize: 100);
+        var cts = new CancellationTokenSource();
+        long lastReported = 0;
+
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            Decrypt(
+                container,
+                "warisan",
+                progress: position =>
+                {
+                    lastReported = position;
+                    if (position == container.Length)
+                    {
+                        cts.Cancel();
+                    }
+                },
+                cancellationToken: cts.Token));
+
+        Assert.Equal(container.Length, lastReported);
+        Assert.Equal(AegisErrors.Cancelled, error.Message);
+    }
+
+    [Fact]
     public void RewrapHonorsCancellation()
     {
         var container = Encrypt(PatternBytes(1_000, 5), "lama", null, FastOptions());

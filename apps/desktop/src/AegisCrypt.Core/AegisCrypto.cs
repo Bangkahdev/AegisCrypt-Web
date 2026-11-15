@@ -265,6 +265,7 @@ public static class AegisCrypto
             output.Write(plaintext);
 
             progress?.Invoke(input.Position);
+            ThrowIfCancelled(cancellationToken);
 
             if (isFinal)
             {
@@ -284,6 +285,8 @@ public static class AegisCrypto
         {
             throw new AegisFormatException(AegisErrors.Trailing);
         }
+
+        ThrowIfCancelled(cancellationToken);
 
         return new DecryptResult(filename, false);
     }
@@ -434,7 +437,10 @@ public static class AegisCrypto
 
             offset += 4 + chunkLength;
             progress?.Invoke(offset);
+            ThrowIfCancelled(cancellationToken);
         }
+
+        ThrowIfCancelled(cancellationToken);
     }
 
     private static byte[] RandomBytesDefault(int length)

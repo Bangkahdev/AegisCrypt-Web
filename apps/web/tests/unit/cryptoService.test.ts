@@ -12,7 +12,7 @@ import {
   processFileDecrypt,
   processFileEncrypt,
 } from "../../src/services/cryptoService";
-import { makeRng, patternBytes, toBytes, type Bytes } from "../helpers";
+import { buildLegacyV2, makeRng, patternBytes, toBytes, type Bytes } from "../helpers";
 
 const CHUNK = CRYPTO_CONSTANTS.CHUNK_SIZE_MIN; // 64 KiB keeps multi-record tests fast
 
@@ -331,5 +331,94 @@ describe("decryption cancellation and cleanup", () => {
       ),
     ).rejects.toThrow(AegisError.tampered);
     expect(aborts).toHaveLength(1);
+  });
+
+  it("cancels when the progress callback aborts on the final v3 record", async () => {
+    const controller = new AbortController();
+    const container = await encrypt(patternBytes(300), "pw");
+    const finalizes: number[] = [];
+    const aborts: number[] = [];
+    const sink = {
+      write: () => {},
+      finalize: () => {
+        finalizes.push(1);
+        return new Blob([]);
+      },
+      abort: () => {
+        aborts.push(1);
+      },
+    };
+
+    await expect(
+      processFileDecrypt(
+        container,
+        "pw",
+        null,
+        controller.signal,
+        () => controller.abort(),
+        { sink },
+      ),
+    ).rejects.toThrow(AegisError.cancelled);
+    expect(finalizes).toHaveLength(0);
+    expect(aborts).toHaveLength(1);
+  });
+
+  it("cancels when the progress callback aborts on the final v2 record", async () => {
+    const controller = new AbortController();
+    const container = await buildLegacyV2(
+      patternBytes(200),
+      "legacy-pw",
+      makeRng(2)(32),
+      [makeRng(3)(CRYPTO_CONSTANTS.IV_LENGTH)],
+    );
+    const finalizes: number[] = [];
+    const sink = {
+      write: () => {},
+      finalize: () => {
+        finalizes.push(1);
+        return new Blob([]);
+      },
+      abort: () => {},
+    };
+
+    await expect(
+      processFileDecrypt(
+        new Blob([container]),
+        "legacy-pw",
+        null,
+        controller.signal,
+        () => controller.abort(),
+        { sink },
+      ),
+    ).rejects.toThrow(AegisError.cancelled);
+    expect(finalizes).toHaveLength(0);
+  });
+
+  it("surfaces a v2 sink write failure instead of a credential error", async () => {
+    const container = await buildLegacyV2(
+      patternBytes(200),
+      "legacy-pw",
+      makeRng(2)(32),
+      [makeRng(3)(CRYPTO_CONSTANTS.IV_LENGTH)],
+    );
+    const failure = new Error("penyimpanan penuh");
+    const sink = {
+      write: () => {
+        throw failure;
+      },
+      finalize: () => new Blob([]),
+      abort: () => {},
+    };
+
+    await expect(
+      processFileDecrypt(
+        new Blob([container]),
+        "legacy-pw",
+        null,
+        new AbortController().signal,
+        () => {},
+        { sink },
+      ),
+    ).rejects.toThrow("penyimpanan penuh");
   });
 });
