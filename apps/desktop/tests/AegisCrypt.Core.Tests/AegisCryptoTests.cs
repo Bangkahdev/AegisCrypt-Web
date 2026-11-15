@@ -380,6 +380,58 @@ public class AegisCryptoTests
     }
 
     [Fact]
+    public void EncryptHonorsCancellationRequestedOnFinalRecord()
+    {
+        var plaintext = PatternBytes(AegisConstants.ChunkSizeMin * 2 + 100, 8);
+        var cts = new CancellationTokenSource();
+        long lastReported = -1;
+
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            Encrypt(
+                plaintext,
+                "sandi",
+                null,
+                new EncryptOptions
+                {
+                    Iterations = AegisConstants.IterationsMin,
+                    ChunkSize = AegisConstants.ChunkSizeMin,
+                    Progress = position =>
+                    {
+                        lastReported = position;
+                        if (position == plaintext.Length)
+                        {
+                            cts.Cancel();
+                        }
+                    },
+                },
+                cts.Token));
+
+        Assert.Equal(plaintext.Length, lastReported);
+        Assert.Equal(AegisErrors.Cancelled, error.Message);
+    }
+
+    [Fact]
+    public void EncryptEmptyInputHonorsCancellationRequestedOnFinalProgress()
+    {
+        var cts = new CancellationTokenSource();
+
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            Encrypt(
+                Array.Empty<byte>(),
+                "sandi",
+                null,
+                new EncryptOptions
+                {
+                    Iterations = AegisConstants.IterationsMin,
+                    ChunkSize = AegisConstants.ChunkSizeMin,
+                    Progress = _ => cts.Cancel(),
+                },
+                cts.Token));
+
+        Assert.Equal(AegisErrors.Cancelled, error.Message);
+    }
+
+    [Fact]
     public void DecryptHonorsCancellation()
     {
         var plaintext = PatternBytes(AegisConstants.ChunkSizeMin * 3, 2);

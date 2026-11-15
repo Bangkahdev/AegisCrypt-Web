@@ -53,7 +53,7 @@ aegiscrypt-web/
 
 ## Development & Testing
 
-Web app (run from `apps/web`):
+Web app (run from `apps/web`, Node.js 22.23+):
 
 ```bash
 npm install

@@ -53,7 +53,7 @@ aegiscrypt-web/
 
 ## Pengembangan & Pengujian
 
-Aplikasi web (jalankan dari `apps/web`):
+Aplikasi web (jalankan dari `apps/web`, Node.js 22.23+):
 
 ```bash
 npm install

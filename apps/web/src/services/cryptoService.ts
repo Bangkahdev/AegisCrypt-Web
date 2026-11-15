@@ -871,6 +871,7 @@ export const processFileEncrypt = async (
     parts.push(await encryptRecord(0, new Uint8Array(0), true));
     if (signal.aborted) throw new Error(AegisError.cancelled);
     onProgress(0);
+    if (signal.aborted) throw new Error(AegisError.cancelled);
     return new Blob(parts, { type: "application/octet-stream" });
   }
 
@@ -890,9 +891,11 @@ export const processFileEncrypt = async (
     offset = end;
     index += 1;
     onProgress(offset);
+    if (signal.aborted) throw new Error(AegisError.cancelled);
     await yieldToEventLoop();
   }
 
+  if (signal.aborted) throw new Error(AegisError.cancelled);
   return new Blob(parts, { type: "application/octet-stream" });
 };
 
