@@ -83,7 +83,8 @@ Operator layanan
 Penerbitan lisensi, penagihan, pemantauan, dukungan
 2.3 Lingkungan Operasi
 • Web modern dengan Web Crypto API dan HTTPS (Chrome, Edge, Firefox, Safari, dua versi mayor terakhir).
-• PWA pada tahap berikutnya; Android, iOS, dan desktop pada Fase 5.
+• PWA pada tahap berikutnya; Android dan iOS pada Fase 5.
+• Klien desktop (.NET 8: Core, CLI, dan GUI Avalonia) **sudah ada di repositori ini** dan ikut diuji di CI, sehingga termasuk baseline Phase 1 untuk paritas format v2/v3. Rilis terdistribusi (ditandatangani, dengan checksum SHA-256) tetap menjadi pekerjaan Fase 5; sampai saat itu build desktop diperlakukan sebagai *early-access companion build*, bukan kanal distribusi utama.
 • Backend berupa layanan HTTPS dengan basis data relasional.
 2.4 Batasan Desain
 1.  Enkripsi dan dekripsi berjalan di sisi klien; backend tidak boleh berada pada jalur proses tersebut.

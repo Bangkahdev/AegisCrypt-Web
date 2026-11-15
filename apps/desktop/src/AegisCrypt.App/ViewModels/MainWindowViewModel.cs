@@ -263,6 +263,7 @@ public sealed class MainWindowViewModel : ObservableObject
                 },
                 cancellationToken);
 
+            cancellationToken.ThrowIfCancellationRequested();
             File.Move(tempPath, fullOutput, true);
             ProgressPercent = 100;
             SetStatus($"Terenkripsi: {fullOutput}", false);
@@ -319,6 +320,7 @@ public sealed class MainWindowViewModel : ObservableObject
             }
 
             EnsureOutputAvailable(finalPath);
+            cancellationToken.ThrowIfCancellationRequested();
             File.Move(tempPath, finalPath, true);
 
             ProgressPercent = 100;

@@ -178,9 +178,9 @@ internal static class Program
                 AegisCrypto.Encrypt(input, output, password, keyFile, options, cancellationToken);
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             File.Move(tempPath, fullOutput, true);
-            Console.WriteLine($"Terenkripsi: {fullOutput}");
-            return 0;
+            Console.WriteLine($"Terenkripsi: {fullOutput}");            return 0;
         }
         finally
         {
@@ -218,6 +218,8 @@ internal static class Program
             {
                 result = AegisCrypto.Decrypt(input, output, password, keyFile, recoveryKey, null, cancellationToken);
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             var finalPath = requestedOutput is null
                 ? Path.Combine(directory, ResolveDecryptName(inputPath, result.Filename))
@@ -278,6 +280,7 @@ internal static class Program
             }
 
             var finalPath = Path.GetFullPath(outputPath);
+            cancellationToken.ThrowIfCancellationRequested();
             File.Move(tempPath, finalPath, true);
             Console.WriteLine($"Direwrap: {finalPath}");
             return 0;
