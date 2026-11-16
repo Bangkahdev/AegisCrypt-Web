@@ -53,4 +53,5 @@ Not independently audited yet — see **Known limitations**.
 - **Per-DEK usage budget** is documented in `spec-aegis-v3.md` §7.2 but not enforced. The
   record-count ceiling (`MAX_RECORDS`) is enforced on both platforms; the aggregate
   ciphertext/AAD block budget awaits an independent crypto review.
-- **Landing pages** under `/awal/` stay `noindex` until the public announcement.
+- **Search visibility.** `/awal/` and `/awal/id/` ship indexable with this release (canonical plus
+  `hreflang` alternates); the feedback pages under `/awal/feedback/` stay `noindex`.
