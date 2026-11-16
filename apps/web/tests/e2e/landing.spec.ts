@@ -49,7 +49,7 @@ test.describe('Gate 1 landing pages', () => {
     await expect(page.getByRole('link', { name: 'Security notes' })).toHaveAttribute('href', 'https://docs.aegiscrypt.bangkah.tech/keamanan');
   });
 
-  test('landing stays noindex with no console errors or inline resources', async ({ page }) => {
+  test('landing is indexable with no console errors or inline resources', async ({ page }) => {
     const errors: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'error') errors.push(message.text());
@@ -59,6 +59,22 @@ test.describe('Gate 1 landing pages', () => {
     expect(errors).toEqual([]);
     expect(await page.locator('[style]').count()).toBe(0);
     expect(await page.locator('script').count()).toBe(0);
+    expect(await page.locator('meta[name="robots"]').count()).toBe(0);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      'https://aegiscrypt.bangkah.tech/awal/',
+    );
+
+    await page.goto('/awal/id/');
+    expect(await page.locator('meta[name="robots"]').count()).toBe(0);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      'https://aegiscrypt.bangkah.tech/awal/id/',
+    );
+
+    await page.goto('/awal/feedback/');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+    await page.goto('/awal/id/feedback/');
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
   });
 
