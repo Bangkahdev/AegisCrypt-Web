@@ -131,5 +131,16 @@ export const RECORD_AAD_LENGTH = 43;
    */
   export const MAX_RECORDS = 4_294_967_294;
 
+  /**
+   * Aggregate per-DEK AES-GCM usage budget (D1b, product policy — provisional).
+   * 96-bit nonces stay unique under the deterministic construction, but the total
+   * data authenticated under one DEK must stay far below 2^32 GCM blocks:
+   * NIST SP 800-38D analysis puts the forgery advantage near 2^-64 at
+   * sigma ≈ 2^32 blocks. 2^32 blocks x 16 bytes = 64 GiB of plaintext + AAD
+   * per DEK. Enforced as product policy, not yet a normative format rule; see
+   * docs/specs/spec-aegis-v3.md section 7.2.
+   */
+  export const MAX_DEK_BYTES = 64 * 1024 * 1024 * 1024; // 64 GiB
+
 /** Legacy v2 header: magic(5) + version(1) + salt(32). */
 export const LEGACY_HEADER_LENGTH = 38;

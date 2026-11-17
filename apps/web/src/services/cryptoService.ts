@@ -38,6 +38,7 @@ import {
   FILENAME_METADATA_INDEX,
   FILENAME_AAD_DOMAIN,
   FILENAME_AAD_LENGTH,
+  MAX_DEK_BYTES,
 } from "../constants";
 
 /**
@@ -84,6 +85,7 @@ export const AegisError = {
   recoveryKey: "Kunci recovery salah atau slot rusak.",
   legacyCorrupt: "Berkas corrupt: struktur v2 tidak valid.",
   cancelled: "Operation Cancelled",
+  dekBudget: "Anggaran penggunaan DEK tercapai; berkas melebihi batas per kunci data.",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -97,6 +99,18 @@ const defaultRandomBytes: RandomBytes = (length) =>
 
 export const generateSalt = (): Bytes =>
   webcrypto.getRandomValues(new Uint8Array(CRYPTO_CONSTANTS.SALT_LENGTH));
+
+/**
+ * Aggregate per-DEK GCM accounting (D1b). Counts plaintext bytes plus the
+ * authenticated additional data of every record sealed with the same DEK.
+ * Throws before any record is sealed once the budget is exceeded.
+ */
+export const assertDekBudget = (usedBytes: number, additionalBytes: number): void => {
+  const next = usedBytes + additionalBytes;
+  if (!Number.isFinite(next) || next > MAX_DEK_BYTES) {
+    throw new Error(AegisError.dekBudget);
+  }
+};
 
 export const generateIV = (): Bytes =>
   webcrypto.getRandomValues(new Uint8Array(CRYPTO_CONSTANTS.IV_LENGTH));
@@ -820,10 +834,14 @@ export const processFileEncrypt = async (
   );
 
   const parts: BlobPart[] = [header];
+  let dekBytes = 0;
   if (options.recoveryKey) {
     parts.push(await sealRecoverySlot(dekRaw, options.recoveryKey, fileId, randomBytes));
   }
   if (options.filename != null) {
+    const filenameBytes = new TextEncoder().encode(options.filename);
+    assertDekBudget(dekBytes, filenameBytes.byteLength + FILENAME_AAD_LENGTH);
+    dekBytes += filenameBytes.byteLength + FILENAME_AAD_LENGTH;
     parts.push(await encryptFilename(dek, fileId, noncePrefix, options.filename));
   }
   const totalSize = file.size;
@@ -868,6 +886,8 @@ export const processFileEncrypt = async (
     // Cancellation must still be observed: an abort requested before this
     // point must not produce a "successful" container.
     if (signal.aborted) throw new Error(AegisError.cancelled);
+    assertDekBudget(dekBytes, RECORD_AAD_LENGTH);
+    dekBytes += RECORD_AAD_LENGTH;
     parts.push(await encryptRecord(0, new Uint8Array(0), true));
     if (signal.aborted) throw new Error(AegisError.cancelled);
     onProgress(0);
@@ -885,6 +905,8 @@ export const processFileEncrypt = async (
     const plaintext = new Uint8Array(await file.slice(offset, end).arrayBuffer());
     const isFinal = end === totalSize;
 
+    assertDekBudget(dekBytes, plaintext.byteLength + RECORD_AAD_LENGTH);
+    dekBytes += plaintext.byteLength + RECORD_AAD_LENGTH;
     parts.push(await encryptRecord(index, plaintext, isFinal));
     if (signal.aborted) throw new Error(AegisError.cancelled);
 
@@ -1035,9 +1057,15 @@ export const processFileDecrypt = async (
     }
     if (signal.aborted) throw new Error(AegisError.cancelled);
     const dek = await importDek(dekRaw, ["decrypt"]);
+    let dekBytes = 0;
 
     const { recordsOffset, filename } = await resolveRecordsOffset(reader, header, dek);
     if (filename) options.onFilename?.(filename);
+    if (filename != null) {
+      const filenameBytes = new TextEncoder().encode(filename);
+      assertDekBudget(dekBytes, filenameBytes.byteLength + FILENAME_AAD_LENGTH);
+      dekBytes += filenameBytes.byteLength + FILENAME_AAD_LENGTH;
+    }
 
     let offset = recordsOffset;
     let index = 0;
@@ -1103,6 +1131,8 @@ export const processFileDecrypt = async (
         throw new Error(AegisError.tampered);
       }
 
+      assertDekBudget(dekBytes, plaintext.byteLength + RECORD_AAD_LENGTH);
+      dekBytes += plaintext.byteLength + RECORD_AAD_LENGTH;
       await sink.write(plaintext);
 
       offset += RECORD_HEADER_LENGTH + ciphertextLength;

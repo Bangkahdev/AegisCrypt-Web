@@ -4,9 +4,12 @@ import {
   FILE_VERSION,
   HEADER_LENGTH,
   KDF_ID_PBKDF2_SHA256,
+  MAX_DEK_BYTES,
+  RECORD_AAD_LENGTH,
 } from "../../src/constants";
 import {
   AegisError,
+  assertDekBudget,
   deriveKey,
   prepareKeyMaterial,
   processFileDecrypt,
@@ -453,5 +456,32 @@ describe("decryption cancellation and cleanup", () => {
         { sink },
       ),
     ).rejects.toThrow("penyimpanan penuh");
+  });
+});
+
+describe("DEK usage budget (D1b)", () => {
+  const perRecord = CRYPTO_CONSTANTS.CHUNK_SIZE_MIN + RECORD_AAD_LENGTH;
+
+  it("accepts exactly MAX_DEK_BYTES", () => {
+    assertDekBudget(0, MAX_DEK_BYTES);
+  });
+
+  it("rejects one byte over MAX_DEK_BYTES", () => {
+    expect(() => assertDekBudget(MAX_DEK_BYTES, 1)).toThrow(AegisError.dekBudget);
+  });
+
+  it("rejects non-finite overflow", () => {
+    expect(() => assertDekBudget(Number.MAX_SAFE_INTEGER, 1)).toThrow(AegisError.dekBudget);
+  });
+
+  it("tracks accumulation across records up to the boundary", () => {
+    const count = Math.floor(MAX_DEK_BYTES / perRecord);
+    let used = 0;
+    for (let i = 0; i < count; i += 1) {
+      assertDekBudget(used, perRecord);
+      used += perRecord;
+    }
+    expect(used).toBeLessThanOrEqual(MAX_DEK_BYTES);
+    expect(() => assertDekBudget(used, perRecord)).toThrow(AegisError.dekBudget);
   });
 });

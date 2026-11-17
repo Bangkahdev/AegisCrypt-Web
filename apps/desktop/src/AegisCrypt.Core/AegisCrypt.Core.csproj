@@ -3,4 +3,9 @@
     <OutputType>Library</OutputType>
     <RootNamespace>AegisCrypt.Core</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>AegisCrypt.Core.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>

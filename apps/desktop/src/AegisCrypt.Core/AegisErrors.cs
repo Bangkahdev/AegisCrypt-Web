@@ -20,6 +20,7 @@ public static class AegisErrors
     public const string RecoveryKey = "Kunci recovery salah atau slot rusak.";
     public const string LegacyCorrupt = "Berkas corrupt: struktur v2 tidak valid.";
     public const string Cancelled = "Operation Cancelled";
+    public const string DekBudget = "Anggaran penggunaan DEK tercapai; berkas melebihi batas per kunci data.";
 
     public static string Version(int version) =>
         $"Versi file tidak didukung (v{version}). Perbarui aplikasi.";
