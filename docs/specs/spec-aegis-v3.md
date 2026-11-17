@@ -157,21 +157,21 @@ Nonce (tidak disimpan): nonce_prefix(4) || index(8, u64 BE), index mulai 0 berta
 
 **Ukuran per invokasi:** `chunk_size ≤ 16 MiB`. Nilai ini jauh di bawah batas panjang plaintext per invokasi GCM (SP 800-38D §5.2.1.1: ≤ `2^39 - 256` bit ≈ 68,7 GB untuk IV 96-bit).
 
-### 7.2 Anggaran blok per DEK (pertimbangan, belum normatif)
+### 7.2 Anggaran blok per DEK (D1b: diterapkan sebagai kebijakan produk, belum normatif)
 
 Jaminan GCM menurun seiring jumlah blok plaintext dan AAD yang diproses dengan satu kunci; SP 800-38D menyarankan total blok per kunci dibatasi (contoh yang disebut standar: `2^64` blok). Pada geometri maksimum yang diizinkan (`≈2^32` record × 16 MiB) totalnya `≈2^52` blok — secara teori masih di bawah `2^64`, tetapi keunggulan pemalsuan tag (orde `σ^2 / 2^128`) berada di kisaran `2^-24`, jauh lebih lemah daripada target umum `2^-32`/`2^-64`. Karena itu:
 
-- Rekomendasi operasional (non-normatif, untuk ditinjau pada D1b): batasi total plaintext+AAD per DEK hingga `≤ 64 GiB` (`σ ≈ 2^32` blok, keunggulan `≈ 2^-64`).
+- **Diterapkan (D1b, kebijakan produk — belum normatif):** batasi total plaintext+AAD per DEK hingga `≤ 64 GiB` (`σ ≈ 2^32` blok, keunggulan `≈ 2^-64`). Web dan Desktop menghitung dan menegakkan anggaran ini saat enkripsi maupun dekripsi; melebihi batas ditolak sebelum plaintext dipublikasikan, tanpa keluaran parsial.
 - Anggaran yang dimaksud **wajib menghitung seluruh blok yang diproses satu DEK**, bukan hanya panjang plaintext: blok ciphertext tiap record, blok AAD tiap record (header record, `file_id`, `nonce_prefix`, indeks), record metadata nama berkas (indeks `2^64-1`), serta percobaan verifikasi tag yang gagal. SP 800-38D Lampiran B menyarankan pemantauan dan pembatasan percobaan verifikasi gagal selain pembatasan total blok.
 - **Kapasitas *invocation field* bukan anggaran pemakaian DEK.** `2^64` invokasi hanya menunjukkan nonce tidak berulang, bukan bahwa memproses `2^64` record dengan satu kunci masih aman. Kedua angka tidak boleh disamakan.
-- **Status implementasi saat ini:** web dan desktop menegakkan `MAX_RECORDS` (penolakan struktural), tetapi **belum** menghitung atau menegakkan anggaran blok agregat per DEK. Kebijakan agregat tetap non-normatif sampai D1b ditinjau, dan dinyatakan sebagai batas kebijakan produk, bukan jaminan kriptografis.
+- **Status implementasi saat ini:** web dan desktop **menghitung dan menegakkan** anggaran blok agregat per DEK (`≤ 64 GiB` plaintext + AAD, ≈ 2^32 blok GCM). Kebijakan tetap **non-normatif / provisional** sampai tinjauan kriptografi independen selesai; bukan jaminan kriptografis dan bukan aturan format final.
 - Implementasi **boleh** menolak masukan yang melebihi anggaran operasional tanpa melanggar format; penolakan yang lebih ketat tetap kompatibel dengan berkas valid yang sudah ada.
 - Menjadikan anggaran ini **normatif** (atau menurunkan `MAX_RECORDS`) memerlukan tinjauan kriptografis dan entri perubahan pada dokumen ini, bukan asumsi implementasi.
 **Perilaku normatif saat terlampaui:**
-- Penulis: menolak mengenkripsi record ke-`2^32-1` dan seterusnya (error terkontrol; tidak ada keluaran parsial).
+- Penulis: menolak mengenkripsi bila total plaintext+AAD per DEK melebihi 64 GiB (error terkontrol; tidak ada keluaran parsial).
 - Parser: menolak kontainer yang memuat record dengan indeks ≥ `MAX_RECORDS` (`AegisError.record` di Web; `AegisErrors.Record` di Desktop).
 
-**Status:** provisional. Angka ini **wajib ditinjau kriptografer independen** (batas invokasi/tag, margin forgery, kebijakan rotasi DEK) sebelum status dokumen menjadi FROZEN v2.0. Jika tinjauan menurunkan batas, perubahan bersifat *parsing lebih ketat* dan tidak merusak berkas yang sudah valid di bawah batas baru.
+**Status:** provisional. Implementasi telah menegakkan batas ini sebagai kebijakan produk, namun angka ini **wajib ditinjau kriptografer independen** (batas invokasi/tag, margin forgery, kebijakan rotasi DEK) sebelum status dokumen menjadi FROZEN v2.0. Jika tinjauan menurunkan batas, perubahan bersifat *parsing lebih ketat* dan tidak merusak berkas yang sudah valid di bawah batas baru.
 
 ## 7.1 Batas ukuran praktis (non-normatif)
 - Ukuran berkas yang dapat diproses dibatasi memori/platform (Web: Blob/OPFS; Desktop: stream seekable), bukan oleh format.
@@ -255,7 +255,7 @@ Menambah error baru **wajib** memperbarui katalog, kedua implementasi, dan uji p
 
 ## 11. Daftar Keputusan Pembekuan (Checklist)
 
-- [x] **D1 — Batas DEK/record:** **provisional** — maksimum `2^32-2` record per berkas/DEK sebagai kebijakan konservatif (lihat §7, §7.2); menunggu validasi kriptografis independen (D1a: konstruksi nonce/invokasi, D1b: anggaran blok per DEK).
+- [x] **D1 — Batas DEK/record:** **provisional** — maksimum `2^32-2` record per berkas/DEK sebagai kebijakan konservatif (lihat §7, §7.2); **D1b (anggaran blok per DEK: ≤ 64 GiB plaintext+AAD) telah diimplementasikan dan diujikan pada Web + Desktop**; masih menunggu validasi kriptografis independen (D1a: konstruksi nonce/invokasi) sebelum dinyatakan normatif.
 - [x] **D2 — KeyMaterial/encoding:** ditetapkan — UTF-8 byte-exact tanpa normalisasi; keyfile = SHA-256(byte mentah) ditempel setelah password tanpa pemisah.
 - [x] **D3 — Parameter header final:** ditetapkan — iterasi 600.000–5.000.000; chunk 65.536–16.777.216 byte.
 - [x] **D4 — Kompatibilitas v2:** selesai — fixture v2 beku bersama, dibaca Web + Desktop.

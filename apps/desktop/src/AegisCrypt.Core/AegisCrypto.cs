@@ -46,6 +46,7 @@ public static class AegisCrypto
         var fileId = randomBytes(AegisConstants.FileIdLength);
         var noncePrefix = randomBytes(AegisConstants.NoncePrefixLength);
         var wrapNonce = randomBytes(AegisConstants.IvLength);
+        var dekBytes = 0UL;
 
         byte flags = 0;
         if (keyFile is not null)
@@ -92,6 +93,8 @@ public static class AegisCrypto
 
         if (opts.Filename is not null)
         {
+            var filenameBytes = Encoding.UTF8.GetBytes(opts.Filename);
+            dekBytes = AccumulateDekBytes(dekBytes, (ulong)filenameBytes.Length + AegisConstants.FilenameAadLength);
             output.Write(EncryptFilename(dek, fileId, noncePrefix, opts.Filename));
         }
 
@@ -109,6 +112,7 @@ public static class AegisCrypto
 
             if (filled < opts.ChunkSize)
             {
+                dekBytes = AccumulateDekBytes(dekBytes, (ulong)filled + AegisConstants.RecordAadLength);
                 WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), true);
                 opts.Progress?.Invoke(input.Position);
                 ThrowIfCancelled(cancellationToken);
@@ -118,12 +122,14 @@ public static class AegisCrypto
             var extra = input.ReadByte();
             if (extra < 0)
             {
+                dekBytes = AccumulateDekBytes(dekBytes, (ulong)filled + AegisConstants.RecordAadLength);
                 WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), true);
                 opts.Progress?.Invoke(input.Position);
                 ThrowIfCancelled(cancellationToken);
                 break;
             }
 
+            dekBytes = AccumulateDekBytes(dekBytes, (ulong)filled + AegisConstants.RecordAadLength);
             WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), false);
             opts.Progress?.Invoke(input.Position);
             ThrowIfCancelled(cancellationToken);
@@ -208,7 +214,13 @@ public static class AegisCrypto
             dek = UnwrapDek(header, headerBytes, keyMaterial);
         }
 
+        ulong dekBytes = 0;
+
         var (filename, recordsOffset) = ResolveFilename(input, header, dek);
+        if (filename is not null)
+        {
+            dekBytes = AccumulateDekBytes(dekBytes, (ulong)Encoding.UTF8.GetByteCount(filename) + AegisConstants.FilenameAadLength);
+        }
 
         input.Position = recordsOffset;
         long index = 0;
@@ -267,6 +279,7 @@ public static class AegisCrypto
             var nonce = MakeNonce(header.NoncePrefix, (ulong)index);
             var aad = MakeRecordAad(header.ChunkSize, header.FileId, header.NoncePrefix, recordHeader, (ulong)index);
             var plaintext = DecryptGcm(dek, nonce, sealedData, aad, AegisErrors.Tampered);
+            dekBytes = AccumulateDekBytes(dekBytes, (ulong)plaintext.Length + AegisConstants.RecordAadLength);
             output.Write(plaintext);
 
             progress?.Invoke(input.Position);
@@ -771,6 +784,24 @@ public static class AegisCrypto
 
         output.Write(recordHeader);
         output.Write(sealedData);
+    }
+
+    internal static ulong AccumulateDekBytes(ulong current, ulong add)
+    {
+        ulong next;
+        try
+        {
+            next = checked(current + add);
+        }
+        catch (System.OverflowException)
+        {
+            throw new AegisFormatException(AegisErrors.DekBudget);
+        }
+        if (next > AegisConstants.MaxDekBytes)
+        {
+            throw new AegisFormatException(AegisErrors.DekBudget);
+        }
+        return next;
     }
 
     private static void ThrowIfCancelled(CancellationToken cancellationToken)

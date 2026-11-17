@@ -31,6 +31,7 @@ const MESSAGE_KEYS: Record<string, TranslationKey> = {
   [AegisError.recoveryKey]: "errors.recoveryKey",
   [AegisError.legacyCorrupt]: "errors.legacyCorrupt",
   [AegisError.cancelled]: "errors.cancelled",
+  [AegisError.dekBudget]: "errors.dekBudget",
 };
 
 const VERSION_MESSAGE = /^Versi file tidak didukung \(v(\d+)\)\. Perbarui aplikasi\.$/;

@@ -61,6 +61,15 @@ public static class AegisConstants
     /// </summary>
     public const ulong MaxRecords = 4_294_967_294UL;
 
+    /// <summary>
+    /// Aggregate per-DEK AES-GCM usage budget (D1b, product policy — provisional).
+    /// 64 GiB of plaintext + AAD per DEK is about 2^32 GCM blocks; NIST SP 800-38D
+    /// analysis puts the forgery advantage near 2^-64 at sigma ≈ 2^32 blocks.
+    /// Enforced at encryption and decryption before plaintext is published. See
+    /// docs/specs/spec-aegis-v3.md sections 7 and 7.2.
+    /// </summary>
+    public const ulong MaxDekBytes = 64UL * 1024 * 1024 * 1024;
+
     public const int LegacyHeaderLength = 38;
 
     public const byte FileVersion = 3;

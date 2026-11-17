@@ -59,6 +59,7 @@ export const en = {
   "errors.recoveryKey": "The recovery key is wrong or the slot is damaged.",
   "errors.legacyCorrupt": "The legacy v2 structure is corrupt.",
   "errors.cancelled": "Operation cancelled.",
+  "errors.dekBudget": "The data key usage limit was reached; the file is too large for a single data key.",
 
   "common.switchLanguage": "Switch language",
   "common.themeLight": "Switch to light mode",
@@ -254,6 +255,7 @@ export const id: Record<TranslationKey, string> = {
   "errors.recoveryKey": "Kunci recovery salah atau slot rusak.",
   "errors.legacyCorrupt": "Struktur v2 lama rusak.",
   "errors.cancelled": "Operasi dibatalkan.",
+  "errors.dekBudget": "Batas penggunaan kunci data tercapai; berkas terlalu besar untuk satu kunci data.",
 
   "common.switchLanguage": "Ganti bahasa",
   "common.themeLight": "Ganti ke mode terang",
