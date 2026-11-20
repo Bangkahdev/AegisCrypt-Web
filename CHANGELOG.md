@@ -9,11 +9,18 @@ change, and nothing in this file is a security certification.
 
 ### Security
 
-- **Per-DEK AES-GCM usage budget (D1b)**: aggregate plaintext + AAD processed under one DEK is
-  capped at 64 GiB (≈ 2^32 GCM blocks, forgery advantage ≈ 2^-64 per NIST SP 800-38D analysis).
-  Web and Desktop enforce the budget at encryption and decryption and reject containers that
-  would exceed it before any plaintext is published; includes boundary and overflow tests.
-  Still provisional pending independent cryptographic review — see spec §7.2.
+- **Per-DEK AES-GCM budget (D1b)**: every GCM invocation is charged in GHASH
+  blocks (`B = ceil(|AAD|/16) + ceil(|C|/16) + 1`, `C` = encrypted payload without the
+  tag). Per DEK the total is capped at `σ ≤ 2^32` blocks (forgery advantage ≈ 2^-64
+  per NIST SP 800-38D) with a 64 GiB plaintext+AAD secondary cap; Web and Desktop
+  charge before every invoked GCM operation (encryption, decryption, filename
+  metadata) — a failed tag verification is charged too — and reject containers that
+  would exceed the budget before GCM runs. Cross-platform parity is locked by the
+  shared `gcm-block-accounting.json` fixture, and boundary/chunk-size integration
+  tests (64 KiB / 1 MiB / 16 MiB) cover both platforms. Cumulative failed-attempt
+  limits across sessions are explicitly NOT enforced (offline app) and are
+  documented as a known limitation, not claimed. Still provisional pending
+  independent cryptographic review — see spec §7.2.
 
 ## [0.1.0] - 2026-11-15
 

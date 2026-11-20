@@ -39,6 +39,7 @@ import {
   FILENAME_AAD_DOMAIN,
   FILENAME_AAD_LENGTH,
   MAX_DEK_BYTES,
+  MAX_DEK_BLOCKS,
 } from "../constants";
 
 /**
@@ -101,15 +102,71 @@ export const generateSalt = (): Bytes =>
   webcrypto.getRandomValues(new Uint8Array(CRYPTO_CONSTANTS.SALT_LENGTH));
 
 /**
- * Aggregate per-DEK GCM accounting (D1b). Counts plaintext bytes plus the
- * authenticated additional data of every record sealed with the same DEK.
- * Throws before any record is sealed once the budget is exceeded.
+ * GHASH block count for one AES-GCM invocation (NIST SP 800-38D, sec. 6.3):
+ * AAD and ciphertext are padded to 16-byte blocks and an extra length block
+ * encodes len(A)||len(C) before GHASH runs:
+ *   B = ceil(|AAD| / 16) + ceil(|C| / 16) + 1
+ * C is the encrypted payload without the tag.
  */
-export const assertDekBudget = (usedBytes: number, additionalBytes: number): void => {
-  const next = usedBytes + additionalBytes;
-  if (!Number.isFinite(next) || next > MAX_DEK_BYTES) {
-    throw new Error(AegisError.dekBudget);
-  }
+export const countGcmBlocks = (
+  aadBytes: number,
+  ciphertextBytes: number,
+): number =>
+  Math.ceil(aadBytes / 16) + Math.ceil(ciphertextBytes / 16) + 1;
+
+export interface DekAccountant {
+  readonly bytes: number;
+  readonly blocks: number;
+  /**
+   * Charge one GCM invocation against the per-DEK budget. Call before the
+   * GCM invocation; a failed tag verification still consumed the work, so
+   * the charge counts attempts, not only successes. Throws
+   * AegisError.dekBudget before the operation when a cap would be exceeded.
+   */
+  charge(aadBytes: number, ciphertextBytes: number): void;
+}
+
+export const createDekAccountant = (
+  maxDekBlocks: number = MAX_DEK_BLOCKS,
+  maxDekBytes: number = MAX_DEK_BYTES,
+): DekAccountant => {
+  let bytes = 0;
+  let blocks = 0;
+
+  return {
+    get bytes() {
+      return bytes;
+    },
+    get blocks() {
+      return blocks;
+    },
+    charge(aadBytes: number, ciphertextBytes: number) {
+      if (
+        !Number.isInteger(aadBytes) ||
+        !Number.isInteger(ciphertextBytes) ||
+        aadBytes < 0 ||
+        ciphertextBytes < 0
+      ) {
+        throw new Error(AegisError.dekBudget);
+      }
+
+      const nextBytes = bytes + aadBytes + ciphertextBytes;
+      const nextBlocks =
+        blocks + countGcmBlocks(aadBytes, ciphertextBytes);
+
+      if (
+        !Number.isFinite(nextBytes) ||
+        !Number.isFinite(nextBlocks) ||
+        nextBytes > maxDekBytes ||
+        nextBlocks > maxDekBlocks
+      ) {
+        throw new Error(AegisError.dekBudget);
+      }
+
+      bytes = nextBytes;
+      blocks = nextBlocks;
+    },
+  };
 };
 
 export const generateIV = (): Bytes =>
@@ -363,6 +420,7 @@ const decryptFilename = async (
   offset: number,
   header: ParsedHeader,
   dek: CryptoKey,
+  accountant?: DekAccountant,
 ): Promise<{ filename: string; blockLength: number }> => {
   if (reader.size - offset < FILENAME_METADATA_LENGTH_BYTES) {
     throw new Error(AegisError.truncated);
@@ -388,6 +446,11 @@ const decryptFilename = async (
   const ciphertext = await reader.read(
     offset + FILENAME_METADATA_LENGTH_BYTES,
     ciphertextLength,
+  );
+
+  accountant?.charge(
+    FILENAME_AAD_LENGTH,
+    ciphertextLength - CRYPTO_CONSTANTS.TAG_LENGTH_BYTES,
   );
 
   let plaintext: Bytes;
@@ -434,6 +497,7 @@ const resolveRecordsOffset = async (
   reader: { size: number; read(offset: number, length: number): Promise<Bytes> },
   header: ParsedHeader,
   dek: CryptoKey,
+  accountant?: DekAccountant,
 ): Promise<{ recordsOffset: number; filename: string | null }> => {
   const offset = header.metadataOffset;
   if (reader.size < offset) throw new Error(AegisError.truncated);
@@ -442,7 +506,7 @@ const resolveRecordsOffset = async (
     return { recordsOffset: offset, filename: null };
   }
 
-  const metadata = await decryptFilename(reader, offset, header, dek);
+  const metadata = await decryptFilename(reader, offset, header, dek, accountant);
   return {
     recordsOffset: offset + metadata.blockLength,
     filename: metadata.filename,
@@ -767,6 +831,10 @@ export interface EncryptOptions {
   recoveryKey?: Uint8Array | null;
   /** Deterministic RNG injection for test vectors / property tests. */
   randomBytes?: RandomBytes;
+  /** Testing seam: override the per-DEK block cap (default MAX_DEK_BLOCKS). */
+  maxDekBlocks?: number;
+  /** Testing seam: override the per-DEK byte cap (default MAX_DEK_BYTES). */
+  maxDekBytes?: number;
 }
 
 export const processFileEncrypt = async (
@@ -834,14 +902,13 @@ export const processFileEncrypt = async (
   );
 
   const parts: BlobPart[] = [header];
-  let dekBytes = 0;
+  const accountant = createDekAccountant(options.maxDekBlocks, options.maxDekBytes);
   if (options.recoveryKey) {
     parts.push(await sealRecoverySlot(dekRaw, options.recoveryKey, fileId, randomBytes));
   }
   if (options.filename != null) {
     const filenameBytes = new TextEncoder().encode(options.filename);
-    assertDekBudget(dekBytes, filenameBytes.byteLength + FILENAME_AAD_LENGTH);
-    dekBytes += filenameBytes.byteLength + FILENAME_AAD_LENGTH;
+    accountant.charge(FILENAME_AAD_LENGTH, filenameBytes.byteLength);
     parts.push(await encryptFilename(dek, fileId, noncePrefix, options.filename));
   }
   const totalSize = file.size;
@@ -886,8 +953,7 @@ export const processFileEncrypt = async (
     // Cancellation must still be observed: an abort requested before this
     // point must not produce a "successful" container.
     if (signal.aborted) throw new Error(AegisError.cancelled);
-    assertDekBudget(dekBytes, RECORD_AAD_LENGTH);
-    dekBytes += RECORD_AAD_LENGTH;
+    accountant.charge(RECORD_AAD_LENGTH, 0);
     parts.push(await encryptRecord(0, new Uint8Array(0), true));
     if (signal.aborted) throw new Error(AegisError.cancelled);
     onProgress(0);
@@ -905,8 +971,7 @@ export const processFileEncrypt = async (
     const plaintext = new Uint8Array(await file.slice(offset, end).arrayBuffer());
     const isFinal = end === totalSize;
 
-    assertDekBudget(dekBytes, plaintext.byteLength + RECORD_AAD_LENGTH);
-    dekBytes += plaintext.byteLength + RECORD_AAD_LENGTH;
+    accountant.charge(RECORD_AAD_LENGTH, plaintext.byteLength);
     parts.push(await encryptRecord(index, plaintext, isFinal));
     if (signal.aborted) throw new Error(AegisError.cancelled);
 
@@ -932,6 +997,10 @@ export interface DecryptOptions {
   onFilename?: (filename: string) => void;
   /** Decrypt using the recovery slot instead of password + keyfile. */
   recoveryKey?: Uint8Array | null;
+  /** Testing seam: override the per-DEK block cap (default MAX_DEK_BLOCKS). */
+  maxDekBlocks?: number;
+  /** Testing seam: override the per-DEK byte cap (default MAX_DEK_BYTES). */
+  maxDekBytes?: number;
 }
 
 const decryptLegacyV2 = async (
@@ -1057,15 +1126,10 @@ export const processFileDecrypt = async (
     }
     if (signal.aborted) throw new Error(AegisError.cancelled);
     const dek = await importDek(dekRaw, ["decrypt"]);
-    let dekBytes = 0;
+    const accountant = createDekAccountant(options.maxDekBlocks, options.maxDekBytes);
 
-    const { recordsOffset, filename } = await resolveRecordsOffset(reader, header, dek);
+    const { recordsOffset, filename } = await resolveRecordsOffset(reader, header, dek, accountant);
     if (filename) options.onFilename?.(filename);
-    if (filename != null) {
-      const filenameBytes = new TextEncoder().encode(filename);
-      assertDekBudget(dekBytes, filenameBytes.byteLength + FILENAME_AAD_LENGTH);
-      dekBytes += filenameBytes.byteLength + FILENAME_AAD_LENGTH;
-    }
 
     let offset = recordsOffset;
     let index = 0;
@@ -1103,6 +1167,11 @@ export const processFileDecrypt = async (
         throw new Error(AegisError.truncated);
       }
 
+      accountant.charge(
+        RECORD_AAD_LENGTH,
+        ciphertextLength - CRYPTO_CONSTANTS.TAG_LENGTH_BYTES,
+      );
+
       const ciphertext = await reader.read(offset + RECORD_HEADER_LENGTH, ciphertextLength);
       const nonce = makeRecordNonce(header.noncePrefix, index);
       const aad = makeRecordAad(
@@ -1131,8 +1200,6 @@ export const processFileDecrypt = async (
         throw new Error(AegisError.tampered);
       }
 
-      assertDekBudget(dekBytes, plaintext.byteLength + RECORD_AAD_LENGTH);
-      dekBytes += plaintext.byteLength + RECORD_AAD_LENGTH;
       await sink.write(plaintext);
 
       offset += RECORD_HEADER_LENGTH + ciphertextLength;
@@ -1195,7 +1262,7 @@ export const rewrapFile = async (
 
   // Validate the metadata block (if any) before copying the tail verbatim.
   const dek = await importDek(dekRaw, ["decrypt"]);
-  await resolveRecordsOffset(reader, header, dek);
+  await resolveRecordsOffset(reader, header, dek, createDekAccountant());
 
   const iterations = options.iterations ?? header.iterations;
   const randomBytes = options.randomBytes ?? defaultRandomBytes;

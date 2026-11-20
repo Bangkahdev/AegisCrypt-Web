@@ -4,17 +4,20 @@ import {
   FILE_VERSION,
   HEADER_LENGTH,
   KDF_ID_PBKDF2_SHA256,
-  MAX_DEK_BYTES,
+  MAX_DEK_BLOCKS,
   RECORD_AAD_LENGTH,
+  FILENAME_AAD_LENGTH,
 } from "../../src/constants";
 import {
   AegisError,
-  assertDekBudget,
+  countGcmBlocks,
+  createDekAccountant,
   deriveKey,
   prepareKeyMaterial,
   processFileDecrypt,
   processFileEncrypt,
 } from "../../src/services/cryptoService";
+import blockAccountingVectors from "../fixtures/gcm-block-accounting.json";
 import { buildLegacyV2, makeRng, patternBytes, toBytes, type Bytes } from "../helpers";
 
 const CHUNK = CRYPTO_CONSTANTS.CHUNK_SIZE_MIN; // 64 KiB keeps multi-record tests fast
@@ -459,29 +462,183 @@ describe("decryption cancellation and cleanup", () => {
   });
 });
 
-describe("DEK usage budget (D1b)", () => {
-  const perRecord = CRYPTO_CONSTANTS.CHUNK_SIZE_MIN + RECORD_AAD_LENGTH;
-
-  it("accepts exactly MAX_DEK_BYTES", () => {
-    assertDekBudget(0, MAX_DEK_BYTES);
-  });
-
-  it("rejects one byte over MAX_DEK_BYTES", () => {
-    expect(() => assertDekBudget(MAX_DEK_BYTES, 1)).toThrow(AegisError.dekBudget);
-  });
-
-  it("rejects non-finite overflow", () => {
-    expect(() => assertDekBudget(Number.MAX_SAFE_INTEGER, 1)).toThrow(AegisError.dekBudget);
-  });
-
-  it("tracks accumulation across records up to the boundary", () => {
-    const count = Math.floor(MAX_DEK_BYTES / perRecord);
-    let used = 0;
-    for (let i = 0; i < count; i += 1) {
-      assertDekBudget(used, perRecord);
-      used += perRecord;
+describe("DEK usage budget (D1b, GHASH block accounting)", () => {
+  const fixtureCases = (
+    blockAccountingVectors as {
+      cases: { aad: number; ciphertext: number; blocks: number }[];
     }
-    expect(used).toBeLessThanOrEqual(MAX_DEK_BYTES);
-    expect(() => assertDekBudget(used, perRecord)).toThrow(AegisError.dekBudget);
+  ).cases;
+
+  it("matches the shared cross-platform GHASH block-accounting fixture", () => {
+    expect(fixtureCases.length).toBeGreaterThan(0);
+    for (const c of fixtureCases) {
+      expect(countGcmBlocks(c.aad, c.ciphertext)).toBe(c.blocks);
+    }
+  });
+
+  it("accepts exactly maxDekBlocks and rejects one block over", () => {
+    const acc = createDekAccountant(4);
+    acc.charge(RECORD_AAD_LENGTH, 0); // 3 + 0 + 1 = 4 blocks: exactly the cap
+    expect(acc.blocks).toBe(4);
+    expect(() => acc.charge(0, 0)).toThrow(AegisError.dekBudget); // +1 block
+  });
+
+  it("enforces the byte cap as a secondary limit", () => {
+    const acc = createDekAccountant(MAX_DEK_BLOCKS, 10);
+    acc.charge(4, 6); // 10 bytes: exactly the cap
+    expect(acc.bytes).toBe(10);
+    expect(() => acc.charge(0, 1)).toThrow(AegisError.dekBudget);
+  });
+
+  it("rejects non-integer, negative and non-finite inputs", () => {
+    const acc = createDekAccountant();
+    expect(() => acc.charge(1.5, 0)).toThrow(AegisError.dekBudget);
+    expect(() => acc.charge(-1, 0)).toThrow(AegisError.dekBudget);
+    expect(() => acc.charge(0, Number.POSITIVE_INFINITY)).toThrow(AegisError.dekBudget);
+    expect(() => acc.charge(Number.NaN, 0)).toThrow(AegisError.dekBudget);
+  });
+
+  it("charges large invocations without overflow", () => {
+    const acc = createDekAccountant();
+    const big = 2 ** 31;
+    acc.charge(0, big);
+    expect(acc.blocks).toBe(Math.ceil(big / 16) + 1);
+  });
+
+  it("encrypt rejects before sealing once the per-DEK budget is exceeded", async () => {
+    const file = new Blob([new Uint8Array([1, 2, 3, 4])]);
+    const signal = new AbortController().signal;
+    await expect(
+      processFileEncrypt(file, "pw", null, signal, () => {}, {
+        chunkSize: CHUNK,
+        maxDekBlocks: 4, // the 4-byte final record needs 5 blocks
+      }),
+    ).rejects.toThrow(AegisError.dekBudget);
+    await expect(
+      processFileEncrypt(file, "pw", null, signal, () => {}, {
+        chunkSize: CHUNK,
+        maxDekBlocks: 5,
+      }),
+    ).resolves.toBeInstanceOf(Blob);
+  });
+
+  it("encryption accounts for chunk boundaries (64 KiB / 1 MiB / 16 MiB)", async () => {
+    for (const chunk of [
+      CRYPTO_CONSTANTS.CHUNK_SIZE_MIN,
+      CRYPTO_CONSTANTS.CHUNK_SIZE,
+      CRYPTO_CONSTANTS.CHUNK_SIZE_MAX,
+    ]) {
+      const file = new Blob([new Uint8Array(chunk + 1)]);
+      const total = chunk / 16 + 4 + 5; // full chunk record + 1-byte final record
+      const pass = processFileEncrypt(file, "pw", null, new AbortController().signal, () => {}, {
+        chunkSize: chunk,
+        maxDekBlocks: total,
+      });
+      await expect(pass).resolves.toBeInstanceOf(Blob);
+      const fail = processFileEncrypt(file, "pw", null, new AbortController().signal, () => {}, {
+        chunkSize: chunk,
+        maxDekBlocks: total - 1,
+      });
+      await expect(fail).rejects.toThrow(AegisError.dekBudget);
+    }
+  });
+
+  it("charges filename metadata before payload records", async () => {
+    const file = new Blob([new Uint8Array(0)]);
+    const signal = new AbortController().signal;
+    // Filename "a" (1 byte): 3 + 1 + 1 = 5 blocks; empty-file record: 4 blocks; total 9.
+    await expect(
+      processFileEncrypt(file, "pw", null, signal, () => {}, {
+        chunkSize: CHUNK,
+        filename: "a",
+        maxDekBlocks: 8,
+      }),
+    ).rejects.toThrow(AegisError.dekBudget);
+    await expect(
+      processFileEncrypt(file, "pw", null, signal, () => {}, {
+        chunkSize: CHUNK,
+        filename: "a",
+        maxDekBlocks: 9,
+      }),
+    ).resolves.toBeInstanceOf(Blob);
+  });
+
+  it("decrypt rejects before invoking GCM and publishes no plaintext", async () => {
+    const payload = patternBytes(64, 7);
+    const container = await processFileEncrypt(
+      new Blob([payload]),
+      "pw",
+      null,
+      new AbortController().signal,
+      () => {},
+      { chunkSize: CHUNK },
+    );
+    const writes: number[] = [];
+    let aborts = 0;
+    const sink = {
+      write: () => {
+        writes.push(1);
+      },
+      finalize: () => new Blob([]),
+      abort: () => {
+        aborts += 1;
+      },
+    };
+    // 64-byte record needs 3 + ceil(64/16) + 1 = 8 blocks; budget allows only 7.
+    await expect(
+      processFileDecrypt(container, "pw", null, new AbortController().signal, () => {}, {
+        sink,
+        maxDekBlocks: 7,
+      }),
+    ).rejects.toThrow(AegisError.dekBudget);
+    expect(writes).toHaveLength(0);
+    expect(aborts).toBe(1);
+  });
+
+  it("decrypt boundary: exact block count passes, one less rejects", async () => {
+    const payload = patternBytes(64, 7);
+    const generate = () =>
+      processFileEncrypt(new Blob([payload]), "pw", null, new AbortController().signal, () => {}, {
+        chunkSize: CHUNK,
+      });
+    const total = countGcmBlocks(RECORD_AAD_LENGTH, payload.byteLength); // 8
+    const pass = await generate();
+    await expect(
+      processFileDecrypt(pass, "pw", null, new AbortController().signal, () => {}, {
+        maxDekBlocks: total,
+      }),
+    ).resolves.toBeInstanceOf(Blob);
+    const fail = await generate();
+    await expect(
+      processFileDecrypt(fail, "pw", null, new AbortController().signal, () => {}, {
+        maxDekBlocks: total - 1,
+      }),
+    ).rejects.toThrow(AegisError.dekBudget);
+  });
+
+  it("charges filename metadata on decrypt before payload records", async () => {
+    const payload = patternBytes(4, 9);
+    const filenameBlocks = countGcmBlocks(FILENAME_AAD_LENGTH, 1); // 5
+    const recordBlocks = countGcmBlocks(RECORD_AAD_LENGTH, payload.byteLength); // 5
+    const total = filenameBlocks + recordBlocks; // 10
+
+    const generate = () =>
+      processFileEncrypt(new Blob([payload]), "pw", null, new AbortController().signal, () => {}, {
+        chunkSize: CHUNK,
+        filename: "a",
+      });
+
+    const pass = await generate();
+    await expect(
+      processFileDecrypt(pass, "pw", null, new AbortController().signal, () => {}, {
+        maxDekBlocks: total,
+      }),
+    ).resolves.toBeInstanceOf(Blob);
+    const fail = await generate();
+    await expect(
+      processFileDecrypt(fail, "pw", null, new AbortController().signal, () => {}, {
+        maxDekBlocks: total - 1,
+      }),
+    ).rejects.toThrow(AegisError.dekBudget);
   });
 });

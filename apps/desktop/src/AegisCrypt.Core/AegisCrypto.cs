@@ -13,6 +13,8 @@ public sealed class EncryptOptions
     public Func<int, byte[]>? RandomBytes { get; init; }
     /// <summary>Reports the number of plaintext bytes consumed so far.</summary>
     public Action<long>? Progress { get; init; }
+    /// <summary>Testing seam: overrides the per-DEK GHASH block cap (default AegisConstants.MaxDekBlocks).</summary>
+    public ulong? MaxDekBlocks { get; init; }
 }
 
 public sealed record DecryptResult(string? Filename, bool LegacyV2);
@@ -47,6 +49,8 @@ public static class AegisCrypto
         var noncePrefix = randomBytes(AegisConstants.NoncePrefixLength);
         var wrapNonce = randomBytes(AegisConstants.IvLength);
         var dekBytes = 0UL;
+        var dekBlocks = 0UL;
+        var maxBlocks = opts.MaxDekBlocks ?? AegisConstants.MaxDekBlocks;
 
         byte flags = 0;
         if (keyFile is not null)
@@ -94,7 +98,7 @@ public static class AegisCrypto
         if (opts.Filename is not null)
         {
             var filenameBytes = Encoding.UTF8.GetBytes(opts.Filename);
-            dekBytes = AccumulateDekBytes(dekBytes, (ulong)filenameBytes.Length + AegisConstants.FilenameAadLength);
+            (dekBytes, dekBlocks) = ChargeDek(dekBytes, dekBlocks, (ulong)AegisConstants.FilenameAadLength, (ulong)filenameBytes.Length, maxBlocks);
             output.Write(EncryptFilename(dek, fileId, noncePrefix, opts.Filename));
         }
 
@@ -112,7 +116,7 @@ public static class AegisCrypto
 
             if (filled < opts.ChunkSize)
             {
-                dekBytes = AccumulateDekBytes(dekBytes, (ulong)filled + AegisConstants.RecordAadLength);
+                (dekBytes, dekBlocks) = ChargeDek(dekBytes, dekBlocks, (ulong)AegisConstants.RecordAadLength, (ulong)filled, maxBlocks);
                 WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), true);
                 opts.Progress?.Invoke(input.Position);
                 ThrowIfCancelled(cancellationToken);
@@ -122,14 +126,14 @@ public static class AegisCrypto
             var extra = input.ReadByte();
             if (extra < 0)
             {
-                dekBytes = AccumulateDekBytes(dekBytes, (ulong)filled + AegisConstants.RecordAadLength);
+                (dekBytes, dekBlocks) = ChargeDek(dekBytes, dekBlocks, (ulong)AegisConstants.RecordAadLength, (ulong)filled, maxBlocks);
                 WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), true);
                 opts.Progress?.Invoke(input.Position);
                 ThrowIfCancelled(cancellationToken);
                 break;
             }
 
-            dekBytes = AccumulateDekBytes(dekBytes, (ulong)filled + AegisConstants.RecordAadLength);
+            (dekBytes, dekBlocks) = ChargeDek(dekBytes, dekBlocks, (ulong)AegisConstants.RecordAadLength, (ulong)filled, maxBlocks);
             WriteRecord(output, dek, noncePrefix, opts.ChunkSize, fileId, (ulong)index, buffer.AsSpan(0, filled), false);
             opts.Progress?.Invoke(input.Position);
             ThrowIfCancelled(cancellationToken);
@@ -148,7 +152,8 @@ public static class AegisCrypto
         byte[]? keyFile = null,
         byte[]? recoveryKey = null,
         Action<long>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        ulong? maxDekBlocks = null)
     {
         if (!input.CanSeek)
         {
@@ -214,13 +219,15 @@ public static class AegisCrypto
             dek = UnwrapDek(header, headerBytes, keyMaterial);
         }
 
+        var maxBlocks = maxDekBlocks ?? AegisConstants.MaxDekBlocks;
         ulong dekBytes = 0;
+        ulong dekBlocks = 0;
 
-        var (filename, recordsOffset) = ResolveFilename(input, header, dek);
-        if (filename is not null)
-        {
-            dekBytes = AccumulateDekBytes(dekBytes, (ulong)Encoding.UTF8.GetByteCount(filename) + AegisConstants.FilenameAadLength);
-        }
+        var (filename, recordsOffset) = ResolveFilename(
+            input,
+            header,
+            dek,
+            (aad, ct) => (dekBytes, dekBlocks) = ChargeDek(dekBytes, dekBlocks, aad, ct, maxBlocks));
 
         input.Position = recordsOffset;
         long index = 0;
@@ -273,13 +280,14 @@ public static class AegisCrypto
                 throw new AegisFormatException(AegisErrors.Truncated);
             }
 
+            (dekBytes, dekBlocks) = ChargeDek(dekBytes, dekBlocks, (ulong)AegisConstants.RecordAadLength, (ulong)(ciphertextLength - AegisConstants.TagLength), maxBlocks);
+
             var sealedData = new byte[(int)ciphertextLength];
             ReadExactlyOrThrow(input, sealedData, AegisErrors.Truncated);
 
             var nonce = MakeNonce(header.NoncePrefix, (ulong)index);
             var aad = MakeRecordAad(header.ChunkSize, header.FileId, header.NoncePrefix, recordHeader, (ulong)index);
             var plaintext = DecryptGcm(dek, nonce, sealedData, aad, AegisErrors.Tampered);
-            dekBytes = AccumulateDekBytes(dekBytes, (ulong)plaintext.Length + AegisConstants.RecordAadLength);
             output.Write(plaintext);
 
             progress?.Invoke(input.Position);
@@ -357,7 +365,14 @@ public static class AegisCrypto
         var oldMaterial = PrepareKeyMaterial(oldPassword, oldKeyFile);
         ThrowIfCancelled(cancellationToken);
         var dek = UnwrapDek(header, headerBytes, oldMaterial);
-        ResolveFilename(input, header, dek);
+        var rewrapDekBytes = 0UL;
+        var rewrapDekBlocks = 0UL;
+        var rewrapMaxBlocks = AegisConstants.MaxDekBlocks;
+        ResolveFilename(
+            input,
+            header,
+            dek,
+            (aad, ct) => (rewrapDekBytes, rewrapDekBlocks) = ChargeDek(rewrapDekBytes, rewrapDekBlocks, aad, ct, rewrapMaxBlocks));
         ThrowIfCancelled(cancellationToken);
 
         var newIterations = iterations ?? header.Iterations;
@@ -700,7 +715,8 @@ public static class AegisCrypto
     private static (string? Filename, long RecordsOffset) ResolveFilename(
         Stream input,
         AegisHeader header,
-        byte[] dek)
+        byte[] dek,
+        Action<ulong, ulong>? charge = null)
     {
         var metadataOffset = (long)header.MetadataOffset;
         if (input.Length < metadataOffset)
@@ -736,6 +752,8 @@ public static class AegisCrypto
 
         var sealedData = new byte[ciphertextLength];
         ReadExactlyOrThrow(input, sealedData, AegisErrors.Truncated);
+
+        charge?.Invoke((ulong)AegisConstants.FilenameAadLength, (ulong)(ciphertextLength - AegisConstants.TagLength));
 
         var plaintext = DecryptGcm(
             dek,
@@ -786,22 +804,46 @@ public static class AegisCrypto
         output.Write(sealedData);
     }
 
-    internal static ulong AccumulateDekBytes(ulong current, ulong add)
+    /// <summary>
+    /// GHASH block count for one AES-GCM invocation (NIST SP 800-38D, sec. 6.3):
+    /// AAD and ciphertext are padded to 16-byte blocks and an extra length block
+    /// encodes len(A)||len(C) before GHASH runs:
+    ///   B = ceil(|AAD| / 16) + ceil(|C| / 16) + 1
+    /// C is the encrypted payload without the tag.
+    /// </summary>
+    internal static ulong CountGcmBlocks(ulong aadBytes, ulong ciphertextBytes)
+        => (aadBytes + 15) / 16 + (ciphertextBytes + 15) / 16 + 1;
+
+    /// <summary>
+    /// Charges one GCM invocation against the per-DEK budget. A failed tag
+    /// verification still consumed the work, so charge before the invocation
+    /// and let the caller throw on failure. Returns the updated accumulators.
+    /// </summary>
+    internal static (ulong Bytes, ulong Blocks) ChargeDek(
+        ulong bytes,
+        ulong blocks,
+        ulong aadBytes,
+        ulong ciphertextBytes,
+        ulong maxDekBlocks)
     {
-        ulong next;
+        ulong nextBytes;
+        ulong nextBlocks;
         try
         {
-            next = checked(current + add);
+            nextBytes = checked(bytes + aadBytes + ciphertextBytes);
+            nextBlocks = checked(blocks + CountGcmBlocks(aadBytes, ciphertextBytes));
         }
         catch (System.OverflowException)
         {
             throw new AegisFormatException(AegisErrors.DekBudget);
         }
-        if (next > AegisConstants.MaxDekBytes)
+
+        if (nextBytes > AegisConstants.MaxDekBytes || nextBlocks > maxDekBlocks)
         {
             throw new AegisFormatException(AegisErrors.DekBudget);
         }
-        return next;
+
+        return (nextBytes, nextBlocks);
     }
 
     private static void ThrowIfCancelled(CancellationToken cancellationToken)

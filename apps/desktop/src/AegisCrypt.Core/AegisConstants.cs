@@ -70,6 +70,16 @@ public static class AegisConstants
     /// </summary>
     public const ulong MaxDekBytes = 64UL * 1024 * 1024 * 1024;
 
+    /// <summary>
+    /// Aggregate per-DEK GHASH block budget (D1b, product policy — provisional).
+    /// Sigma ≈ 2^32 GHASH blocks keeps the forgery advantage near 2^-64
+    /// (NIST SP 800-38D: advantage ~ sigma^2 / 2^128). GHASH blocks per GCM
+    /// invocation: ceil(|AAD|/16) + ceil(|C|/16) + 1, where C is the encrypted
+    /// payload without the tag. Enforced before every GCM invocation. See
+    /// docs/specs/spec-aegis-v3.md sections 7 and 7.2.
+    /// </summary>
+    public const ulong MaxDekBlocks = 4UL * 1024 * 1024 * 1024;
+
     public const int LegacyHeaderLength = 38;
 
     public const byte FileVersion = 3;

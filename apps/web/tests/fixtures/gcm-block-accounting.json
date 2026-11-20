@@ -1,0 +1,17 @@
+{
+  "description": "Shared GHASH block-accounting vectors for one AES-GCM invocation: B = ceil(|AAD| / 16) + ceil(|C| / 16) + 1, where C is the encrypted payload without the tag. AAD 43 = v3 record AAD, AAD 36 = filename metadata AAD. Used by web (vitest) and desktop (xUnit) to keep the per-DEK block accounting identical on both platforms.",
+  "cases": [
+    { "aad": 43, "ciphertext": 0, "blocks": 4 },
+    { "aad": 43, "ciphertext": 4, "blocks": 5 },
+    { "aad": 43, "ciphertext": 100, "blocks": 11 },
+    { "aad": 43, "ciphertext": 65536, "blocks": 4100 },
+    { "aad": 43, "ciphertext": 1048576, "blocks": 65540 },
+    { "aad": 43, "ciphertext": 16777216, "blocks": 1048580 },
+    { "aad": 36, "ciphertext": 0, "blocks": 4 },
+    { "aad": 36, "ciphertext": 1, "blocks": 5 },
+    { "aad": 36, "ciphertext": 1024, "blocks": 68 },
+    { "aad": 16, "ciphertext": 32, "blocks": 4 },
+    { "aad": 1, "ciphertext": 15, "blocks": 3 },
+    { "aad": 17, "ciphertext": 17, "blocks": 5 }
+  ]
+}
