@@ -67,8 +67,11 @@ Not independently audited yet — see **Known limitations**.
   copy of anything important.
 - **Desktop is a preview.** Builds are unsigned and no installer or checksum set is published
   yet; desktop UI localization is pending.
-- **Per-DEK usage budget** is documented in `spec-aegis-v3.md` §7.2 but not enforced. The
-  record-count ceiling (`MAX_RECORDS`) is enforced on both platforms; the aggregate
-  ciphertext/AAD block budget awaits an independent crypto review.
+- **Per-DEK AES-GCM budget (D1b)** is enforced as provisional product policy on both
+  platforms: GHASH blocks are charged before every GCM invocation (record payload,
+  filename metadata), with a `σ ≤ 2^32` block cap plus a 64 GiB plaintext+AAD secondary
+  cap. Not yet normative — independent crypto review is pending before the format is
+  declared frozen. The record-count ceiling (`MAX_RECORDS`) is also enforced on both
+  platforms.
 - **Search visibility.** `/awal/` and `/awal/id/` ship indexable with this release (canonical plus
   `hreflang` alternates); the feedback pages under `/awal/feedback/` stay `noindex`.
