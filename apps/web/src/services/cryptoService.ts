@@ -85,7 +85,7 @@ export const AegisError = {
   recoveryMissing: "Berkas ini tidak memiliki slot recovery.",
   recoveryKey: "Kunci recovery salah atau slot rusak.",
   legacyCorrupt: "Berkas corrupt: struktur v2 tidak valid.",
-  cancelled: "Operation Cancelled",
+  cancelled: "Operasi dibatalkan.",
   dekBudget: "Anggaran penggunaan DEK tercapai; berkas melebihi batas per kunci data.",
 } as const;
 

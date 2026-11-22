@@ -103,7 +103,7 @@ describe("crypto worker client (local fallback)", () => {
         () => {},
         FAST,
       ),
-    ).rejects.toThrow(/cancelled/i);
+    ).rejects.toThrow(/dibatalkan/i);
   });
 });
 
