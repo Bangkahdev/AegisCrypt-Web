@@ -12,7 +12,7 @@ Bantu kami menyempurnakan AegisCrypt
 
 ## Pengantar
 
-Jawaban hanya dipakai untuk menyempurnakan AegisCrypt. Form dikelola oleh layanan pihak ketiga (Tally). Isi kontak bersifat opsional dan bisa dihapus kapan saja dengan menghubungi atha@bangkah.tech.
+Jawaban hanya dipakai untuk menyempurnakan AegisCrypt. Form dikelola oleh layanan pihak ketiga (Tally). Isi kontak bersifat opsional dan bisa dihapus kapan saja dengan menghubungi aegiscrypt@bangkah.tech.
 
 ## Bagian A — Tentang kamu
 

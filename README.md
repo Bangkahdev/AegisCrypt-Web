@@ -111,7 +111,7 @@ Each record: 5-byte header (`final flag` + uint32 ciphertext length) + ciphertex
 ## Security & Reporting
 
 - Policy: [SECURITY.md](SECURITY.md)
-- Contact: **atha@bangkah.tech** (do not open public issues for vulnerabilities)
+- Contact: **aegiscrypt@bangkah.tech** (do not open public issues for vulnerabilities)
 - `/.well-known/security.txt` included in web build
 
 ## Documentation

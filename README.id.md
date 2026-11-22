@@ -111,7 +111,7 @@ Setiap record: header 5 byte (`flag final` + panjang ciphertext uint32) + cipher
 ## Keamanan & Pelaporan
 
 - Kebijakan: [SECURITY.md](SECURITY.md)
-- Kontak: **atha@bangkah.tech** (jangan buka issue publik untuk kerentanan)
+- Kontak: **aegiscrypt@bangkah.tech** (jangan buka issue publik untuk kerentanan)
 - `/.well-known/security.txt` disertakan pada build web
 
 ## Dokumentasi

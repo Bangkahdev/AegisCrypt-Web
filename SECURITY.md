@@ -14,7 +14,7 @@ The cryptographic core and file format are security-sensitive. Please report iss
 
 **Do not open a public issue for security vulnerabilities.**
 
-Report vulnerabilities by email to: **atha@bangkah.tech**
+Report vulnerabilities by email to: **aegiscrypt@bangkah.tech**
 
 Please include, when available:
 - A clear description of the issue and affected component/version/commit
