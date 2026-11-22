@@ -5,7 +5,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 semantic. Everything before `1.0.0` is a public preview: interfaces and the format may still
 change, and nothing in this file is a security certification.
 
-## [0.1.0] - 2026-11-15
+## [0.1.0] - 2026-11-23
 
 First public preview of the web app, the `.aegis` v3 format, and the shared desktop core.
 Not independently audited yet — see **Known limitations**.

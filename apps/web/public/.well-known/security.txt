@@ -1,4 +1,4 @@
-Contact: mailto:atha@bangkah.tech
+Contact: mailto:aegiscrypt@bangkah.tech
 Expires: 2027-05-15T00:00:00.000Z
 Preferred-Languages: en, id
 Canonical: https://aegiscrypt.bangkah.tech/.well-known/security.txt
